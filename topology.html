@@ -1,0 +1,522 @@
+<!doctype html>
+<html lang="id">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width,initial-scale=1" />
+  <title>Topologi Jaringan — User Friendly Enhanced (Standalone)</title>
+  <script src="https://cdn.tailwindcss.com"></script>
+  <style>
+    html,body { height:100%; }
+    body { margin:0; font-family: Inter, system-ui, -apple-system, 'Segoe UI', Roboto, 'Helvetica Neue', Arial; }
+    #canvas { background: linear-gradient(180deg,#fbfdff,#eef2f7); position:relative; overflow:auto; }
+    .node { width:140px; min-height:60px; border-radius:10px; background:white; border:2px solid #0ea5a4; display:flex;align-items:center;justify-content:center;box-shadow:0 6px 18px rgba(2,6,23,0.06); cursor:grab; position:absolute; user-select:none; padding:8px; }
+    .node.dragging { opacity:0.9; cursor:grabbing; transform:scale(1.02); }
+    svg#connections { position:absolute; left:0; top:0; width:100%; height:100%; pointer-events:none; z-index:5; }
+    .port { width:10px; height:10px; background:#333; border-radius:50%; position:absolute; right:-5px; top:50%; transform:translateY(-50%); }
+    .grid { background-image: linear-gradient(rgba(2,6,23,0.03) 1px, transparent 1px), linear-gradient(90deg, rgba(2,6,23,0.03) 1px, transparent 1px); background-size:40px 40px, 40px 40px; }
+    .connection-label { font-size:12px; font-weight:600; background:rgba(255,255,255,0.95); padding:4px 8px; border-radius:8px; border:1px solid rgba(2,6,23,0.06); display:flex;align-items:center;gap:6px }
+    .sidebar-device { user-select:none; }
+    .icon { font-size:20px; }
+    .small-muted { font-size:12px; color:#64748b }
+    .zoom-ctrl { background:rgba(255,255,255,0.9); padding:6px; border-radius:8px; box-shadow:0 4px 12px rgba(2,6,23,0.06); }
+    .canvas-highlight { outline: 4px dashed rgba(14,165,164,0.18); }
+    .toolbar-toggle { display:flex; gap:8px; align-items:center }
+    .muted { color:#64748b }
+  </style>
+</head>
+<body class="h-screen flex">
+  <!-- Sidebar -->
+  <aside class="w-80 bg-slate-800 text-white p-4 flex flex-col gap-4">
+    <div class="flex items-center justify-between">
+      <div>
+        <h1 class="text-lg font-semibold">Topologi Jaringan</h1>
+        <p class="text-xs text-slate-300">Drag perangkat ke kanvas. Klik 2 node untuk menghubungkan.</p>
+      </div>
+      <div class="text-xs small-muted">v1 • standalone</div>
+    </div>
+
+    <div>
+      <input id="deviceSearch" placeholder="Cari perangkat..." class="w-full p-2 rounded bg-slate-700 text-sm placeholder-slate-300" />
+    </div>
+
+    <div class="mt-2 overflow-auto" style="max-height:42vh">
+      <template id="device-categories">
+        <div class="mb-3">
+          <h2 class="text-xs uppercase text-slate-400">Komputer</h2>
+          <div id="devices-computer" class="mt-2 grid grid-cols-1 gap-2"></div>
+        </div>
+        <div class="mb-3">
+          <h2 class="text-xs uppercase text-slate-400">Server & Storage</h2>
+          <div id="devices-server" class="mt-2 grid grid-cols-1 gap-2"></div>
+        </div>
+        <div class="mb-3">
+          <h2 class="text-xs uppercase text-slate-400">Perangkat Jaringan</h2>
+          <div id="devices-network" class="mt-2 grid grid-cols-1 gap-2"></div>
+        </div>
+        <div class="mb-3">
+          <h2 class="text-xs uppercase text-slate-400">Wireless & Cloud</h2>
+          <div id="devices-wireless" class="mt-2 grid grid-cols-1 gap-2"></div>
+        </div>
+      </template>
+    </div>
+
+    <div class="mt-auto flex flex-col gap-2">
+      <div class="grid grid-cols-2 gap-2">
+        <button id="undoBtn" class="p-2 rounded bg-slate-600 hover:bg-slate-500">↶ Undo</button>
+        <button id="redoBtn" class="p-2 rounded bg-slate-600 hover:bg-slate-500">↷ Redo</button>
+      </div>
+      <div class="grid grid-cols-3 gap-2">
+        <button id="zoomIn" class="p-2 rounded bg-slate-600 hover:bg-slate-500">➕</button>
+        <button id="zoomReset" class="p-2 rounded bg-slate-600 hover:bg-slate-500">1x</button>
+        <button id="zoomOut" class="p-2 rounded bg-slate-600 hover:bg-slate-500">➖</button>
+      </div>
+
+      <div class="toolbar-toggle">
+        <label class="text-xs muted flex items-center gap-2"><input id="snapToggle" type="checkbox" checked /> Snap</label>
+        <label class="text-xs muted flex items-center gap-2"><input id="autoLinkToggle" type="checkbox" /> Auto-link</label>
+      </div>
+
+      <button id="saveBtn" class="w-full bg-emerald-500 hover:bg-emerald-600 text-white p-2 rounded">💾 Simpan</button>
+      <button id="loadBtn" class="w-full bg-sky-500 hover:bg-sky-600 text-white p-2 rounded">📂 Muat</button>
+      <div class="grid grid-cols-2 gap-2">
+        <button id="exportPng" class="p-2 bg-indigo-500 hover:bg-indigo-600 text-white rounded">🖼️ PNG</button>
+        <button id="exportPdf" class="p-2 bg-rose-500 hover:bg-rose-600 text-white rounded">📄 PDF</button>
+      </div>
+      <button id="downloadJson" class="w-full bg-yellow-500 hover:bg-yellow-600 text-black p-2 rounded">🔽 JSON</button>
+      <button id="resetBtn" class="w-full bg-slate-600 hover:bg-slate-500 text-white p-2 rounded">♻️ Reset</button>
+    </div>
+  </aside>
+
+  <!-- Main canvas + properties -->
+  <main class="flex-1 flex">
+    <section id="canvas-wrapper" class="flex-1 relative bg-gradient-to-b from-white to-slate-50 overflow-auto">
+      <div id="canvas" class="flex-1 relative grid grid-cols-1 grid-rows-1" style="min-height:600px; transform-origin:0 0;">
+        <div id="canvas-grid" class="absolute inset-0 grid"></div>
+        <svg id="connections"></svg>
+        <div id="dropHint" class="absolute inset-0 flex items-center justify-center pointer-events:none text-slate-300 text-sm">Tarik perangkat dari sidebar atau klik ikon lalu klik kanvas</div>
+      </div>
+
+      <!-- Floating controls -->
+      <div class="absolute right-4 top-4 flex flex-col gap-2 z-40">
+        <div class="zoom-ctrl">Zoom: <span id="zoomLevel">100%</span></div>
+      </div>
+    </section>
+
+    <aside class="w-96 bg-white border-l p-4">
+      <h2 class="font-semibold">Properti Perangkat</h2>
+      <div id="props" class="mt-3 text-sm text-slate-700">
+        <p class="text-slate-400">Pilih node untuk melihat/ubah properti</p>
+      </div>
+
+      <hr class="my-4" />
+      <h3 class="text-sm font-medium">Panduan Singkat</h3>
+      <ul class="list-disc pl-5 text-sm mt-2 small-muted">
+        <li>Drag perangkat dari sidebar ke kanvas — atau klik ikon lalu klik kanvas.</li>
+        <li>Klik satu node lalu klik node lain untuk membuat koneksi (atau aktifkan Auto-link).</li>
+        <li>Klik kanan pada node untuk menghapus.</li>
+        <li>Gunakan Undo/Redo bila perlu.</li>
+      </ul>
+    </aside>
+  </main>
+
+  <!-- Libraries for export to PNG/PDF -->
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/html2canvas/1.4.1/html2canvas.min.js"></script>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
+
+  <script>
+    // ---------- Data & State ----------
+    let currentId = 0;
+    const nodes = {};
+    let connections = [];
+    let selectedNode = null;
+    const gridSize = 20; // snapping grid
+    let scale = 1;
+
+    // Undo/Redo stacks
+    const undoStack = [];
+    const redoStack = [];
+
+    // Interaction modes
+    let pendingPaletteType = null; // when user clicks icon (click-to-add)
+    let snapEnabled = true;
+    let autoLinkEnabled = false;
+
+    const canvasWrapper = document.getElementById('canvas-wrapper');
+    const canvas = document.getElementById('canvas');
+    const svg = document.getElementById('connections');
+    const props = document.getElementById('props');
+    const dropHint = document.getElementById('dropHint');
+
+    // ---------- Device palette (more icons) ----------
+    const PALETTE = [
+      // Computers
+      { cat:'computer', type:'PC', icon:'💻', label:'PC' },
+      { cat:'computer', type:'Laptop', icon:'🖥️', label:'Laptop' },
+      // Servers
+      { cat:'server', type:'Server', icon:'🗄️', label:'Server' },
+      { cat:'server', type:'NAS', icon:'📦', label:'NAS' },
+      // Network
+      { cat:'network', type:'Router', icon:'📡', label:'Router' },
+      { cat:'network', type:'Switch', icon:'🔀', label:'Switch' },
+      { cat:'network', type:'Hub', icon:'🔌', label:'Hub' },
+      { cat:'network', type:'Bridge', icon:'🌉', label:'Bridge' },
+      { cat:'network', type:'Firewall', icon:'🔥', label:'Firewall' },
+      { cat:'network', type:'MikroTik', icon:'🧱', label:'MikroTik' },
+      // Wireless & Cloud
+      { cat:'wireless', type:'AccessPoint', icon:'📶', label:'Access Point' },
+      { cat:'wireless', type:'AP', icon:'📡', label:'AP' },
+      { cat:'wireless', type:'Cloud', icon:'☁️', label:'Cloud/Internet' },
+      { cat:'wireless', type:'Mobile', icon:'📱', label:'Mobile' },
+    ];
+
+    function initPalette(){
+      const tpl = document.getElementById('device-categories').content.cloneNode(true);
+      document.querySelector('.mt-2.overflow-auto').appendChild(tpl);
+      const buckets = { computer: document.getElementById('devices-computer'), server: document.getElementById('devices-server'), network: document.getElementById('devices-network'), wireless: document.getElementById('devices-wireless') };
+      PALETTE.forEach(p => {
+        const el = document.createElement('div');
+        el.className = 'sidebar-device p-2 rounded bg-slate-700 hover:bg-slate-600 cursor-grab flex items-center gap-3';
+        el.draggable = true; el.dataset.type = p.type; el.innerHTML = `<div class="icon">${p.icon}</div><div><div class="font-medium">${p.label}</div><div class="small-muted">${p.type}</div></div>`;
+
+        // dragstart for drag & drop
+        el.addEventListener('dragstart', e => {
+          e.dataTransfer.setData('text/plain', p.type);
+          e.dataTransfer.effectAllowed = 'copy';
+          // set a drag image for better UX
+          try{ const crt = el.cloneNode(true); crt.style.position='absolute'; crt.style.top='-1000px'; document.body.appendChild(crt); e.dataTransfer.setDragImage(crt, 20, 20); setTimeout(()=>crt.remove(),100); }catch(err){}
+        });
+
+        // click-to-add fallback (user clicks icon then clicks canvas)
+        el.addEventListener('click', (e) => { e.stopPropagation(); pendingPaletteType = p.type; dropHint.textContent = `Klik pada kanvas untuk menempatkan: ${p.label}`; });
+
+        buckets[p.cat].appendChild(el);
+      });
+    }
+
+    initPalette();
+
+    // search
+    document.getElementById('deviceSearch').addEventListener('input', (e)=>{
+      const q = e.target.value.toLowerCase(); document.querySelectorAll('.sidebar-device').forEach(d=>{
+        const txt = d.textContent.toLowerCase(); d.style.display = txt.includes(q) ? 'flex' : 'none';
+      });
+    });
+
+    // snap & auto-link toggles
+    document.getElementById('snapToggle').addEventListener('change', (e)=>{ snapEnabled = e.target.checked; });
+    document.getElementById('autoLinkToggle').addEventListener('change', (e)=>{ autoLinkEnabled = e.target.checked; });
+
+    // ---------- Drag & Drop handlers (robust) ----------
+    // use canvas-wrapper for consistent events even when canvas scaled or scrolled
+    canvasWrapper.addEventListener('dragenter', (e) => {
+      e.preventDefault(); canvas.classList.add('canvas-highlight'); dropHint.style.opacity = '0.25';
+    });
+    canvasWrapper.addEventListener('dragover', (e) => {
+      e.preventDefault(); e.dataTransfer.dropEffect = 'copy';
+    });
+    canvasWrapper.addEventListener('dragleave', (e) => {
+      // only remove highlight when leaving wrapper bounds
+      const rect = canvasWrapper.getBoundingClientRect(); if(e.clientX < rect.left || e.clientX > rect.right || e.clientY < rect.top || e.clientY > rect.bottom){ canvas.classList.remove('canvas-highlight'); dropHint.style.opacity = '1'; }
+    });
+    canvasWrapper.addEventListener('drop', (e) => {
+      e.preventDefault(); canvas.classList.remove('canvas-highlight'); dropHint.style.opacity = '1';
+      const type = e.dataTransfer.getData('text/plain') || pendingPaletteType || 'Device';
+      const rect = canvas.getBoundingClientRect();
+      // compute position inside canvas accounting for scroll and scale
+      const scrollLeft = canvasWrapper.scrollLeft; const scrollTop = canvasWrapper.scrollTop;
+      const x = ((e.clientX - rect.left) + scrollLeft) / scale - 70;
+      const y = ((e.clientY - rect.top) + scrollTop) / scale - 30;
+      const nx = snapEnabled ? snap(Math.max(8, x)) : Math.max(8, Math.round(x));
+      const ny = snapEnabled ? snap(Math.max(8, y)) : Math.max(8, Math.round(y));
+      const node = createNode({ x: nx, y: ny, type });
+      pushUndo({ t:'createNode', payload: { id: node.dataset.id } });
+      pendingPaletteType = null; dropHint.style.display = 'none';
+    });
+
+    // click-to-add: if pendingPaletteType set, place at click
+    canvas.addEventListener('click', (e)=>{
+      if(!pendingPaletteType) return; const rect = canvas.getBoundingClientRect(); const scrollLeft = canvasWrapper.scrollLeft; const scrollTop = canvasWrapper.scrollTop;
+      const x = ((e.clientX - rect.left) + scrollLeft) / scale - 70; const y = ((e.clientY - rect.top) + scrollTop) / scale - 30;
+      const nx = snapEnabled ? snap(Math.max(8, x)) : Math.max(8, Math.round(x));
+      const ny = snapEnabled ? snap(Math.max(8, y)) : Math.max(8, Math.round(y));
+      const node = createNode({ x: nx, y: ny, type: pendingPaletteType }); pushUndo({ t:'createNode', payload:{ id: node.dataset.id } }); pendingPaletteType = null; dropHint.style.display = 'none';
+    });
+
+    function snap(v){ return Math.round(v / gridSize) * gridSize; }
+
+    // ---------- Node creation ----------
+    function getIconForType(type){ const found = PALETTE.find(p=>p.type === type); return found ? found.icon : '🔧'; }
+
+    function createNode({ x=40, y=40, type='Device', id=null, meta={} }){
+      const nid = id ?? String(currentId++);
+      const el = document.createElement('div');
+      el.className = 'node';
+      el.style.left = x + 'px';
+      el.style.top = y + 'px';
+      el.dataset.id = nid;
+      el.dataset.type = type;
+      el.dataset.name = meta.name || `${type}-${nid}`;
+      el.dataset.ip = meta.ip || '';
+      el.innerHTML = `<div class="flex items-center gap-3 w-full">
+        <div class="text-2xl icon-el">${getIconForType(type)}</div>
+        <div class="flex-1 text-left">
+          <div class="font-semibold text-sm" id="label-${nid}">${el.dataset.name}</div>
+          <div class="small-muted text-xs coord-${nid}">${el.dataset.ip || ''}</div>
+        </div>
+      </div>`;
+
+      const port = document.createElement('div'); port.className = 'port'; el.appendChild(port);
+
+      makeDraggable(el);
+
+      el.addEventListener('click', (ev) => { ev.stopPropagation(); handleSelectNode(el); });
+      el.addEventListener('contextmenu', (ev) => { ev.preventDefault(); ev.stopPropagation(); if(confirm('Hapus perangkat ini?')){ removeNode(el.dataset.id); pushUndo({ t:'removeNode', payload:{ id: el.dataset.id } }); } });
+
+      canvas.appendChild(el);
+      nodes[nid] = el;
+      drawConnections();
+      return el;
+    }
+
+    // ---------- Dragging logic (with move history) ----------
+    function makeDraggable(el){
+      let startX=0,startY=0,origX=0,origY=0; let dragging=false; let moved=false;
+      el.addEventListener('pointerdown', e => {
+        if(e.button !== 0) return; dragging = true; moved=false; el.setPointerCapture(e.pointerId);
+        el.classList.add('dragging');
+        startX = e.clientX; startY = e.clientY;
+        origX = parseInt(el.style.left || 0); origY = parseInt(el.style.top || 0);
+        e.preventDefault();
+      });
+      document.addEventListener('pointermove', e => {
+        if(!dragging) return;
+        // account for canvas scroll
+        const scrollLeft = canvasWrapper.scrollLeft; const scrollTop = canvasWrapper.scrollTop;
+        let nx = origX + (e.clientX - startX) / scale; let ny = origY + (e.clientY - startY) / scale;
+        nx = Math.max(8, nx); ny = Math.max(8, ny);
+        el.style.left = (snapEnabled ? snap(nx) : Math.round(nx)) + 'px'; el.style.top = (snapEnabled ? snap(ny) : Math.round(ny)) + 'px'; moved=true;
+        drawConnections();
+        updateCoordDisplay(el);
+      });
+      document.addEventListener('pointerup', e => {
+        if(dragging){ dragging=false; el.classList.remove('dragging'); el.releasePointerCapture?.(e.pointerId); if(moved){ pushUndo({ t:'moveNode', payload:{ id: el.dataset.id, from:{x:origX,y:origY}, to:{x:parseInt(el.style.left), y:parseInt(el.style.top)} } }); } }
+      });
+    }
+
+    function updateCoordDisplay(el){ const id = el.dataset.id; const coord = el.querySelector('.coord-'+id); if(coord) coord.textContent = `x:${parseInt(el.style.left)} y:${parseInt(el.style.top)}`; }
+
+    // ---------- Selection & connect ----------
+    function handleSelectNode(el){
+      if(!selectedNode){ selectedNode = el; el.style.borderColor = '#ef4444'; renderProps(); }
+      else if(selectedNode === el){ selectedNode.style.borderColor = '#0ea5a4'; selectedNode=null; renderProps(); }
+      else {
+        const from = selectedNode; const to = el;
+        if(autoLinkEnabled){ const conn = { from: from.dataset.id, to: to.dataset.id, type:'Ethernet', label:'', id: genConnId() }; connections.push(conn); pushUndo({ t:'createConn', payload:{ id: conn.id } }); selectedNode.style.borderColor = '#0ea5a4'; selectedNode=null; drawConnections(); renderProps(); return; }
+        // prompt for cable type & label
+        const type = prompt('Tipe kabel (Ethernet / Fiber) — default Ethernet', 'Ethernet') || 'Ethernet';
+        const label = prompt('Label koneksi (optional)', '') || '';
+        const conn = { from: from.dataset.id, to: to.dataset.id, type, label, id: genConnId() };
+        connections.push(conn);
+        pushUndo({ t:'createConn', payload: { id: conn.id } });
+        selectedNode.style.borderColor = '#0ea5a4'; selectedNode=null;
+        drawConnections(); renderProps();
+      }
+    }
+
+    function genConnId(){ return 'c' + Math.random().toString(36).substring(2,9); }
+
+    // ---------- Draw connections ----------
+    function drawConnections(){
+      // resize svg to full canvas (account for scroll/scale)
+      svg.setAttribute('width', canvas.scrollWidth * scale);
+      svg.setAttribute('height', canvas.scrollHeight * scale);
+      svg.innerHTML = '';
+
+      connections.forEach(conn => {
+        const n1 = nodes[conn.from]; const n2 = nodes[conn.to]; if(!n1 || !n2) return;
+        const x1 = (n1.offsetLeft + n1.offsetWidth) * scale; // right side
+        const y1 = (n1.offsetTop + n1.offsetHeight/2) * scale;
+        const x2 = (n2.offsetLeft) * scale; // left side
+        const y2 = (n2.offsetTop + n2.offsetHeight/2) * scale;
+
+        const dx = Math.abs(x2 - x1); const hx = Math.max(40, dx/2);
+        const path = document.createElementNS('http://www.w3.org/2000/svg','path');
+        const d = `M ${x1} ${y1} C ${x1+hx} ${y1} ${x2-hx} ${y2} ${x2} ${y2}`;
+        path.setAttribute('d', d);
+        path.setAttribute('stroke', conn.type && conn.type.toLowerCase().includes('fiber') ? '#a78bfa' : '#1f2937');
+        path.setAttribute('stroke-width', '3'); path.setAttribute('fill','none'); path.setAttribute('data-conn-id', conn.id);
+        svg.appendChild(path);
+
+        const mid = path.getPointAtLength(path.getTotalLength()/2);
+        const foreign = document.createElementNS('http://www.w3.org/2000/svg','foreignObject');
+        foreign.setAttribute('x', mid.x - 60); foreign.setAttribute('y', mid.y - 16);
+        foreign.setAttribute('width', 140); foreign.setAttribute('height', 32);
+        foreign.innerHTML = `<div class="connection-label" xmlns="http://www.w3.org/1999/xhtml">${conn.type}${conn.label ? ' — '+conn.label : ''} <button data-del="${conn.id}" style="margin-left:8px;background:transparent;border:none;cursor:pointer;font-weight:700;color:#ef4444">✖</button></div>`;
+        svg.appendChild(foreign);
+      });
+
+      // delete buttons
+      svg.querySelectorAll('[data-del]').forEach(btn => btn.addEventListener('click', (e) => {
+        const cid = e.target.dataset.del; connections = connections.filter(c=>c.id !== cid); pushUndo({ t:'removeConn', payload:{ id: cid } }); drawConnections();
+      }));
+    }
+
+    // ---------- Node removal ----------
+    function removeNode(id){ const el = nodes[id]; if(!el) return; el.remove(); delete nodes[id]; connections = connections.filter(c => c.from !== id && c.to !== id); drawConnections(); renderProps(); }
+
+    // ---------- Render properties panel ----------
+    function renderProps(){
+      if(!selectedNode){ props.innerHTML = '<p class="text-slate-400">Pilih node untuk melihat/ubah properti</p>'; return; }
+      const el = selectedNode; const id = el.dataset.id;
+      props.innerHTML = `
+        <div class="mt-2">
+          <label class="text-xs text-slate-500">ID</label>
+          <div class="text-sm font-mono">${id}</div>
+        </div>
+        <div class="mt-3">
+          <label class="text-xs text-slate-500">Tipe</label>
+          <select id="prop-type" class="mt-1 p-2 border rounded w-full">
+            ${PALETTE.map(p=>`<option value="${p.type}" ${p.type===el.dataset.type?'selected':''}>${p.label} (${p.type})</option>`).join('')}
+          </select>
+        </div>
+        <div class="mt-3">
+          <label class="text-xs text-slate-500">Nama</label>
+          <input id="prop-name" class="mt-1 p-2 border rounded w-full" value="${el.dataset.name || ''}" />
+        </div>
+        <div class="mt-3">
+          <label class="text-xs text-slate-500">IP</label>
+          <input id="prop-ip" class="mt-1 p-2 border rounded w-full" value="${el.dataset.ip || ''}" placeholder="192.168.0.10" />
+        </div>
+        <div class="mt-3">
+          <label class="text-xs text-slate-500">Posisi (X, Y)</label>
+          <div class="mt-1 p-2 border rounded w-full font-mono">${parseInt(el.style.left)}, ${parseInt(el.style.top)}</div>
+        </div>
+        <div class="mt-3 flex gap-2">
+          <button id="applyProps" class="p-2 bg-emerald-500 text-white rounded">Apply</button>
+          <button id="closeProps" class="p-2 bg-slate-200 rounded">Close</button>
+          <button id="centerOn" class="p-2 bg-sky-500 text-white rounded">Center</button>
+        </div>
+      `;
+      document.getElementById('applyProps').addEventListener('click', () => {
+        const n = document.getElementById('prop-name').value.trim(); const ip = document.getElementById('prop-ip').value.trim(); const t = document.getElementById('prop-type').value;
+        el.dataset.name = n || el.dataset.name; el.dataset.ip = ip; el.dataset.type = t;
+        const label = el.querySelector(`#label-${id}`);
+        if(label) label.textContent = el.dataset.name;
+        // update icon
+        const iconEl = el.querySelector('.icon-el'); if(iconEl) iconEl.textContent = getIconForType(t);
+        renderProps();
+      });
+      document.getElementById('closeProps').addEventListener('click', () => { selectedNode.style.borderColor = '#0ea5a4'; selectedNode=null; renderProps(); });
+      document.getElementById('centerOn').addEventListener('click', () => {
+        const rect = canvas.getBoundingClientRect(); const nx = parseInt(el.style.left); const ny = parseInt(el.style.top);
+        const wrapper = document.getElementById('canvas-wrapper'); wrapper.scrollTo({ left: Math.max(0, nx*scale - wrapper.clientWidth/2 + el.clientWidth/2), top: Math.max(0, ny*scale - wrapper.clientHeight/2 + el.clientHeight/2), behavior:'smooth' });
+      });
+    }
+
+    // deselect on canvas
+    canvas.addEventListener('click', () => { if(selectedNode && !pendingPaletteType){ selectedNode.style.borderColor = '#0ea5a4'; selectedNode=null; renderProps(); } });
+
+    // ---------- Save / Load (localStorage) ----------
+    function serialize(){
+      const nlist = Object.values(nodes).map(n=>({ id:n.dataset.id, type:n.dataset.type, name:n.dataset.name, ip:n.dataset.ip, x:parseInt(n.style.left), y:parseInt(n.style.top) }));
+      return JSON.stringify({ nodes: nlist, connections }, null, 2);
+    }
+    document.getElementById('saveBtn').addEventListener('click', () => { localStorage.setItem('topology_v1', serialize()); alert('Topologi disimpan ke LocalStorage.'); });
+    document.getElementById('loadBtn').addEventListener('click', () => {
+      const raw = localStorage.getItem('topology_v1'); if(!raw){ alert('Tidak ada topologi di LocalStorage.'); return; }
+      try{ const data = JSON.parse(raw); loadFromData(data); alert('Topologi dimuat.'); }catch(e){ alert('Gagal memuat: file rusak.'); }
+    });
+
+    document.getElementById('downloadJson').addEventListener('click', () => {
+      const blob = new Blob([serialize()],{type:'application/json'}); const url = URL.createObjectURL(blob);
+      const a = document.createElement('a'); a.href = url; a.download = 'topology.json'; document.body.appendChild(a); a.click(); a.remove(); URL.revokeObjectURL(url);
+    });
+
+    function loadFromData(data){
+      // clear
+      Object.keys(nodes).forEach(k=>{ nodes[k].remove(); delete nodes[k]; }); connections = [];
+      data.nodes.forEach(n=> createNode({ x:n.x, y:n.y, type:n.type, id:n.id, meta:{ name:n.name, ip:n.ip } }));
+      connections = (data.connections||[]).map(c => ({ ...c, id:c.id || genConnId() }));
+      currentId = Math.max(currentId, ...Object.keys(nodes).map(k=>parseInt(k)).filter(v=>!isNaN(v))+1 || currentId);
+      drawConnections(); renderProps();
+    }
+
+    // ---------- Export PNG / PDF ----------
+    document.getElementById('exportPng').addEventListener('click', async () => {
+      const rect = canvas.getBoundingClientRect();
+      const clone = canvas.cloneNode(true);
+      clone.style.width = rect.width + 'px'; clone.style.height = rect.height + 'px';
+      document.body.appendChild(clone);
+      const svgClone = svg.cloneNode(true); clone.querySelector('svg')?.replaceWith(svgClone);
+      await html2canvas(clone, {useCORS:true, scale:2}).then(c => {
+        const link = document.createElement('a'); link.download = 'topology.png'; link.href = c.toDataURL('image/png'); link.click(); link.remove();
+      });
+      clone.remove();
+    });
+
+    document.getElementById('exportPdf').addEventListener('click', async () => {
+      const rect = canvas.getBoundingClientRect();
+      const clone = canvas.cloneNode(true);
+      clone.style.width = rect.width + 'px'; clone.style.height = rect.height + 'px'; document.body.appendChild(clone);
+      const svgClone = svg.cloneNode(true); clone.querySelector('svg')?.replaceWith(svgClone);
+      const canvasImg = await html2canvas(clone, {useCORS:true, scale:2});
+      const imgData = canvasImg.toDataURL('image/png');
+      const { jsPDF } = window.jspdf;
+      const pdf = new jsPDF({ unit:'px', format:[rect.width, rect.height] });
+      pdf.addImage(imgData, 'PNG', 0, 0, rect.width, rect.height);
+      pdf.save('topology.pdf');
+      clone.remove();
+    });
+
+    // ---------- Reset ----------
+    document.getElementById('resetBtn').addEventListener('click', () => { if(confirm('Reset canvas? Semua perangkat akan hilang.')){ Object.keys(nodes).forEach(k=>{ nodes[k].remove(); delete nodes[k]; }); connections=[]; drawConnections(); renderProps(); pushUndo({ t:'reset', payload:{} }); } });
+
+    // ---------- Initial demo nodes ----------
+    createNode({ x:60, y:60, type:'Router', meta:{ name:'Router-A', ip:'192.168.1.1' } });
+    createNode({ x:340, y:60, type:'Switch', meta:{ name:'Switch-1' } });
+    createNode({ x:340, y:220, type:'PC', meta:{ name:'Workstation-01', ip:'192.168.1.101' } });
+
+    // ---------- Keyboard shortcuts ----------
+    document.addEventListener('keydown', e => {
+      if(e.key === 'Delete' && selectedNode){ if(confirm('Hapus perangkat terpilih?')){ removeNode(selectedNode.dataset.id); pushUndo({ t:'removeNode', payload:{ id: selectedNode.dataset.id } }); } }
+      if((e.ctrlKey || e.metaKey) && e.key === 'z'){ undo(); }
+      if((e.ctrlKey || e.metaKey) && (e.key === 'y' || (e.shiftKey && e.key === 'Z'))){ redo(); }
+    });
+
+    // ---------- Undo / Redo ----------
+    function pushUndo(action){ undoStack.push(action); redoStack.length = 0; updateUndoButtons(); }
+    function updateUndoButtons(){ document.getElementById('undoBtn').disabled = undoStack.length===0; document.getElementById('redoBtn').disabled = redoStack.length===0; }
+    document.getElementById('undoBtn').addEventListener('click', undo); document.getElementById('redoBtn').addEventListener('click', redo);
+
+    function undo(){ const a = undoStack.pop(); if(!a) return; redoStack.push(a); performInverse(a); updateUndoButtons(); }
+    function redo(){ const a = redoStack.pop(); if(!a) return; undoStack.push(a); performRedo(a); updateUndoButtons(); }
+
+    function performInverse(a){ // best-effort inverses
+      if(a.t==='createNode'){ removeNode(a.payload.id); }
+      else if(a.t==='removeNode'){ alert('Undo: restore not available for removeNode.'); }
+      else if(a.t==='moveNode'){ const el = nodes[a.payload.id]; if(el){ el.style.left = a.payload.from.x + 'px'; el.style.top = a.payload.from.y + 'px'; drawConnections(); } }
+      else if(a.t==='createConn'){ connections = connections.filter(c=>c.id !== a.payload.id); drawConnections(); }
+      else if(a.t==='removeConn'){ alert('Undo: restore not available for removeConn.'); }
+      else if(a.t==='reset'){ alert('Undo: reset cannot be undone.'); }
+    }
+    function performRedo(a){ if(a.t==='createNode'){ alert('Redo: cannot reliably redo createNode.'); } else if(a.t==='moveNode'){ const el = nodes[a.payload.id]; if(el){ el.style.left = a.payload.to.x + 'px'; el.style.top = a.payload.to.y + 'px'; drawConnections(); } } }
+
+    // ---------- Zoom controls ----------
+    function setScale(v){ scale = v; canvas.style.transform = `scale(${scale})`; document.getElementById('zoomLevel').textContent = Math.round(scale*100) + '%'; drawConnections(); }
+    document.getElementById('zoomIn').addEventListener('click', ()=> setScale(Math.min(2, scale + 0.1)));
+    document.getElementById('zoomOut').addEventListener('click', ()=> setScale(Math.max(0.4, scale - 0.1)));
+    document.getElementById('zoomReset').addEventListener('click', ()=> setScale(1));
+    setScale(1);
+
+    // ---------- Helpers ----------
+    function pushConnSnapshot(){ /* reserved for future full undo stack improvements */ }
+
+    // ---------- Connection delete via middle click (optional) ----------
+    svg.addEventListener('dblclick', (e)=>{ /* reserved */ });
+
+    // ---------- On load try to load saved topology (non-destructive) ----------
+    window.addEventListener('load', ()=>{ const raw = localStorage.getItem('topology_v1'); if(raw){ /* keep demo but not auto-load */ } });
+
+  </script>
+</body>
+</html>

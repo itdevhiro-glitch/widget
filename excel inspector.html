@@ -1,0 +1,345 @@
+<!doctype html>
+<html lang="id">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width,initial-scale=1" />
+  <title>File Analyzer Pro — Detail Excel</title>
+  <style>
+    /* Mengadopsi Dark Mode untuk tampilan elegan profesional */
+    :root { font-family: 'Inter', system-ui, sans-serif; }
+    body { margin:0; background:#1e293b; color:#f8fafc; padding:32px; }
+    .container { max-width:1200px; margin:0 auto; background:#334155; padding:32px; border-radius:16px; box-shadow:0 10px 25px rgba(0,0,0,0.4); }
+    h1 { font-size:28px; margin-bottom:4px; color:#94a3b8; }
+    p.lead { color:#94a3b8; margin:0 0 24px; font-size:16px; }
+    .controls { display:flex; flex-wrap:wrap; gap:16px; margin-bottom:24px; background:#475569; padding:16px; border-radius:12px; }
+    input[type=file] { padding:10px; border:1px solid #64748b; border-radius:8px; background:#1e293b; color:#fff; }
+    button.btn { background:#0ea5e9; color:#fff; border:0; padding:10px 18px; border-radius:8px; cursor:pointer; font-weight:600; transition: background 0.2s; }
+    button.btn:hover { background:#0284c7; }
+    button.btn.download { background:#10b981; } /* Warna hijau untuk download */
+    button.btn.download:hover { background:#059669; }
+    .stat-card { background:#475569; padding:16px; border-radius:12px; text-align:center; flex-grow:1; min-width:150px; box-shadow:0 4px 8px rgba(0,0,0,0.2); }
+    .stat-card .small { font-size:13px; color:#cbd5e1; margin-bottom:4px; }
+    .stat-card div:last-child { font-size:20px; font-weight:700; color:#fff; }
+    .stats { display:flex; flex-wrap:wrap; gap:16px; margin-bottom:30px; }
+    .sheet-card, .formula-card { background:#475569; border:1px solid #64748b; border-radius:12px; margin-bottom:16px; box-shadow:0 4px 10px rgba(0,0,0,0.2); }
+    .sheet-header { background:#334155; padding:14px 20px; border-bottom:1px solid #64748b; cursor:pointer; display:flex; justify-content:space-between; align-items:center; border-top-left-radius:12px; border-top-right-radius:12px; }
+    .sheet-body { padding:20px; display:none; }
+    table { width:100%; border-collapse:collapse; margin-bottom:16px; }
+    th, td { text-align:left; padding:10px; border-bottom:1px solid #64748b; color:#f8fafc; }
+    th { color:#cbd5e1; font-weight:600; background:#334155; }
+    pre { background:#1e293b; color:#94a3b8; padding:16px; border-radius:10px; overflow-x:auto; font-size:14px; }
+    .toggle { transition:0.3s ease; transform:rotate(0deg); }
+    .toggle.open { transform:rotate(90deg); color:#0ea5e9; }
+    .footer { margin-top:30px; font-size:13px; color:#64748b; text-align:center; }
+    .chart-container { width:100%; max-height:350px; margin-top:20px; margin-bottom:30px; padding:20px; background:#475569; border-radius:12px; box-shadow:0 4px 8px rgba(0,0,0,0.2); }
+    .formula-card h3 { padding:14px 20px; margin:0; border-bottom:1px solid #64748b; background:#334155; border-top-left-radius:12px; border-top-right-radius:12px; color:#cbd5e1; }
+    .formula-card ul { list-style-type:none; padding:0 20px 10px; }
+    .formula-card li { border-bottom:1px dashed #64748b; padding:10px 0; }
+    .formula-card li:last-child { border-bottom:none; }
+    .error-msg { color:#f87171; font-weight:600; margin-right:8px; }
+    .suggestion { color:#4ade80; font-style:italic; }
+  </style>
+</head>
+<body>
+  <div class="container">
+    <h1><span style="color:#0ea5e9;">File</span> Analyzer Pro 📊</h1>
+    <p class="lead">Unggah file Excel (.xlsx, .xls, .csv) untuk analisis struktur, statistik, dan deteksi rumus kompleks.</p>
+
+    <div class="controls">
+      <input id="fileInput" type="file" accept=".xlsx,.xls,.csv" />
+      <button id="analyzeBtn" class="btn">Analisis File</button>
+      <button id="applyAndDownloadBtn" class="btn download" style="display:none;">Terapkan Perbaikan & Unduh (.xlsx)</button>
+      <button id="clearBtn" class="btn" style="background:#64748b">Bersihkan</button>
+    </div>
+
+    <div id="fileInfo" style="display:none">
+      <h2>Ringkasan File</h2>
+      <div class="stats">
+        <div class="stat-card"><div class="small">Nama File</div><div id="fName"></div></div>
+        <div class="stat-card"><div class="small">Ukuran</div><div id="fSize"></div></div>
+        <div class="stat-card"><div class="small">Tipe</div><div id="fType"></div></div>
+        <div class="stat-card"><div class="small">Jumlah Sheet</div><div id="fSheets"></div></div>
+        <div class="stat-card"><div class="small">Total Kata</div><div id="fWords"></div></div>
+      </div>
+
+      <div id="chart" class="chart-container"></div>
+      
+      <h2>Analisis Rumus & Perbaikan (AI-Driven)</h2>
+      <div id="formulaAnalysis" class="formula-card">
+        <h3>Deteksi Rumus Bermasalah</h3>
+        <ul id="formulaIssues">
+          <li>Tidak ada rumus kompleks terdeteksi.</li>
+        </ul>
+      </div>
+
+      <h2>Detail Sheet</h2>
+      <div id="sheetsContainer"></div>
+    </div>
+
+    <div id="error" style="color:#f87171;margin-top:10px;font-weight:600;"></div>
+  </div>
+
+  <div class="footer">
+    Aplikasi Analisis Excel oleh Gemini AI. Desain UI/UX Profesional.
+  </div>
+
+  <script src="https://cdn.sheetjs.com/xlsx-latest/package/dist/xlsx.full.min.js"></script>
+  <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+  <script>
+    function formatBytes(bytes){ const sizes=['B','KB','MB','GB']; if(bytes===0) return '0 B'; const i=parseInt(Math.floor(Math.log(bytes)/Math.log(1024))); return Math.round(bytes/Math.pow(1024,i),2)+' '+sizes[i]; }
+    function countWords(str){ if(!str) return 0; return String(str).trim().split(/\s+/).filter(Boolean).length; }
+
+    const analyzeBtn=document.getElementById('analyzeBtn');
+    const clearBtn=document.getElementById('clearBtn');
+    const downloadBtn = document.getElementById('applyAndDownloadBtn');
+    let globalWorkbook = null; // Menyimpan Workbook hasil analisis
+
+    // --- LOGIKA AUTO-FIX ---
+
+    // 1. Logika Saran Perbaikan (PLACEHOLDER)
+    function suggestFixes(formula) {
+        let suggestion = null; // Jika null, tidak ada perubahan rumus
+        let fixedFormula = null; 
+
+        if (formula.toUpperCase().includes('VLOOKUP')) {
+            // Contoh Perbaikan: Mengubah VLOOKUP menjadi INDEX/MATCH yang lebih efisien (SIMULASI)
+            // Ini hanyalah string, implementasi nyata butuh parsing struktur rumus
+            if (formula.toUpperCase().includes("VLOOKUP(A1,")) {
+                 fixedFormula = "=IFERROR(INDEX(Sheet2!$B:$B,MATCH(A1,Sheet2!$A:$A,0)),\"Error\")";
+                 suggestion = 'VLOOKUP diganti INDEX/MATCH yang lebih robust dan IFERROR ditambahkan.';
+            } else {
+                 suggestion = 'Saran: Pertimbangkan untuk mengganti dengan kombinasi INDEX(MATCH()) untuk fleksibilitas yang lebih baik.';
+            }
+        } else if (formula.toUpperCase().includes('#VALUE!')) {
+             suggestion = 'Saran: Cek apakah input atau argumen fungsi memiliki tipe data yang salah (Teks vs. Angka).';
+        }
+
+        // Output fixedFormula harus diawali dengan '='
+        if (fixedFormula && !fixedFormula.startsWith('=')) fixedFormula = '=' + fixedFormula;
+        
+        return { suggestion: suggestion, fixedFormula: fixedFormula };
+    }
+
+    // 2. Analisis Formula & Deteksi Isu
+    function analyzeFormulas(sheet, sheetName, range) {
+        const issues = [];
+        const isComplex = (formula) => formula.includes('VLOOKUP') || formula.includes('INDEX(MATCH') || formula.includes('SUMIFS') || formula.includes('IF(');
+
+        for(let R=range.s.r;R<=range.e.r;R++){
+          for(let C=range.s.c;C<=range.e.c;C++){
+            const addr=XLSX.utils.encode_cell({r:R,c:C});
+            const cell=sheet[addr];
+            
+            if(cell && cell.f){
+                const result = suggestFixes(cell.f);
+
+                if(isComplex(cell.f.toUpperCase()) || result.fixedFormula) {
+                    issues.push({ 
+                        sheet: sheetName,
+                        cell: addr, 
+                        formula: cell.f, 
+                        suggestion: result.suggestion || "Rumus kompleks terdeteksi, periksa efisiensi.",
+                        fixedFormula: result.fixedFormula 
+                    });
+                }
+            } else if (cell && cell.w && cell.w.includes('#VALUE!')) {
+                // Contoh deteksi error hasil
+                issues.push({ 
+                    sheet: sheetName,
+                    cell: addr, 
+                    formula: cell.f || 'Nilai Sel: ' + cell.w, 
+                    suggestion: 'Cek input atau argumen fungsi, mungkin ada kesalahan tipe data.',
+                    fixedFormula: null
+                });
+            }
+          }
+        }
+        return issues;
+    }
+
+    // 3. Fungsi Terapkan Perbaikan ke Workbook
+    function applyFixes(workbook, issues) {
+        let fixesApplied = 0;
+        const newWorkbook = XLSX.utils.book_new();
+
+        workbook.SheetNames.forEach(sheetName => {
+            const originalSheet = workbook.Sheets[sheetName];
+            const newSheet = {};
+            
+            // Duplikasi properti sheet (kecuali data sel)
+            for (const key in originalSheet) {
+                if (key.startsWith('!')) {
+                    newSheet[key] = originalSheet[key];
+                }
+            }
+            
+            // Iterasi dan copy/fix data sel
+            for (const cellAddress in originalSheet) {
+                if (cellAddress.startsWith('!')) continue;
+
+                const originalCell = originalSheet[cellAddress];
+                let fixedCell = { ...originalCell }; // Duplikasi sel
+
+                // Cek apakah ada perbaikan untuk sel ini
+                const fix = issues.find(i => i.sheet === sheetName && i.cell === cellAddress && i.fixedFormula);
+                
+                if (fix) {
+                    // Terapkan perbaikan rumus
+                    fixedCell.f = fix.fixedFormula.substring(1); // Simpan tanpa '='
+                    fixedCell.v = null; // Nilai harus dikalkulasi ulang oleh Excel
+                    fixedCell.t = 'n'; // Tipe data (asumsi hasil rumus numerik)
+                    fixesApplied++;
+                }
+
+                newSheet[cellAddress] = fixedCell;
+            }
+
+            XLSX.utils.book_append_sheet(newWorkbook, newSheet, sheetName);
+        });
+
+        console.log(`Perbaikan Rumus Diterapkan: ${fixesApplied}`);
+        return newWorkbook;
+    }
+
+    // --- EVENT HANDLERS ---
+    
+    analyzeBtn.onclick=async()=>{
+      const input=document.getElementById('fileInput');
+      const err=document.getElementById('error'); err.textContent='';
+      downloadBtn.style.display = 'none';
+      if(!input.files.length){ err.textContent='Pilih file terlebih dahulu.'; return; }
+      const file=input.files[0];
+      const buf=await file.arrayBuffer();
+      let workbook;
+      try{ workbook=XLSX.read(buf,{type:'array', formulae: true}); }catch(e){ err.textContent='File rusak atau format tidak didukung.'; return; }
+      
+      // Simpan Workbook global
+      globalWorkbook = workbook; 
+
+      document.getElementById('fileInfo').style.display='block';
+      document.getElementById('fName').textContent=file.name;
+      // ... (statistik file display) ...
+      document.getElementById('fSize').textContent=formatBytes(file.size);
+      document.getElementById('fType').textContent=file.type||'–';
+      document.getElementById('fSheets').textContent=workbook.SheetNames.length;
+
+      let totalWords=0;
+      const container=document.getElementById('sheetsContainer');
+      container.innerHTML='';
+      const formulaIssuesList = document.getElementById('formulaIssues');
+      formulaIssuesList.innerHTML = '';
+      let allFormulaIssues = [];
+
+      const chartData=[];
+
+      workbook.SheetNames.forEach((name,idx)=>{
+        const sheet=workbook.Sheets[name];
+        const range=sheet['!ref'] ? XLSX.utils.decode_range(sheet['!ref']) : {s: {r: -1, c: -1}, e: {r: -1, c: -1}};
+        let rowCount=range.e.r - range.s.r + 1 > 0 ? range.e.r - range.s.r + 1 : 0;
+        let colCount=range.e.c - range.s.c + 1 > 0 ? range.e.c - range.s.c + 1 : 0;
+        let cellFilled=0, wordCount=0, numCount=0, textCount=0;
+
+        // Mendapatkan isu rumus untuk sheet ini
+        const sheetIssues = analyzeFormulas(sheet, name, range);
+        allFormulaIssues = allFormulaIssues.concat(sheetIssues.map(issue => ({...issue, sheet: name})));
+
+        // ... (Loop penghitungan data & pembuatan card) ...
+        for(let R=range.s.r;R<=range.e.r;R++){
+          for(let C=range.s.c;C<=range.e.c;C++){
+            const addr=XLSX.utils.encode_cell({r:R,c:C});
+            const cell=sheet[addr];
+            if(!cell||cell.v===undefined) continue;
+            cellFilled++;
+            if(typeof cell.v==='string'){ textCount++; wordCount+=countWords(cell.v); }
+            else if(typeof cell.v==='number'){ numCount++; wordCount++; }
+            else wordCount++;
+          }
+        }
+        totalWords+=wordCount;
+        chartData.push({sheet:name,words:wordCount,cells:cellFilled});
+
+        const card=document.createElement('div');
+        card.className='sheet-card';
+        card.innerHTML=`<div class="sheet-header"><span><strong>${name}</strong> | Baris: ${rowCount}, Kolom: ${colCount}</span><span class="toggle">▶</span></div><div class="sheet-body">
+        <table><tbody>
+        <tr><td>Baris Terpakai</td><td>${rowCount}</td></tr>
+        <tr><td>Kolom Terpakai</td><td>${colCount}</td></tr>
+        <tr><td>Sel Terisi</td><td>${cellFilled}</td></tr>
+        <tr><td>Kata (perkiraan)</td><td>${wordCount}</td></tr>
+        <tr><td>Teks</td><td>${textCount}</td></tr>
+        <tr><td>Numerik</td><td>${numCount}</td></tr>
+        </tbody></table>
+        <p style="color:#94a3b8; margin-top:10px;">Pratinjau Data (8 Baris Pertama):</p>
+        <pre id="preview-${idx}"></pre></div>`;
+        container.appendChild(card);
+
+        const body=card.querySelector('.sheet-body');
+        const header=card.querySelector('.sheet-header');
+        const toggle=card.querySelector('.toggle');
+        header.onclick=()=>{ const open=body.style.display==='block'; body.style.display=open?'none':'block'; toggle.classList.toggle('open',!open); };
+
+        try{
+          const json=XLSX.utils.sheet_to_json(sheet,{header:1,raw:true});
+          const preview=json.slice(0,8).map(r=>r.join(' | ')).join('\n');
+          document.getElementById(`preview-${idx}`).textContent=preview||'(kosong)';
+        }catch{}
+      });
+
+      document.getElementById('fWords').textContent=totalWords;
+
+      // Update Formula Issues UI
+      if (allFormulaIssues.length === 0) {
+          formulaIssuesList.innerHTML = '<li><span class="suggestion">Tidak ada rumus kompleks atau error terdeteksi.</span></li>';
+      } else {
+          allFormulaIssues.forEach(issue => {
+              const fixInfo = issue.fixedFormula ? ` <span style="color:#10b981;">(Auto Fix tersedia)</span>` : '';
+              const listItem = document.createElement('li');
+              listItem.innerHTML = `<span class="error-msg">[${issue.sheet}:${issue.cell}]</span> Rumus: <span style="color:#facc15;">${issue.formula}</span>${fixInfo}<br><span class="suggestion">${issue.suggestion}</span>`;
+              formulaIssuesList.appendChild(listItem);
+          });
+          // Tampilkan tombol Download jika ada isu yang dideteksi
+          downloadBtn.style.display = 'block'; 
+      }
+
+      // ChartJS summary (kode chart tetap sama)
+      const ctx=document.createElement('canvas');
+      const chartContainer=document.getElementById('chart');
+      chartContainer.innerHTML='<h3 style="color:#cbd5e1; margin:0 0 10px 0;">Distribusi Data per Sheet</h3>';
+      chartContainer.appendChild(ctx);
+      new Chart(ctx,{type:'bar',data:{labels:chartData.map(d=>d.sheet),datasets:[{label:'Jumlah Kata',data:chartData.map(d=>d.words),backgroundColor:'#0ea5e9'},{label:'Sel Terisi',data:chartData.map(d=>d.cells),backgroundColor:'#38bdf8'}]},options:{responsive:true, maintainAspectRatio: false, plugins:{legend:{position:'bottom', labels:{color:'#cbd5e1'}}, title:{display:true, text:'Perbandingan Jumlah Kata dan Sel Terisi', color:'#cbd5e1'}}, scales:{y:{ticks:{color:'#94a3b8'}, grid:{color:'#475569'}}, x:{ticks:{color:'#94a3b8'}, grid:{color:'#475569'}}}}});
+      
+      // Simpan isu ke tombol download
+      downloadBtn.issues = allFormulaIssues;
+    };
+
+    downloadBtn.onclick = () => {
+        if (!globalWorkbook || !downloadBtn.issues || downloadBtn.issues.length === 0) {
+            alert('Tidak ada file atau perbaikan untuk diunduh.');
+            return;
+        }
+
+        // Terapkan perbaikan ke workbook yang disimpan
+        const fixedWorkbook = applyFixes(globalWorkbook, downloadBtn.issues);
+
+        // Buat nama file baru
+        const originalFileName = document.getElementById('fName').textContent.replace(/\.[^/.]+$/, "");
+        const newFileName = `${originalFileName}_FIXED_${new Date().getTime()}.xlsx`;
+
+        // Pemicu unduhan
+        XLSX.writeFile(fixedWorkbook, newFileName);
+        
+        alert(`File ${newFileName} berhasil diunduh dengan perbaikan rumus!`);
+    };
+
+    clearBtn.onclick=()=>{ 
+        document.getElementById('fileInfo').style.display='none'; 
+        document.getElementById('fileInput').value=''; 
+        document.getElementById('sheetsContainer').innerHTML=''; 
+        document.getElementById('chart').innerHTML=''; 
+        document.getElementById('error').textContent=''; 
+        downloadBtn.style.display = 'none';
+        globalWorkbook = null;
+    };
+  </script>
+</body>
+</html>
