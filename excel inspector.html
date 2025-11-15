@@ -3,9 +3,8 @@
 <head>
   <meta charset="utf-8" />
   <meta name="viewport" content="width=device-width,initial-scale=1" />
-  <title>File Analyzer Pro — Detail Excel</title>
+  <title>File Analyzer Pro — Detail Excel (Patched)</title>
   <style>
-    /* Mengadopsi Dark Mode untuk tampilan elegan profesional */
     :root { font-family: 'Inter', system-ui, sans-serif; }
     body { margin:0; background:#1e293b; color:#f8fafc; padding:32px; }
     .container { max-width:1200px; margin:0 auto; background:#334155; padding:32px; border-radius:16px; box-shadow:0 10px 25px rgba(0,0,0,0.4); }
@@ -15,8 +14,9 @@
     input[type=file] { padding:10px; border:1px solid #64748b; border-radius:8px; background:#1e293b; color:#fff; }
     button.btn { background:#0ea5e9; color:#fff; border:0; padding:10px 18px; border-radius:8px; cursor:pointer; font-weight:600; transition: background 0.2s; }
     button.btn:hover { background:#0284c7; }
-    button.btn.download { background:#10b981; } /* Warna hijau untuk download */
+    button.btn.download { background:#10b981; } 
     button.btn.download:hover { background:#059669; }
+    button.btn.warn { background:#f43f5e; }
     .stat-card { background:#475569; padding:16px; border-radius:12px; text-align:center; flex-grow:1; min-width:150px; box-shadow:0 4px 8px rgba(0,0,0,0.2); }
     .stat-card .small { font-size:13px; color:#cbd5e1; margin-bottom:4px; }
     .stat-card div:last-child { font-size:20px; font-weight:700; color:#fff; }
@@ -38,12 +38,14 @@
     .formula-card li:last-child { border-bottom:none; }
     .error-msg { color:#f87171; font-weight:600; margin-right:8px; }
     .suggestion { color:#4ade80; font-style:italic; }
+    .small-muted { color:#94a3b8; font-size:13px; }
+    .fix-badge { background:#0ea5e9; color:white; padding:2px 8px; border-radius:8px; font-size:12px; margin-left:8px; }
   </style>
 </head>
 <body>
   <div class="container">
-    <h1><span style="color:#0ea5e9;">File</span> Analyzer Pro 📊</h1>
-    <p class="lead">Unggah file Excel (.xlsx, .xls, .csv) untuk analisis struktur, statistik, dan deteksi rumus kompleks.</p>
+    <h1><span style="color:#0ea5e9;">File</span> Analyzer Pro 📊 — Patched</h1>
+    <p class="lead">Unggah file Excel (.xlsx, .xls, .csv) untuk analisis struktur, statistik, dan deteksi rumus (termasuk rumus yang salah/typo).</p>
 
     <div class="controls">
       <input id="fileInput" type="file" accept=".xlsx,.xls,.csv" />
@@ -64,11 +66,11 @@
 
       <div id="chart" class="chart-container"></div>
       
-      <h2>Analisis Rumus & Perbaikan (AI-Driven)</h2>
+      <h2>Analisis Rumus & Perbaikan (AI-Driven + Validator)</h2>
       <div id="formulaAnalysis" class="formula-card">
         <h3>Deteksi Rumus Bermasalah</h3>
         <ul id="formulaIssues">
-          <li>Tidak ada rumus kompleks terdeteksi.</li>
+          <li class="small-muted">Menunggu analisis...</li>
         </ul>
       </div>
 
@@ -80,7 +82,7 @@
   </div>
 
   <div class="footer">
-    Aplikasi Analisis Excel oleh Gemini AI. Desain UI/UX Profesional.
+    Aplikasi Analisis Excel oleh Gemini AI. Patch deteksi rumus oleh ChatGPT.
   </div>
 
   <script src="https://cdn.sheetjs.com/xlsx-latest/package/dist/xlsx.full.min.js"></script>
@@ -92,72 +94,234 @@
     const analyzeBtn=document.getElementById('analyzeBtn');
     const clearBtn=document.getElementById('clearBtn');
     const downloadBtn = document.getElementById('applyAndDownloadBtn');
-    let globalWorkbook = null; // Menyimpan Workbook hasil analisis
+    let globalWorkbook = null;
 
-    // --- LOGIKA AUTO-FIX ---
+    // --- Enhanced Validator Utilities ---
 
-    // 1. Logika Saran Perbaikan (PLACEHOLDER)
-    function suggestFixes(formula) {
-        let suggestion = null; // Jika null, tidak ada perubahan rumus
-        let fixedFormula = null; 
+    // Minimal list of common Excel functions (extendable). Using uppercase keys for comparison.
+    const EXCEL_FUNCTIONS = new Set([
+      "SUM","AVERAGE","PRODUCT","MIN","MAX","IF","IFERROR","VLOOKUP","HLOOKUP","INDEX","MATCH","XLOOKUP","SUMIFS","COUNT","COUNTA","COUNTIF","COUNTIFS","ROUND","ROUNDUP","ROUNDDOWN","CONCATENATE","LEFT","RIGHT","MID","TRIM","LEN","SUBSTITUTE","INDIRECT","OFFSET","AND","OR","NOT","DATE","TODAY","YEAR","MONTH","DAY","TEXT","VALUE","SEARCH","FIND","ISNUMBER","ISERROR","ISBLANK","SUMPRODUCT","UNIQUE","FILTER","SORT","SEQUENCE","ARRAYTOTEXT"
+    ]);
 
-        if (formula.toUpperCase().includes('VLOOKUP')) {
-            // Contoh Perbaikan: Mengubah VLOOKUP menjadi INDEX/MATCH yang lebih efisien (SIMULASI)
-            // Ini hanyalah string, implementasi nyata butuh parsing struktur rumus
-            if (formula.toUpperCase().includes("VLOOKUP(A1,")) {
-                 fixedFormula = "=IFERROR(INDEX(Sheet2!$B:$B,MATCH(A1,Sheet2!$A:$A,0)),\"Error\")";
-                 suggestion = 'VLOOKUP diganti INDEX/MATCH yang lebih robust dan IFERROR ditambahkan.';
-            } else {
-                 suggestion = 'Saran: Pertimbangkan untuk mengganti dengan kombinasi INDEX(MATCH()) untuk fleksibilitas yang lebih baik.';
-            }
-        } else if (formula.toUpperCase().includes('#VALUE!')) {
-             suggestion = 'Saran: Cek apakah input atau argumen fungsi memiliki tipe data yang salah (Teks vs. Angka).';
+    // Helper: extract function names used in a formula (naive, but works for many cases)
+    function extractFunctionNames(formula) {
+        const names = [];
+        // find words followed by '('
+        const re = /([A-Za-z_][A-Za-z0-9_.]*)\s*\(/g;
+        let m;
+        while ((m = re.exec(formula)) !== null) {
+            names.push(m[1].toUpperCase());
         }
-
-        // Output fixedFormula harus diawali dengan '='
-        if (fixedFormula && !fixedFormula.startsWith('=')) fixedFormula = '=' + fixedFormula;
-        
-        return { suggestion: suggestion, fixedFormula: fixedFormula };
+        return Array.from(new Set(names));
     }
 
-    // 2. Analisis Formula & Deteksi Isu
+    // 1) Basic syntax checks
+    function checkParenthesesBalance(formula) {
+        let depth = 0;
+        for (let ch of formula) {
+            if (ch === "(") depth++;
+            if (ch === ")") depth--;
+            if (depth < 0) return { ok:false, msg: "Ada tanda ')' tanpa pasangan sebelumnya." };
+        }
+        if (depth !== 0) return { ok:false, msg: "Jumlah '(' dan ')' tidak seimbang." };
+        return { ok:true };
+    }
+
+    function containsTrailingOperator(formula) {
+        // ends with + - * / ^ & , or trailing comma inside function
+        const trimmed = formula.trim();
+        if (/[+\-*/^&\s,]$/.test(trimmed)) return true;
+        return false;
+    }
+
+    function containsSemicolon(formula) {
+        return formula.indexOf(';') !== -1;
+    }
+
+    function containsDivideByZero(formula) {
+        // simple heuristics: /0 or /( ... - ... ) that evaluates to zero not detected, but direct /0 flagged
+        return /\/\s*0(\D|$)/.test(formula);
+    }
+
+    function isJustEquals(formula) {
+        const t = formula.trim();
+        return t === "=" || t === "";
+    }
+
+    function hasInvalidCharacters(formula) {
+        // Excel accepts many chars; flag control characters or some unusual tokens
+        return /[\u0000-\u001F]/.test(formula);
+    }
+
+    function detectUnknownFunctions(formula) {
+        const used = extractFunctionNames(formula);
+        const unknown = used.filter(fn => !EXCEL_FUNCTIONS.has(fn));
+        return unknown;
+    }
+
+    // 2) Basic auto-fix attempts for common typos
+    function attemptAutoFix(formula) {
+        let fixed = null;
+        let note = null;
+        const up = formula.toUpperCase();
+
+        // Fix common typos
+        const replacements = [
+            [/SUMM\(/g, "SUM("],
+            [/AVERAG(E?)/g, "AVERAGE"],
+            [/AVERAGEE\(/g, "AVERAGE("],
+            [/CONCATENATE\(/g, "CONCATENATE("],
+            [/INDIREC\(/g, "INDIRECT("],
+            [/XLOKUP\(/g, "XLOOKUP("],
+            [/VLOOLKUP\(/g, "VLOOKUP("],
+            [/;(?=[^\)]*(?:\)|$))/g, ","] // semicolon -> comma (risky: locale)
+        ];
+
+        let newFormula = formula;
+        replacements.forEach(([re, rep]) => {
+            newFormula = newFormula.replace(re, rep);
+        });
+
+        // Fix a trailing comma inside SUM(...) or remove trailing operator at end
+        if (/,\s*\)/.test(newFormula)) {
+            newFormula = newFormula.replace(/,\s*\)/g, ")");
+        }
+        if (/[+\-*/^&,\s]$/.test(newFormula.trim())) {
+            // remove trailing operator (best-effort)
+            newFormula = newFormula.trim().replace(/[+\-*/^&,\s]+$/, "");
+        }
+
+        // If we actually changed something, return suggestion
+        if (newFormula !== formula) {
+            fixed = newFormula;
+            note = "Auto-fix applied (typo/separator/trailing operator fix). Periksa hasil.";
+        }
+
+        // If division by zero literal, suggest check
+        if (containsDivideByZero(newFormula) && !fixed) {
+            note = "Rumus berisi '/0' — periksa pembagian nol.";
+        }
+
+        // Parenthesis balance auto-close (very careful attempt)
+        const balance = (() => {
+            let d = 0; for (let ch of newFormula) { if (ch === "(") d++; if (ch === ")") d--; } return d;
+        })();
+        if (balance > 0 && !fixed) {
+            // add missing ')' at end (best-effort)
+            fixed = newFormula + ")".repeat(balance);
+            note = "Menambahkan penutup ')' otomatis (best-effort).";
+        }
+
+        return { fixedFormula: fixed, note: note };
+    }
+
+    // 3) Comprehensive per-formula validator that returns list of issues + (optional) auto fix
+    function validateFormulaString(formula) {
+        // Normalize: formula might be stored without leading '=' in sheet object.f; but typically f excludes '=' in SheetJS.
+        let original = String(formula || "");
+        // If starts with '=' remove for analysis then keep a flag
+        let hasEq = false;
+        if (original.startsWith("=")) { hasEq = true; original = original.substring(1); }
+
+        const issues = [];
+
+        if (!original.trim()) {
+            issues.push({code:"EMPTY_FORMULA", msg:"Rumus kosong atau hanya '='."});
+            return { issues, suggestion:null, fixedFormula:null };
+        }
+
+        // basic checks
+        if (hasInvalidCharacters(original)) issues.push({code:"INVALID_CHARS", msg:"Terdapat karakter non-printable/invalid."});
+        const par = checkParenthesesBalance(original);
+        if (!par.ok) issues.push({code:"PAREN_MISMATCH", msg:par.msg});
+        if (containsSemicolon(original)) issues.push({code:"SEMICOLON_SEPARATOR", msg:"Terdapat ';' — periksa lokal pemisah argumen (koma vs titik koma)."});
+        if (containsDivideByZero(original)) issues.push({code:"DIV_BY_ZERO", msg:"Pembagian oleh nol terdeteksi (literal '/0')."});
+        if (containsTrailingOperator(original)) issues.push({code:"TRAILING_OPERATOR", msg:"Rumus berakhir dengan operator atau koma (mungkin incomplete)."});
+        if (isJustEquals(original)) issues.push({code:"JUST_EQUALS", msg:"Hanya '=' ditemukan."});
+
+        // Extract functions and detect unknowns
+        const unknownFns = detectUnknownFunctions(original);
+        if (unknownFns.length) {
+            issues.push({code:"UNKNOWN_FUNCTION", msg:`Fungsi tidak dikenal/typo: ${unknownFns.join(", ")}.`});
+        }
+
+        // Very simple malformed patterns
+        if (/[,]{2,}/.test(original)) issues.push({code:"DOUBLE_COMMA", msg:"Terdapat koma ganda atau argumen kosong."});
+        if (/[^\)]\s*\)/.test(original) && par.ok === false) {} // placeholder
+
+        // Try auto-fix when there are only fixable issues
+        const attempted = attemptAutoFix((hasEq? "=":"") + original);
+        let fixed = null;
+        if (attempted.fixedFormula) {
+            // convert to SheetJS .f content (without '=')
+            fixed = attempted.fixedFormula.startsWith("=") ? attempted.fixedFormula.substring(1) : attempted.fixedFormula;
+        }
+
+        return { issues, suggestion: attempted.note || null, fixedFormula: fixed ? (fixed.startsWith("=")? fixed : "=" + fixed) : null };
+    }
+
+    // 4) Suggest fixes + overall orchestration
+    function suggestFixes(formula) {
+        // This function returns {suggestion, fixedFormula}
+        try {
+            const { issues, suggestion, fixedFormula } = validateFormulaString(formula);
+            let joinedSuggestion = null;
+            if (issues && issues.length) {
+                joinedSuggestion = issues.map(i => i.msg).join(" ");
+                if (suggestion) joinedSuggestion += " Saran: " + suggestion;
+            } else if (suggestion) {
+                joinedSuggestion = suggestion;
+            } else {
+                joinedSuggestion = null;
+            }
+            return { suggestion: joinedSuggestion, fixedFormula: fixedFormula };
+        } catch (e) {
+            return { suggestion: "Validator gagal memproses rumus.", fixedFormula: null };
+        }
+    }
+
+    // Modified complexity detector: now we flag formulas with ANY issue OR complex patterns
     function analyzeFormulas(sheet, sheetName, range) {
         const issues = [];
-        const isComplex = (formula) => formula.includes('VLOOKUP') || formula.includes('INDEX(MATCH') || formula.includes('SUMIFS') || formula.includes('IF(');
-
         for(let R=range.s.r;R<=range.e.r;R++){
           for(let C=range.s.c;C<=range.e.c;C++){
             const addr=XLSX.utils.encode_cell({r:R,c:C});
             const cell=sheet[addr];
-            
-            if(cell && cell.f){
-                const result = suggestFixes(cell.f);
+            if(!cell) continue;
+            // cell.f is formula WITHOUT leading '=' for SheetJS; but sometimes has full string
+            const formulaRaw = cell.f !== undefined ? (typeof cell.f==="string" ? cell.f : String(cell.f)) : (cell.w && typeof cell.w==="string" ? cell.w : null);
+            if(!formulaRaw) continue;
 
-                if(isComplex(cell.f.toUpperCase()) || result.fixedFormula) {
-                    issues.push({ 
-                        sheet: sheetName,
-                        cell: addr, 
-                        formula: cell.f, 
-                        suggestion: result.suggestion || "Rumus kompleks terdeteksi, periksa efisiensi.",
-                        fixedFormula: result.fixedFormula 
+            // Validate
+            const result = suggestFixes(formulaRaw);
+            // If result indicates issues (either suggestion exists or validation found unknown function)
+            if (result.suggestion || (result.fixedFormula)) {
+                issues.push({
+                    sheet: sheetName,
+                    cell: addr,
+                    formula: formulaRaw,
+                    suggestion: result.suggestion || "Terjadi potensi masalah pada rumus.",
+                    fixedFormula: result.fixedFormula // may be null
+                });
+            } else {
+                // also flag if contains obvious unknown functions even if no suggestion
+                const unknownFns = detectUnknownFunctions(formulaRaw);
+                if (unknownFns.length) {
+                    issues.push({
+                      sheet: sheetName,
+                      cell: addr,
+                      formula: formulaRaw,
+                      suggestion: "Fungsi tidak dikenal: " + unknownFns.join(", "),
+                      fixedFormula: null
                     });
                 }
-            } else if (cell && cell.w && cell.w.includes('#VALUE!')) {
-                // Contoh deteksi error hasil
-                issues.push({ 
-                    sheet: sheetName,
-                    cell: addr, 
-                    formula: cell.f || 'Nilai Sel: ' + cell.w, 
-                    suggestion: 'Cek input atau argumen fungsi, mungkin ada kesalahan tipe data.',
-                    fixedFormula: null
-                });
             }
           }
         }
         return issues;
     }
 
-    // 3. Fungsi Terapkan Perbaikan ke Workbook
+    // applyFixes: keep same approach but ensure we set .f correctly (SheetJS expects formula string without leading '=')
     function applyFixes(workbook, issues) {
         let fixesApplied = 0;
         const newWorkbook = XLSX.utils.book_new();
@@ -165,29 +329,27 @@
         workbook.SheetNames.forEach(sheetName => {
             const originalSheet = workbook.Sheets[sheetName];
             const newSheet = {};
-            
-            // Duplikasi properti sheet (kecuali data sel)
+
             for (const key in originalSheet) {
                 if (key.startsWith('!')) {
                     newSheet[key] = originalSheet[key];
                 }
             }
-            
-            // Iterasi dan copy/fix data sel
+
             for (const cellAddress in originalSheet) {
                 if (cellAddress.startsWith('!')) continue;
-
                 const originalCell = originalSheet[cellAddress];
-                let fixedCell = { ...originalCell }; // Duplikasi sel
+                let fixedCell = { ...originalCell };
 
-                // Cek apakah ada perbaikan untuk sel ini
                 const fix = issues.find(i => i.sheet === sheetName && i.cell === cellAddress && i.fixedFormula);
-                
-                if (fix) {
-                    // Terapkan perbaikan rumus
-                    fixedCell.f = fix.fixedFormula.substring(1); // Simpan tanpa '='
-                    fixedCell.v = null; // Nilai harus dikalkulasi ulang oleh Excel
-                    fixedCell.t = 'n'; // Tipe data (asumsi hasil rumus numerik)
+                if (fix && fix.fixedFormula) {
+                    // SheetJS formula string should NOT start with '='
+                    const fstr = fix.fixedFormula.startsWith("=") ? fix.fixedFormula.substring(1) : fix.fixedFormula;
+                    fixedCell.f = fstr;
+                    // Clear value so Excel will recalc, set type unknown to let Excel decide
+                    delete fixedCell.v;
+                    // t should be left alone or removed to let Excel recalc; remove it if present
+                    if (fixedCell.t) delete fixedCell.t;
                     fixesApplied++;
                 }
 
@@ -202,7 +364,6 @@
     }
 
     // --- EVENT HANDLERS ---
-    
     analyzeBtn.onclick=async()=>{
       const input=document.getElementById('fileInput');
       const err=document.getElementById('error'); err.textContent='';
@@ -213,12 +374,10 @@
       let workbook;
       try{ workbook=XLSX.read(buf,{type:'array', formulae: true}); }catch(e){ err.textContent='File rusak atau format tidak didukung.'; return; }
       
-      // Simpan Workbook global
       globalWorkbook = workbook; 
 
       document.getElementById('fileInfo').style.display='block';
       document.getElementById('fName').textContent=file.name;
-      // ... (statistik file display) ...
       document.getElementById('fSize').textContent=formatBytes(file.size);
       document.getElementById('fType').textContent=file.type||'–';
       document.getElementById('fSheets').textContent=workbook.SheetNames.length;
@@ -239,11 +398,9 @@
         let colCount=range.e.c - range.s.c + 1 > 0 ? range.e.c - range.s.c + 1 : 0;
         let cellFilled=0, wordCount=0, numCount=0, textCount=0;
 
-        // Mendapatkan isu rumus untuk sheet ini
         const sheetIssues = analyzeFormulas(sheet, name, range);
         allFormulaIssues = allFormulaIssues.concat(sheetIssues.map(issue => ({...issue, sheet: name})));
 
-        // ... (Loop penghitungan data & pembuatan card) ...
         for(let R=range.s.r;R<=range.e.r;R++){
           for(let C=range.s.c;C<=range.e.c;C++){
             const addr=XLSX.utils.encode_cell({r:R,c:C});
@@ -289,24 +446,28 @@
 
       // Update Formula Issues UI
       if (allFormulaIssues.length === 0) {
-          formulaIssuesList.innerHTML = '<li><span class="suggestion">Tidak ada rumus kompleks atau error terdeteksi.</span></li>';
+          formulaIssuesList.innerHTML = '<li><span class="suggestion">Tidak ada rumus yang mencurigakan terdeteksi.</span></li>';
       } else {
+          // Sort: prioritize those with fixedFormula
+          allFormulaIssues.sort((a,b) => (b.fixedFormula?1:0) - (a.fixedFormula?1:0));
           allFormulaIssues.forEach(issue => {
-              const fixInfo = issue.fixedFormula ? ` <span style="color:#10b981;">(Auto Fix tersedia)</span>` : '';
+              const fixInfo = issue.fixedFormula ? ` <span class="fix-badge">Auto-Fix</span>` : '';
               const listItem = document.createElement('li');
-              listItem.innerHTML = `<span class="error-msg">[${issue.sheet}:${issue.cell}]</span> Rumus: <span style="color:#facc15;">${issue.formula}</span>${fixInfo}<br><span class="suggestion">${issue.suggestion}</span>`;
+              const suggestedHtml = issue.suggestion ? `<div class="small-muted">${issue.suggestion}</div>` : "";
+              const fixedHtml = issue.fixedFormula ? `<div style="margin-top:6px;"><strong>Usulan Perbaikan:</strong> <code>${issue.fixedFormula}</code></div>` : "";
+              listItem.innerHTML = `<div><span class="error-msg">[${issue.sheet}:${issue.cell}]</span> Rumus: <span style="color:#facc15;">${issue.formula}</span>${fixInfo}${suggestedHtml}${fixedHtml}</div>`;
               formulaIssuesList.appendChild(listItem);
           });
           // Tampilkan tombol Download jika ada isu yang dideteksi
           downloadBtn.style.display = 'block'; 
       }
 
-      // ChartJS summary (kode chart tetap sama)
+      // Chart
       const ctx=document.createElement('canvas');
       const chartContainer=document.getElementById('chart');
       chartContainer.innerHTML='<h3 style="color:#cbd5e1; margin:0 0 10px 0;">Distribusi Data per Sheet</h3>';
       chartContainer.appendChild(ctx);
-      new Chart(ctx,{type:'bar',data:{labels:chartData.map(d=>d.sheet),datasets:[{label:'Jumlah Kata',data:chartData.map(d=>d.words),backgroundColor:'#0ea5e9'},{label:'Sel Terisi',data:chartData.map(d=>d.cells),backgroundColor:'#38bdf8'}]},options:{responsive:true, maintainAspectRatio: false, plugins:{legend:{position:'bottom', labels:{color:'#cbd5e1'}}, title:{display:true, text:'Perbandingan Jumlah Kata dan Sel Terisi', color:'#cbd5e1'}}, scales:{y:{ticks:{color:'#94a3b8'}, grid:{color:'#475569'}}, x:{ticks:{color:'#94a3b8'}, grid:{color:'#475569'}}}}});
+      new Chart(ctx,{type:'bar',data:{labels:chartData.map(d=>d.sheet),datasets:[{label:'Jumlah Kata',data:chartData.map(d=>d.words)},{label:'Sel Terisi',data:chartData.map(d=>d.cells)}]},options:{responsive:true, maintainAspectRatio: false, plugins:{legend:{position:'bottom', labels:{color:'#cbd5e1'}}, title:{display:true, text:'Perbandingan Jumlah Kata dan Sel Terisi', color:'#cbd5e1'}}, scales:{y:{ticks:{color:'#94a3b8'}, grid:{color:'#475569'}}, x:{ticks:{color:'#94a3b8'}, grid:{color:'#475569'}}}}});
       
       // Simpan isu ke tombol download
       downloadBtn.issues = allFormulaIssues;
