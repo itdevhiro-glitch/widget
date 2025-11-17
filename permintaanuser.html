@@ -1,0 +1,608 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Permintaan Perangkat - Zeppelin Portal</title>
+    <link href="https://fonts.googleapis.com/css2?family=Roboto:wght@300;400;500;700;900&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css">
+    
+    <style>
+        /* [SAMA SEPERTI DASHBOARD.HTML] */
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+        body {
+            font-family: 'Roboto', sans-serif;
+            background-color: #f9fafb;
+            color: #1f2937;
+            line-height: 1.6;
+        }
+        .container {
+            width: 100%;
+            max-width: 1280px;
+            margin: 0 auto;
+            padding: 0 24px;
+        }
+        .loading-screen {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100vh;
+            background: linear-gradient(135deg, #D9232D 0%, #F37321 100%);
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            flex-direction: column;
+            color: white;
+            z-index: 9999;
+        }
+        .spinner {
+            width: 50px;
+            height: 50px;
+            border: 4px solid rgba(255, 255, 255, 0.3);
+            border-top-color: #ffffff;
+            border-radius: 50%;
+            animation: spin 1s linear infinite;
+        }
+        .loading-screen p {
+            margin-top: 20px;
+            font-size: 1.1rem;
+            font-weight: 300;
+        }
+        @keyframes spin {
+            to { transform: rotate(360deg); }
+        }
+        .navbar {
+            background-color: #ffffff;
+            padding: 16px 24px;
+            border-bottom: 1px solid #e5e7eb;
+            box-shadow: 0 2px 4px rgba(0,0,0,0.02);
+            position: sticky;
+            top: 0;
+            z-index: 1000;
+        }
+        .nav-container {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            max-width: 1280px;
+            margin: 0 auto;
+        }
+        .nav-logo {
+            font-size: 1.8rem;
+            font-weight: 900;
+            color: #D9232D;
+            text-decoration: none;
+            display: flex;
+            align-items: center;
+        }
+        .nav-logo i {
+            color: #F37321;
+            margin-right: 8px;
+            font-size: 1.5rem;
+        }
+        .nav-profile {
+            display: flex;
+            align-items: center;
+            gap: 12px;
+        }
+        #user-greeting {
+            font-size: 0.95rem;
+            color: #4b5563;
+        }
+        #user-greeting span {
+            font-weight: 700;
+            color: #1f2937;
+        }
+        .logout-button {
+            background: none;
+            border: 1px solid #e5e7eb;
+            color: #D9232D;
+            padding: 8px 12px;
+            border-radius: 8px;
+            cursor: pointer;
+            font-weight: 500;
+            font-size: 0.9rem;
+            transition: all 0.3s ease;
+        }
+        .logout-button:hover {
+            background-color: #D9232D;
+            color: #ffffff;
+            border-color: #D9232D;
+        }
+        .nav-link {
+            font-size: 0.95rem;
+            font-weight: 500;
+            color: #4b5563;
+            text-decoration: none;
+            padding: 8px 12px;
+            border-radius: 8px;
+            transition: all 0.3s ease;
+        }
+        .nav-link:hover {
+            background-color: #f3f4f6;
+        }
+        .nav-link.active {
+            background-color: #fee2e2;
+            color: #D9232D;
+            font-weight: 700;
+        }
+
+        /* [BARU] CSS untuk Form dan Konten */
+        .main-content {
+            padding: 40px 0;
+        }
+        .page-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 24px;
+        }
+        .section-title {
+            font-size: 1.8rem;
+            font-weight: 700;
+            color: #1f2937;
+            display: flex;
+            align-items: center;
+            gap: 12px;
+        }
+        .widget-card {
+            background-color: #ffffff;
+            border: 1px solid #e5e7eb;
+            border-radius: 12px;
+            overflow: hidden;
+            margin-bottom: 32px;
+        }
+        .widget-body {
+            padding: 24px 32px;
+        }
+        
+        /* Form Styling */
+        .form-grid {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 20px;
+        }
+        .form-group {
+            display: flex;
+            flex-direction: column;
+            gap: 8px;
+        }
+        .form-group.full-width {
+            grid-column: 1 / -1;
+        }
+        .form-group label {
+            font-weight: 700;
+            font-size: 0.9rem;
+            color: #374151;
+        }
+        .form-group input,
+        .form-group select,
+        .form-group textarea {
+            width: 100%;
+            padding: 12px;
+            border: 1px solid #d1d5db;
+            border-radius: 8px;
+            font-size: 1rem;
+            font-family: 'Roboto', sans-serif;
+            transition: border-color 0.3s, box-shadow 0.3s;
+        }
+        .form-group input:focus,
+        .form-group select:focus,
+        .form-group textarea:focus {
+            outline: none;
+            border-color: #D9232D;
+            box-shadow: 0 0 0 3px rgba(217, 35, 45, 0.1);
+        }
+        .form-group textarea {
+            min-height: 120px;
+            resize: vertical;
+        }
+        .form-button {
+            width: 100%;
+            padding: 14px;
+            border: none;
+            border-radius: 8px;
+            background-color: #D9232D;
+            color: white;
+            font-size: 1rem;
+            font-weight: 700;
+            cursor: pointer;
+            transition: background-color 0.3s;
+        }
+        .form-button:hover {
+            background-color: #B01B22;
+        }
+        .form-button:disabled {
+            background-color: #aaa;
+            cursor: not-allowed;
+        }
+        
+        /* Message Box */
+        .message-box {
+            font-size: 0.9rem;
+            margin-bottom: 15px;
+            padding: 12px;
+            border-radius: 8px;
+            display: none; 
+            text-align: center;
+            font-weight: 500;
+        }
+        .error {
+            background-color: #fee2e2;
+            color: #D93025;
+            border: 1px solid #D93025;
+        }
+        .success {
+            background-color: #dcfce7;
+            color: #16a34a;
+            border: 1px solid #16a34a;
+        }
+        
+        /* Table History */
+        .table-wrap { overflow: auto; }
+        table {
+            width: 100%;
+            border-collapse: collapse;
+            min-width: 600px;
+        }
+        th, td {
+            padding: 12px 16px;
+            text-align: left;
+            border-bottom: 1px solid #e5e7eb;
+        }
+        th {
+            background-color: #f9fafb;
+            font-size: 0.8rem;
+            font-weight: 700;
+            color: #6b7280;
+            text-transform: uppercase;
+        }
+        .status-badge {
+            display: inline-block;
+            padding: 4px 12px;
+            border-radius: 999px;
+            font-weight: 700;
+            font-size: 0.8rem;
+        }
+        .status-Pending {
+            background-color: #fffbeb;
+            color: #b45309;
+        }
+        .status-Approved {
+            background-color: #dcfce7;
+            color: #16a34a;
+        }
+        .status-Rejected {
+            background-color: #fee2e2;
+            color: #dc2626;
+        }
+        .history-empty {
+            text-align: center;
+            padding: 40px;
+            color: #6b7280;
+        }
+        
+        @media (max-width: 768px) {
+            .nav-container { flex-direction: column; gap: 10px; }
+            .widget-body { padding: 20px; }
+            .form-grid { grid-template-columns: 1fr; }
+            .form-group.full-width { grid-column: 1; }
+            .page-header { flex-direction: column; align-items: flex-start; gap: 10px; }
+            .section-title { font-size: 1.5rem; }
+        }
+    </style>
+</head>
+<body>
+
+    <div id="loading-screen" class="loading-screen">
+        <div class="spinner"></div>
+        <p>Memuat Portal...</p>
+    </div>
+
+    <div id="main-content" style="display: none;">
+
+        <nav class="navbar">
+            <div class="nav-container">
+                <a href="dashboard.html" class="nav-logo">
+                    <i class="fa-solid fa-gear"></i> ZEPPELIN
+                </a>
+                
+                <a href="dashboard.html" class="nav-link">
+                    <i class="fa-solid fa-home"></i> Dashboard
+                </a>
+                <a href="permintaanuser.html" class="nav-link active">
+                    <i class="fa-solid fa-laptop-file"></i> Permintaan Perangkat
+                </a>
+                
+                <div class="nav-profile">
+                    <div id="user-greeting">Halo, <span>Tamu</span></div>
+                    <button id="logout-btn" class="logout-button">
+                        <i class="fa-solid fa-right-from-bracket"></i> Keluar
+                    </button>
+                </div>
+            </div>
+        </nav>
+
+        <main class="main-content container">
+            
+            <div class="page-header">
+                <h2 class="section-title">
+                    <i class="fa-solid fa-laptop-file"></i>
+                    Form Permintaan Perangkat IT
+                </h2>
+            </div>
+            
+            <div class="widget-card">
+                <div class="widget-body">
+                    <form id="request-form">
+                        <div id="form-message" class="message-box"></div>
+                        <div class="form-grid">
+                            <div class="form-group">
+                                <label for="req-kategori">Kategori Permintaan</label>
+                                <select id="req-kategori" required>
+                                    <option value="">Pilih Kategori...</option>
+                                    <option value="Upgrade Hardware">Upgrade Hardware (RAM/SSD)</option>
+                                    <option value="Perangkat Baru">Perangkat Baru (Mouse/Keyboard/Headset)</option>
+                                    <option value="Kabel & Aksesori">Kabel & Aksesori (VGA/HDMI/Charger)</option>
+                                    <option value="Lainnya">Lainnya</option>
+                                </select>
+                            </div>
+
+                            <div class="form-group">
+                                <label for="req-prioritas">Prioritas</label>
+                                <select id="req-prioritas" required>
+                                    <option value="Medium">Medium (Normal)</option>
+                                    <option value="Low">Low (Tidak Mendesak)</option>
+                                    <option value="High">High (Mendesak)</option>
+                                </select>
+                            </div>
+                        </div>
+
+                        <div class="form-group full-width" style="margin-top: 20px;">
+                            <label for="req-detail">Detail Perangkat / Kebutuhan</label>
+                            <input type="text" id="req-detail" placeholder="Contoh: Upgrade RAM 16GB atau Mouse Wireless Logitech" required>
+                        </div>
+                        
+                        <div class="form-group full-width" style="margin-top: 20px;">
+                            <label for="req-alasan">Alasan / Justifikasi Kebutuhan</label>
+                            <textarea id="req-alasan" placeholder="Jelaskan mengapa Anda membutuhkan perangkat ini untuk pekerjaan Anda..." required></textarea>
+                        </div>
+                        
+                        <div class="form-group full-width" style="margin-top: 24px;">
+                            <button type="submit" class="form-button" id="submit-button">Kirim Permintaan</button>
+                        </div>
+                    </form>
+                </div>
+            </div>
+            
+            <h2 class="section-title" style="margin-top: 40px;">
+                <i class="fa-solid fa-history"></i>
+                Riwayat Permintaan Saya
+            </h2>
+            
+            <div class="widget-card">
+                <div class="widget-body" style="padding: 0;">
+                    <div class="table-wrap">
+                        <table id="history-table">
+                            <thead>
+                                <tr>
+                                    <th>Tanggal</th>
+                                    <th>Kategori</th>
+                                    <th>Detail</th>
+                                    <th>Status</th>
+                                    <th>Catatan Admin</th>
+                                </tr>
+                            </thead>
+                            <tbody id="history-table-body">
+                                <tr>
+                                    <td colspan="5" class="history-empty">Memuat riwayat...</td>
+                                </tr>
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+            </div>
+
+        </main>
+    </div>
+
+    <script type="module">
+        import { initializeApp } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-app.js";
+        import { getAuth, onAuthStateChanged, signOut } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-auth.js";
+        import { 
+            getDatabase, 
+            ref, 
+            onValue, 
+            set, 
+            push,
+            query,
+            orderByChild,
+            equalTo,
+            get
+        } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-database.js";
+
+        const firebaseConfig = {
+            apiKey: "AIzaSyA9wgSalrlTcveIZi2i-WND86z1i9JYHKw",
+            authDomain: "it-support-53eeb.firebaseapp.com",
+            databaseURL: "https://it-support-53eeb-default-rtdb.firebaseio.com",
+            projectId: "it-support-53eeb",
+            storageBucket: "it-support-53eeb.firebasestorage.app",
+            messagingSenderId: "573924501146",
+            appId: "1:573924501146:web:12f34306ed675472322123",
+            measurementId: "G-33K6DDE1VR"
+        };
+
+        const app = initializeApp(firebaseConfig);
+        const auth = getAuth(app);
+        const db = getDatabase(app); 
+
+        const mainContent = document.getElementById('main-content');
+        const loadingScreen = document.getElementById('loading-screen');
+        const userGreeting = document.getElementById('user-greeting');
+        const logoutBtn = document.getElementById('logout-btn');
+
+        let currentUserData = null; // Untuk menyimpan data user (nama, dept, dll)
+        
+        // --- AUTH GUARD (SAMA SEPERTI DASHBOARD) ---
+        onAuthStateChanged(auth, (user) => {
+            if (user) {
+                const userRef = ref(db, 'users/' + user.uid);
+                
+                get(userRef).then((snapshot) => {
+                    // Cek Admin
+                    if (user.email === 'root@zeppelin.center') {
+                        signOut(auth).then(() => {
+                            window.location.href = 'login.html?reason=admin_wrong_page';
+                        });
+                        return;
+                    }
+
+                    // Cek User Biasa
+                    if (snapshot.exists()) {
+                        const userData = snapshot.val();
+                        if (userData.status === 'approved') {
+                            currentUserData = userData; // Simpan data user
+                            
+                            userGreeting.innerHTML = `Halo, <span>${userData.nama || user.email}</span>`;
+                            mainContent.style.display = 'block';
+                            loadingScreen.style.display = 'none';
+                            
+                            // [BARU] Muat riwayat permintaan user
+                            loadUserHistory(user.uid);
+                            
+                        } else {
+                            // User pending atau rejected
+                            const reason = userData.status || 'invalid';
+                            signOut(auth).then(() => {
+                                window.location.href = `login.html?reason=${reason}`; 
+                            });
+                        }
+                    } else {
+                        // Data user tidak ada
+                        signOut(auth).then(() => {
+                            window.location.href = 'login.html?reason=no_data';
+                        });
+                    }
+                }).catch((error) => {
+                    console.error("Gagal memvalidasi user:", error);
+                    signOut(auth).then(() => {
+                        window.location.href = 'login.html?reason=db_error';
+                    });
+                });
+            } else {
+                window.location.href = 'login.html';
+            }
+        });
+
+        logoutBtn.addEventListener('click', () => {
+            signOut(auth).then(() => {
+                window.location.href = 'login.html';
+            });
+        });
+
+        // --- FUNGSI SUBMIT FORM PERMINTAAN ---
+        const requestForm = document.getElementById('request-form');
+        const submitButton = document.getElementById('submit-button');
+        const formMessage = document.getElementById('form-message');
+
+        requestForm.addEventListener('submit', (e) => {
+            e.preventDefault();
+            if (!currentUserData) {
+                showMessage('form-message', "Gagal mengirim, data user tidak ditemukan.", true);
+                return;
+            }
+
+            submitButton.disabled = true;
+            submitButton.innerText = "Mengirim...";
+            
+            const requestData = {
+                uid: currentUserData.uid,
+                nama: currentUserData.nama,
+                email: currentUserData.email,
+                departemen: currentUserData.departemen || 'N/A',
+                
+                kategori: document.getElementById('req-kategori').value,
+                prioritas: document.getElementById('req-prioritas').value,
+                detail: document.getElementById('req-detail').value,
+                alasan: document.getElementById('req-alasan').value,
+                
+                status: 'Pending', // Status awal
+                created_at: new Date().toISOString(),
+                admin_notes: '',
+                processed_at: ''
+            };
+
+            const requestsRef = ref(db, 'device_requests');
+            const newRequestRef = push(requestsRef);
+            
+            set(newRequestRef, requestData)
+                .then(() => {
+                    showMessage('form-message', "Permintaan Anda berhasil dikirim!", false);
+                    requestForm.reset();
+                })
+                .catch((error) => {
+                    console.error("Gagal simpan permintaan:", error);
+                    showMessage('form-message', `Gagal mengirim: ${error.message}`, true);
+                })
+                .finally(() => {
+                    submitButton.disabled = false;
+                    submitButton.innerText = "Kirim Permintaan";
+                });
+        });
+
+        function showMessage(elementId, message, isError = true) {
+            const msgBox = document.getElementById(elementId);
+            msgBox.textContent = message;
+            msgBox.className = isError ? 'message-box error' : 'message-box success';
+            msgBox.style.display = 'block';
+            setTimeout(() => msgBox.style.display = 'none', 4000);
+        }
+
+        // --- FUNGSI MUAT RIWAYAT PERMINTAAN ---
+        function loadUserHistory(uid) {
+            const historyBody = document.getElementById('history-table-body');
+            const requestsRef = ref(db, 'device_requests');
+            const userRequestsQuery = query(requestsRef, orderByChild('uid'), equalTo(uid));
+
+            onValue(userRequestsQuery, (snapshot) => {
+                historyBody.innerHTML = ''; // Kosongkan tabel
+                if (snapshot.exists()) {
+                    let requests = [];
+                    snapshot.forEach(child => {
+                        requests.push(child.val());
+                    });
+                    
+                    // Urutkan dari yang terbaru
+                    requests.sort((a, b) => new Date(b.created_at) - new Date(a.created_at));
+                    
+                    requests.forEach(req => {
+                        const tr = document.createElement('tr');
+                        const statusClass = `status-${req.status || 'Pending'}`;
+                        const createdDate = new Date(req.created_at).toLocaleDateString('id-ID', { day: '2-digit', month: 'short', year: 'numeric' });
+                        
+                        tr.innerHTML = `
+                            <td>${createdDate}</td>
+                            <td>${req.kategori}</td>
+                            <td>${req.detail}</td>
+                            <td><span class="status-badge ${statusClass}">${req.status}</span></td>
+                            <td>${req.admin_notes || '...'}</td>
+                        `;
+                        historyBody.appendChild(tr);
+                    });
+                } else {
+                    historyBody.innerHTML = `<tr><td colspan="5" class="history-empty">Anda belum memiliki riwayat permintaan.</td></tr>`;
+                }
+            }, (error) => {
+                console.error("Gagal muat riwayat:", error);
+                historyBody.innerHTML = `<tr><td colspan="5" class="history-empty">Gagal memuat riwayat permintaan.</td></tr>`;
+            });
+        }
+    </script>
+
+</body>
+</html>
