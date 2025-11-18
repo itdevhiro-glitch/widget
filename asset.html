@@ -24,7 +24,7 @@
     transition: opacity 0.3s ease, visibility 0s 0.3s;
   }
   
-  /* .page sekarang 'absolute' untuk menumpuk
+  /* DIUBAH: .page sekarang 'absolute' untuk menumpuk
      dan 'overflow-y-auto' untuk scrolling per halaman */
   .page {
     position: absolute;
@@ -55,6 +55,7 @@
   .spinner {
     width: 40px; height: 40px;
     border: 4px solid #f3f3f3;
+    /* DIUBAH: Menggunakan warna aksen (oranye) agar konsisten */
     border-top-color: #ff7a18; 
     border-radius: 50%;
     animation: spin 1s linear infinite;
@@ -84,17 +85,17 @@
     box-shadow: 0 8px 20px rgba(0,0,0,0.25);
   }
 
-  #addAssetBtn, #saveAssetBtn, #addVendorBtn, #saveVendorBtn {
+  #addAssetBtn, #saveAssetBtn {
     transition: transform 0.2s ease, box-shadow 0.2s ease, opacity 0.2s ease;
     will-change: transform;
   }
-  #addAssetBtn:hover, #saveAssetBtn:hover, #addVendorBtn:hover, #saveVendorBtn:hover {
+  #addAssetBtn:hover, #saveAssetBtn:hover {
     transform: scale(1.03);
     box-shadow: 0 4px 15px rgba(255, 122, 24, 0.3);
     opacity: 1;
   }
 
-  #asset-table-body tr, #vendor-table-body tr {
+  #asset-table-body tr {
     transition: background-color 0.2s ease;
   }
   
@@ -258,7 +259,6 @@
           </button>
         </div>
       </div>
-
       <div class="bg-dark-card rounded-lg shadow-lg border border-dark-border overflow-hidden">
         <div class="overflow-x-auto">
           <table class="w-full min-w-[1000px]">
@@ -283,41 +283,15 @@
     </div>
 
     <div id="page-vendors" class="page p-8 md:p-10">
-      <div class="flex items-center justify-between mb-6">
-        <h1 class="text-3xl font-bold text-white">Manajemen Vendor</h1>
-        <button id="addVendorBtn" class="py-2 px-5 rounded-md bg-accent text-black font-bold shadow-md">
-          <i class="fa-solid fa-plus mr-2"></i>Tambah Vendor Baru
-        </button>
-      </div>
-
-      <div class="bg-dark-card p-4 rounded-lg shadow-lg border border-dark-border mb-6 flex flex-col md:flex-row md:items-center md:justify-between gap-4">
-        <div class="relative flex-grow">
-          <i class="fa-solid fa-search absolute left-4 top-1/2 -translate-y-1/2 text-dark-muted"></i>
-          <input id="searchVendorInput" type="text" placeholder="Cari berdasarkan nama vendor, kontak, atau email..." class="search w-full bg-dark-bg pl-10 pr-4 py-2 rounded-md focus:ring-accent focus:ring-1">
-        </div>
-      </div>
-
-      <div class="bg-dark-card rounded-lg shadow-lg border border-dark-border overflow-hidden">
-        <div class="overflow-x-auto">
-          <table class="w-full min-w-[1000px]">
-            <thead class="bg-dark-bg/50">
-              <tr>
-                <th class="p-4 text-left text-xs font-medium text-dark-muted uppercase tracking-wider">Nama Vendor</th>
-                <th class="p-4 text-left text-xs font-medium text-dark-muted uppercase tracking-wider">Kontak Person</th>
-                <th class="p-4 text-left text-xs font-medium text-dark-muted uppercase tracking-wider">Telepon</th>
-                <th class="p-4 text-left text-xs font-medium text-dark-muted uppercase tracking-wider">Email</th>
-                <th class="p-4 text-left text-xs font-medium text-dark-muted uppercase tracking-wider">Alamat</th>
-                <th class="p-4 text-right text-xs font-medium text-dark-muted uppercase tracking-wider">Aksi</th>
-              </tr>
-            </thead>
-            <tbody id="vendor-table-body" class="divide-y divide-dark-border">
-              <tr><td colspan="6" class="p-6 text-center text-dark-muted">Memuat data vendor...</td></tr>
-            </tbody>
-          </table>
-        </div>
+      <h1 class="text-3xl font-bold text-white mb-6">Manajemen Vendor</h1>
+      <div class="bg-dark-card p-10 rounded-lg shadow-lg border border-dark-border text-center">
+        <i class="fa-solid fa-store text-5xl text-dark-muted mb-4"></i>
+        <h2 class="text-2xl font-bold text-white">Fitur Sedang Dikembangkan</h2>
+        <p class="text-dark-muted mt-2">Halaman untuk mengelola data vendor dan kontak akan tersedia di sini.</p>
       </div>
     </div>
-    </main>
+
+  </main>
 </div>
 
 <div id="loader" class="modal-backdrop fixed inset-0 z-[99] bg-black/60 items-center justify-center">
@@ -347,9 +321,7 @@
       <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
         <div>
           <label for="type" class="block text-sm font-medium text-dark-muted mb-1">Tipe Aset*</label>
-          <input type="text" id="type" list="assetTypesList" placeholder="e.g., Laptop, Keyboard, HDD" required class="input w-full bg-dark-bg rounded-md focus:ring-accent focus:ring-1">
-          <datalist id="assetTypesList">
-            </datalist>
+          <input type="text" id="type" placeholder="e.g., Laptop, Keyboard, HDD" required class="input w-full bg-dark-bg rounded-md focus:ring-accent focus:ring-1">
         </div>
         <div>
           <label for="serialNumber" class="block text-sm font-medium text-dark-muted mb-1">Serial Number</label>
@@ -472,93 +444,7 @@
   </div>
 </div>
 
-<div id="vendorModal" class="modal-backdrop fixed inset-0 z-50 bg-black/60 items-center justify-center p-4">
-  <div class="bg-dark-card rounded-lg shadow-2xl border border-dark-border w-full max-w-2xl max-h-[90vh] flex flex-col">
-    <div class="flex items-center justify-between p-5 border-b border-dark-border">
-      <h3 id="vendorModalTitle" class="text-xl font-bold text-white">Tambah Vendor Baru</h3>
-      <button id="closeVendorModal" class="text-dark-muted hover:text-white transition text-3xl font-light">&times;</button>
-    </div>
-    <form id="vendorForm" class="flex-grow overflow-y-auto p-6 space-y-6">
-      <input type="hidden" id="vendorId">
-      
-      <div>
-        <label for="vendorName" class="block text-sm font-medium text-dark-muted mb-1">Nama Vendor*</label>
-        <input type="text" id="vendorName" required class="input w-full bg-dark-bg rounded-md focus:ring-accent focus:ring-1">
-      </div>
-      
-      <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
-        <div>
-          <label for="contactPerson" class="block text-sm font-medium text-dark-muted mb-1">Kontak Person</label>
-          <input type="text" id="contactPerson" class="input w-full bg-dark-bg rounded-md focus:ring-accent focus:ring-1">
-        </div>
-        <div>
-          <label for="phone" class="block text-sm font-medium text-dark-muted mb-1">Telepon</label>
-          <input type="tel" id="phone" class="input w-full bg-dark-bg rounded-md focus:ring-accent focus:ring-1">
-        </div>
-      </div>
-      
-      <div>
-        <label for="email" class="block text-sm font-medium text-dark-muted mb-1">Email</label>
-        <input type="email" id="email" class="input w-full bg-dark-bg rounded-md focus:ring-accent focus:ring-1">
-      </div>
-      
-      <div>
-        <label for="address" class="block text-sm font-medium text-dark-muted mb-1">Alamat</label>
-        <textarea id="address" rows="2" class="input w-full bg-dark-bg rounded-md focus:ring-accent focus:ring-1"></textarea>
-      </div>
-      
-      <div>
-        <label for="vendorNotes" class="block text-sm font-medium text-dark-muted mb-1">Catatan</label>
-        <textarea id="vendorNotes" rows="3" placeholder="Produk/layanan yang disediakan, dll..." class="input w-full bg-dark-bg rounded-md focus:ring-accent focus:ring-1"></textarea>
-      </div>
 
-    </form>
-    <div class="flex items-center justify-end p-5 border-t border-dark-border bg-dark-bg/50 rounded-b-lg">
-      <button id="cancelVendorModal" type="button" class="py-2 px-5 rounded-md bg-dark-bg text-dark-muted font-bold border border-dark-border transition hover:bg-dark-border">Batal</button>
-      <button id="saveVendorBtn" type="submit" form="vendorForm" class="ml-3 py-2 px-5 rounded-md bg-accent text-black font-bold shadow-md">Simpan Vendor</button>
-    </div>
-  </div>
-</div>
-
-<div id="viewVendorModal" class="modal-backdrop fixed inset-0 z-50 bg-black/60 items-center justify-center p-4">
-  <div class="bg-dark-card rounded-lg shadow-2xl border border-dark-border w-full max-w-2xl max-h-[90vh] flex flex-col">
-    <div class="flex items-center justify-between p-5 border-b border-dark-border">
-      <h3 id="viewVendorModalTitle" class="text-xl font-bold text-white">Detail Vendor</h3>
-      <button id="closeViewVendorModal" class="text-dark-muted hover:text-white transition text-3xl font-light">&times;</button>
-    </div>
-    <div class="flex-grow overflow-y-auto p-6 space-y-6">
-      
-      <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
-        <div class="info-group">
-          <span class="text-sm font-medium text-dark-muted">Nama Vendor</span>
-          <p id="view-vendorName" class="text-lg font-semibold text-white"></p>
-        </div>
-        <div class="info-group">
-          <span class="text-sm font-medium text-dark-muted">Kontak Person</span>
-          <p id="view-contactPerson" class="text-lg font-semibold text-white"></p>
-        </div>
-        <div class="info-group">
-          <span class="text-sm font-medium text-dark-muted">Telepon</span>
-          <p id="view-phone" class="text-lg font-semibold text-white"></p>
-        </div>
-        <div class="info-group">
-          <span class="text-sm font-medium text-dark-muted">Email</span>
-          <p id="view-email" class="text-lg font-semibold text-white"></p>
-        </div>
-      </div>
-      
-      <div class="info-group">
-        <span class="text-sm font-medium text-dark-muted">Alamat</span>
-        <p id="view-address" class="text-lg font-semibold text-white whitespace-pre-wrap"></p>
-      </div>
-
-      <div>
-        <span class="text-sm font-medium text-dark-muted">Catatan</span>
-        <p id="view-vendorNotes" class="text-base text-white bg-dark-bg/50 p-4 rounded-md mt-1 whitespace-pre-wrap"></p>
-      </div>
-    </div>
-  </div>
-</div>
 <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
 <script src="https://cdn.jsdelivr.net/npm/xlsx/dist/xlsx.full.min.js"></script>
 
@@ -629,11 +515,9 @@
   }
 
   // --- Variabel Global Aplikasi ---
-  let fb_app, fb_db, fb_auth, fb_userId, fb_assetsCollectionRef, fb_vendorsCollectionRef;
+  let fb_app, fb_db, fb_auth, fb_userId, fb_assetsCollectionRef;
   let allAssetsCache = [];
-  let allVendorsCache = []; // <-- BARU
   let assetListener = null;
-  let vendorListener = null; // <-- BARU
   let typeChartInstance = null;
   let qcStatusChartInstance = null;
   
@@ -668,27 +552,18 @@
     if (user && user.uid === ADMIN_UID) {
         console.log("Admin user authenticated:", user.uid);
         $("#authMessage").textContent = "Verifikasi Berhasil!";
-        $("#authSubMessage").textContent = "Selamat datang, Admin. Memuat data...";
+        $("#authSubMessage").textContent = "Selamat datang, Admin. Memuat data aset...";
         
         fb_userId = user.uid;
-        // Inisialisasi koleksi Aset
-        fb_assetsCollectionRef = fb_db.collection('users').doc(fb_userId).collection('assets_v2');
-        console.log("Firestore collection path (Assets):", `users/${fb_userId}/assets_v2`);
-        
-        // fb_vendorsCollectionRef = fb_db.collection('users').doc(fb_userId).collection('vendors');
-        console.log("Firestore collection path (Vendors):", `users/${fb_userId}/vendors`);
+        fb_assetsCollectionRef = fb_db.collection('users').doc(fb_userId).collection('assets_v2'); // Koleksi baru
+        console.log("Firestore collection path:", `users/${fb_userId}/assets_v2`);
 
         els.userEmailDisplay.textContent = user.email;
         
-        // Muat kedua set data
-        await Promise.all([
-          loadAssetData(),
-          loadVendorData() // <-- BARU
-        ]);
+        await loadAssetData();
         
         els.authScreen.style.display = 'none';
         els.appContainer.style.display = 'flex';
-        
     } else {
         if(user) {
             console.log("Access Denied. User is not admin:", user.uid);
@@ -704,7 +579,6 @@
         els.appContainer.style.display = 'none'; 
         $('#loader').style.display = 'none';
         if (assetListener) assetListener();
-        if (vendorListener) vendorListener(); // <-- BARU
     }
   }
 
@@ -734,30 +608,23 @@
       if (confirm("Apakah Anda yakin ingin logout?")) await fb_auth.signOut();
     });
 
-    // --- Listener Aset ---
     $('#addAssetBtn').addEventListener('click', () => openAssetModal());
     $('#closeAssetModal').addEventListener('click', () => $('#assetModal').classList.remove('active'));
     $('#cancelAssetModal').addEventListener('click', () => $('#assetModal').classList.remove('active'));
     $('#assetForm').addEventListener('submit', saveAsset);
     $('#closeViewModal').addEventListener('click', () => $('#viewAssetModal').classList.remove('active'));
+
+    // Filter & Search
     $('#searchInput').addEventListener('input', debounce(() => renderAssetTable(allAssetsCache), 300));
     $('#filterQcStatus').addEventListener('change', () => renderAssetTable(allAssetsCache));
     $('#filterType').addEventListener('change', () => renderAssetTable(allAssetsCache));
+
     $('#asset-table-body').addEventListener('click', handleTableActions);
     $('#exportExcelBtn').addEventListener('click', exportToExcel);
-
-    // --- (BARU) Listener Vendor ---
-    $('#addVendorBtn').addEventListener('click', () => openVendorModal());
-    $('#closeVendorModal').addEventListener('click', () => $('#vendorModal').classList.remove('active'));
-    $('#cancelVendorModal').addEventListener('click', () => $('#vendorModal').classList.remove('active'));
-    $('#vendorForm').addEventListener('submit', saveVendor);
-    $('#closeViewVendorModal').addEventListener('click', () => $('#viewVendorModal').classList.remove('active'));
-    $('#searchVendorInput').addEventListener('input', debounce(() => renderVendorTable(allVendorsCache), 300));
-    $('#vendor-table-body').addEventListener('click', handleVendorTableActions);
   }
 
   // ==================================================================
-  // FUNGSI DATA ASET (CRUD & RENDER)
+  // FUNGSI DATA (CRUD & RENDER) - (v2)
   // ==================================================================
 
   async function saveAsset(e) {
@@ -767,7 +634,7 @@
     const assetData = {
       name: $('#assetName').value,
       qty: parseInt($('#qty').value) || 0,
-      type: $('#type').value, // Tipe aset dari input (yang terhubung ke datalist)
+      type: $('#type').value,
       serial: $('#serialNumber').value,
       qcStatus: $('#qcStatus').value,
       location: $('#location').value,
@@ -784,7 +651,7 @@
 
     try {
       if (assetId) {
-        // --- UPDATE ASET ---
+        // --- UPDATE ---
         const docRef = fb_assetsCollectionRef.doc(assetId);
         const oldDoc = allAssetsCache.find(a => a.id === assetId);
         
@@ -801,7 +668,7 @@
         showToast('Aset berhasil diperbarui');
         
       } else {
-        // --- CREATE ASET ---
+        // --- CREATE ---
         assetData.createdAt = firebase.firestore.FieldValue.serverTimestamp();
         const docRef = await fb_assetsCollectionRef.add(assetData);
         logMessage = `Aset dibuat dengan status QC '${assetData.qcStatus}'.`;
@@ -825,7 +692,7 @@
       $('#loader').style.display = 'flex';
 
       assetListener = fb_assetsCollectionRef.orderBy('name', 'asc').onSnapshot((snapshot) => {
-          console.log(`(DATA ASET) Menerima ${snapshot.docs.length} dokumen.`);
+          console.log(`(DATA AKTUAL) Menerima ${snapshot.docs.length} dokumen aset.`);
           allAssetsCache = snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() }));
           
           populateTypeFilter(allAssetsCache);
@@ -874,203 +741,24 @@
     } catch (e) { console.error("Error writing asset log: ", e); }
   }
 
+
   // ==================================================================
-  // --- (BARU) FUNGSI VENDOR (CRUD & RENDER) ---
-  // ==================================================================
-
-  async function saveVendor(e) {
-    e.preventDefault();
-    $('#loader').style.display = 'flex';
-
-    const vendorData = {
-      name: $('#vendorName').value,
-      contact: $('#contactPerson').value,
-      phone: $('#phone').value,
-      email: $('#email').value,
-      address: $('#address').value,
-      notes: $('#vendorNotes').value,
-      lastUpdate: firebase.firestore.FieldValue.serverTimestamp()
-    };
-
-    const vendorId = $('#vendorId').value;
-
-    try {
-      if (vendorId) {
-        // --- UPDATE VENDOR ---
-        const docRef = fb_vendorsCollectionRef.doc(vendorId);
-        await docRef.update(vendorData);
-        showToast('Data vendor berhasil diperbarui');
-        
-      } else {
-        // --- CREATE VENDOR ---
-        vendorData.createdAt = firebase.firestore.FieldValue.serverTimestamp();
-        const docRef = await fb_vendorsCollectionRef.add(vendorData);
-        showToast('Vendor baru berhasil ditambahkan');
-      }
-      
-      $('#vendorModal').classList.remove('active');
-      
-    } catch (e) {
-      console.error("Error saving vendor: ", e);
-      showToast('Gagal menyimpan vendor: ' + e.message, true);
-    } finally {
-      $('#loader').style.display = 'none';
-    }
-  }
-
-  function loadVendorData() {
-    return new Promise((resolve, reject) => {
-      if (vendorListener) vendorListener();
-      
-      vendorListener = fb_vendorsCollectionRef.orderBy('name', 'asc').onSnapshot((snapshot) => {
-          console.log(`(DATA VENDOR) Menerima ${snapshot.docs.length} dokumen.`);
-          allVendorsCache = snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() }));
-          
-          renderVendorTable(allVendorsCache);
-          resolve();
-          
-      }, (error) => {
-          console.error("Error listening to vendors:", error);
-          showToast('Gagal memuat data vendor: ' + error.message, true);
-          reject(error);
-      });
-    });
-  }
-
-  async function deleteVendor(id) {
-    const vendor = allVendorsCache.find(v => v.id === id);
-    if (!vendor) return showToast('Error: Vendor tidak ditemukan.', true);
-
-    if (!confirm(`Yakin ingin menghapus vendor ini?\n\nNama: ${vendor.name}`)) return;
-    
-    $('#loader').style.display = 'flex';
-    try {
-      await fb_vendorsCollectionRef.doc(id).delete();
-      showToast('Vendor berhasil dihapus');
-    } catch (e) {
-      console.error("Error deleting vendor: ", e);
-      showToast('Gagal menghapus vendor: ' + e.message, true);
-    } finally {
-      $('#loader').style.display = 'none';
-    }
-  }
-
-  function renderVendorTable(vendors) {
-    const tableBody = $('#vendor-table-body');
-    if (!tableBody) return;
-    
-    const searchTerm = $('#searchVendorInput').value.toLowerCase();
-
-    const filteredVendors = vendors.filter(vendor => {
-      return !searchTerm ||
-        (vendor.name && vendor.name.toLowerCase().includes(searchTerm)) ||
-        (vendor.contact && vendor.contact.toLowerCase().includes(searchTerm)) ||
-        (vendor.email && vendor.email.toLowerCase().includes(searchTerm));
-    });
-
-    if (filteredVendors.length === 0) {
-      tableBody.innerHTML = `<tr><td colspan="6" class="p-6 text-center text-dark-muted">Tidak ada vendor yang ditemukan.</td></tr>`;
-      return;
-    }
-
-    tableBody.innerHTML = filteredVendors.map(vendor => {
-      return `
-        <tr class="hover:bg-dark-bg/30">
-          <td class="p-4 align-top">
-            <div class="font-bold text-white">${vendor.name || '-'}</div>
-            <div class="text-xs text-dark-muted">${vendor.id}</div>
-          </td>
-          <td class="p-4 align-top text-sm">${vendor.contact || '-'}</td>
-          <td class="p-4 align-top text-sm">${vendor.phone || '-'}</td>
-          <td class="p-4 align-top text-sm">${vendor.email || '-'}</td>
-          <td class="p-4 align-top text-sm">${(vendor.address || '-').substring(0, 50)}...</td>
-          <td class="p-4 align-top text-right">
-            <div class="flex items-center justify-end gap-2">
-              <button data-action="view" data-id="${vendor.id}" class="action-btn bg-dark-card text-dark-muted border border-dark-border hover:border-blue-500 hover:text-blue-500">Lihat</button>
-              <button data-action="edit" data-id="${vendor.id}" class="action-btn bg-dark-card text-dark-muted border border-dark-border hover:border-accent hover:text-accent">Edit</button>
-              <button data-action="delete" data-id="${vendor.id}" class="action-btn bg-dark-card text-dark-muted border border-dark-border hover:border-error hover:text-error">Hapus</button>
-            </div>
-          </td>
-        </tr>
-      `;
-    }).join('');
-  }
-
-  function handleVendorTableActions(e) {
-    const target = e.target.closest('button[data-action]');
-    if (!target) return;
-    const action = target.dataset.action;
-    const id = target.dataset.id;
-    const vendor = allVendorsCache.find(v => v.id === id);
-    if (!vendor) return showToast('Error: Vendor tidak ditemukan lagi.', true);
-
-    if (action === 'view') openViewVendorModal(vendor);
-    else if (action === 'edit') openVendorModal(vendor);
-    else if (action === 'delete') deleteVendor(id);
-  }
-
-  function openVendorModal(vendor = null) {
-    const modal = $('#vendorModal');
-    $('#vendorForm').reset();
-    
-    if (vendor) {
-      // --- MODE EDIT ---
-      $('#vendorModalTitle').textContent = 'Edit Vendor';
-      $('#vendorId').value = vendor.id;
-      $('#vendorName').value = vendor.name || '';
-      $('#contactPerson').value = vendor.contact || '';
-      $('#phone').value = vendor.phone || '';
-      $('#email').value = vendor.email || '';
-      $('#address').value = vendor.address || '';
-      $('#vendorNotes').value = vendor.notes || '';
-    } else {
-      // --- MODE TAMBAH ---
-      $('#vendorModalTitle').textContent = 'Tambah Vendor Baru';
-      $('#vendorId').value = '';
-    }
-    modal.classList.add('active');
-  }
-
-  function openViewVendorModal(vendor) {
-    const modal = $('#viewVendorModal');
-    
-    $('#viewVendorModalTitle').textContent = `Detail: ${vendor.name}`;
-    $('#view-vendorName').textContent = vendor.name || '-';
-    $('#view-contactPerson').textContent = vendor.contact || '-';
-    $('#view-phone').textContent = vendor.phone || '-';
-    $('#view-email').textContent = vendor.email || '-';
-    $('#view-address').textContent = vendor.address || '-';
-    $('#view-vendorNotes').textContent = vendor.notes || '(Tidak ada catatan)';
-    
-    modal.classList.add('active');
-  }
-  
-  // ==================================================================
-  // FUNGSI RENDER & UI (LAINNYA)
+  // FUNGSI RENDER & UI (v2)
   // ==================================================================
 
   /**
-   * (DIUBAH) Mengisi filter Tipe Aset DAN datalist di form
+   * (BARU) Mengisi filter Tipe Aset secara dinamis
    */
   function populateTypeFilter(assets) {
     const filterEl = $('#filterType');
-    const dataListEl = $('#assetTypesList'); // <-- Referensi ke datalist
     const currentVal = filterEl.value;
     
-    // Dapatkan tipe unik, filter 'null'/'undefined', lalu urutkan
-    const types = [...new Set(assets.map(a => a.type).filter(Boolean))].sort();
+    const types = [...new Set(assets.map(a => a.type || 'Lainnya'))].sort();
     
-    // 1. Populate Filter Dropdown
     filterEl.innerHTML = '<option value="">Semua Tipe Aset</option>'; // Reset
     types.forEach(type => {
       const selected = (type === currentVal) ? 'selected' : '';
       filterEl.innerHTML += `<option value="${type}" ${selected}>${type}</option>`;
-    });
-    
-    // 2. Populate Datalist di Modal Form
-    dataListEl.innerHTML = ''; // Reset datalist
-    types.forEach(type => {
-      dataListEl.innerHTML += `<option value="${type}"></option>`;
     });
   }
 
@@ -1320,7 +1008,6 @@
    * Meng-export data ke Excel (v2)
    */
   function exportToExcel() {
-    // ... (Fungsi exportToExcel tidak diubah, tetap berfungsi untuk Aset) ...
     const searchTerm = $('#searchInput').value.toLowerCase();
     const qcStatusFilter = $('#filterQcStatus').value;
     const typeFilter = $('#filterType').value;
@@ -1336,7 +1023,7 @@
       return searchMatch && qcStatusMatch && typeMatch;
     });
 
-    if (filteredAssets.length === 0) return showToast('Tidak ada data aset untuk diexport', true);
+    if (filteredAssets.length === 0) return showToast('Tidak ada data untuk diexport', true);
 
     const dataToExport = filteredAssets.map(a => ({
       'ID Aset': a.id,
