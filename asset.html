@@ -5,8 +5,33 @@
 <meta content="width=device-width,initial-scale=1" name="viewport"/>
 <title>Zeppelin — IT Asset Management (v2)</title>
 <meta content="A professional IT Asset Management (ITAM) dashboard built with Firebase and Tailwind CSS." name="description"/>
+
 <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css">
+
 <script src="https://cdn.tailwindcss.com"></script>
+
+<script>
+  tailwind.config = {
+    theme: {
+      extend: {
+        colors: {
+          'primary': '#007bff',
+          'primary-hover': '#0069d9',
+          'accent': '#ff7a18',
+          'dark-bg': '#0f172a',
+          'dark-card': '#1e293b',
+          'dark-border': '#334155',
+          'dark-text': '#f1f5f9',
+          'dark-muted': '#94a3b8',
+          'error': '#dc3545',
+          'success': '#1db954', // Status Lulus
+          'warning': '#f59e0b', // Status Belum
+        },
+      },
+    },
+  };
+</script>
+
 <style>
   /* Menggunakan font Inter */
   html { font-family: 'Inter', system-ui, sans-serif; }
@@ -112,28 +137,6 @@
     box-shadow: inset 4px 0 0px #ff7a18;
   }
 </style>
-<script>
-  // Konfigurasi Tailwind
-  tailwind.config = {
-    theme: {
-      extend: {
-        colors: {
-          'primary': '#007bff',
-          'primary-hover': '#0069d9',
-          'accent': '#ff7a18',
-          'dark-bg': '#0f172a',
-          'dark-card': '#1e293b',
-          'dark-border': '#334155',
-          'dark-text': '#f1f5f9',
-          'dark-muted': '#94a3b8',
-          'error': '#dc3545',
-          'success': '#1db954', // Status Lulus
-          'warning': '#f59e0b', // Status Belum
-        },
-      },
-    },
-  };
-</script>
 </head>
 <body class="bg-dark-bg text-dark-text">
 
