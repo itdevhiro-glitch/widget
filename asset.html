@@ -3,381 +3,450 @@
 <head>
 <meta charset="utf-8"/>
 <meta content="width=device-width,initial-scale=1" name="viewport"/>
-<title>Zeppelin — Asset Manager (Admin)</title>
-<meta content="Bima Adhitya" name="author"/>
-<meta content="Asset Manager & QC — Zeppelin. Terhubung ke Firebase Firestore." name="description"/>
+<title>Zeppelin — IT Asset Management (Pro)</title>
+<meta content="A professional IT Asset Management (ITAM) dashboard built with Firebase and Tailwind CSS." name="description"/>
 <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css">
+<script src="https://cdn.tailwindcss.com"></script>
 <style>
-:root {
-  --bg: #0e1117;
-  --card: #161b22;
-  --card-light: #1b222e;
-  --muted: #9ca3af;
-  --accent: #ff7a18;
-  --border: rgba(255, 255, 255, 0.1);
-  --success: #1db954;
-  --error: #ff4d4f;
-  --shadow: 0 4px 12px rgba(0, 0, 0, 0.25);
+  /* Menggunakan font Inter */
+  html { font-family: 'Inter', system-ui, sans-serif; }
+  /* Custom Scrollbar */
+  ::-webkit-scrollbar { width: 8px; height: 8px; }
+  ::-webkit-scrollbar-track { background: #2c3e50; }
+  ::-webkit-scrollbar-thumb { background: #888; border-radius: 4px; }
+  ::-webkit-scrollbar-thumb:hover { background: #555; }
   
-  --login-bg: #f4f7fa;
-  --login-card: #ffffff;
-  --login-text: #212529;
-  --login-border: #e9ecef;
-  --login-primary: #D9232D;
-  --login-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.07), 0 2px 4px -2px rgba(0, 0, 0, 0.07);
-}
-* { box-sizing: border-box; font-family: Inter, system-ui, -apple-system, 'Segoe UI', Roboto, Arial; }
-html, body { margin:0; padding:0; height:100%; width:100%; background-color:var(--bg); color:#e6eef6; overflow-x:hidden; }
+  /* ====================================================== */
+  /* PERBAIKAN 1: Transisi Halaman & Modal yang Halus        */
+  /* ====================================================== */
+  .page, .modal-backdrop {
+    opacity: 0;
+    visibility: hidden;
+    pointer-events: none; /* Mencegah interaksi saat tersembunyi */
+    transition: opacity 0.3s ease, visibility 0s 0.3s; /* Tunda penghapusan visibility */
+  }
+  .page { display: block; } /* Ganti dari none */
+  .modal-backdrop { display: flex; } /* Tetap flex untuk centering */
+  
+  /* Tampilkan saat aktif */
+  .page.active, .modal-backdrop.active {
+    opacity: 1;
+    visibility: visible;
+    pointer-events: auto;
+    transition: opacity 0.3s ease;
+  }
+  
+  /* Beri animasi scale-up untuk konten modal */
+  .modal-backdrop > div { /* Target elemen anak (bg-dark-card) */
+    transform: scale(0.95);
+    transition: transform 0.3s cubic-bezier(0.175, 0.885, 0.32, 1.275); /* Efek 'bouncy' */
+  }
+  .modal-backdrop.active > div {
+    transform: scale(1);
+  }
+  
+  /* Animasi Spinner */
+  .spinner {
+    width: 40px; height: 40px;
+    border: 4px solid #f3f3f3;
+    border-top-color: #D9232D;
+    border-radius: 50%;
+    animation: spin 1s linear infinite;
+    margin: 0 auto 20px auto;
+  }
 
-/* Konten Aplikasi */
-.app-content { 
-  display: none; /* Sembunyi by default, tampil setelah login */
-}
-.wrap { width:100%; max-width:1600px; margin:0 auto; padding:clamp(16px,2vw,32px); }
-header{
-  display:flex;
-  justify-content:space-between;
-  align-items:center;
-  flex-wrap:wrap;
-  gap:16px;
-  margin-bottom:24px;
-  padding-bottom: 20px;
-  border-bottom: 1px solid var(--border);
-}
-.brand{display:flex;align-items:center;gap:14px}
-.logo-placeholder{width:52px;height:52px;border-radius:12px;background:linear-gradient(135deg,var(--accent),#ffb24d);display:flex;align-items:center;justify-content:center;font-weight:800;color:#08101a}
-h1{font-size:clamp(18px,1.8vw,22px);margin:0}
-.sub{font-size:clamp(12px,1vw,14px);color:var(--muted)}
-.breadcrumb { font-size: 14px; color: var(--muted); font-weight: 500; }
-.breadcrumb a { color: var(--accent); text-decoration: none; font-weight: 600; }
-.breadcrumb a:hover { text-decoration: underline; }
+  /* Tombol Aksi Tabel */
+  .action-btn {
+    padding: 6px 10px;
+    font-size: 13px;
+    font-weight: 600;
+    border-radius: 6px;
+    transition: all 0.2s ease;
+  }
 
-.controls{display:flex;align-items:center;gap:8px;flex-wrap:wrap}
-.btn{background:var(--accent);border:none;padding:8px 14px;border-radius:8px;color:#08101a;font-weight:600;cursor:pointer;transition:all .2s ease;box-shadow:var(--shadow)}
-.btn:hover{opacity:.9;transform:translateY(-1px)}
-.btn-ghost{background:transparent;border:1px solid var(--border);color:var(--muted);border-radius:8px;padding:8px 12px;cursor:pointer;transition:.2s}
-.btn-ghost:hover{border-color:var(--accent);color:#fff}
-.search{padding:8px 12px;border-radius:8px;border:1px solid var(--border);background:var(--card-light);color:#fff;min-width:200px}
-.grid{display:grid;grid-template-columns:380px 1fr;gap:24px}
-@media (max-width:1100px){ .grid{grid-template-columns:1fr} }
-.card{background:var(--card);border-radius:12px;padding:20px 24px;border:1px solid var(--border);box-shadow:var(--shadow)}
+  /* ====================================================== */
+  /* PERBAIKAN 3 & 4: Efek Hover, Input, dan Sidebar        */
+  /* ====================================================== */
 
-.form-section { margin-top: 16px; padding-top: 16px; border-top: 1px solid var(--border); }
-.form-section:first-child { margin-top: 0; padding-top: 0; border-top: none; }
-.form-section h4 { font-size: 1rem; font-weight: 600; color: var(--accent); margin-top: 0; margin-bottom: 12px; }
+  /* Efek 'float' untuk KPI Card */
+  .kpi-card {
+    transition: transform 0.3s ease, box-shadow 0.3s ease;
+    will-change: transform; /* Optimasi performa */
+  }
+  .kpi-card:hover {
+    transform: translateY(-5px);
+    box-shadow: 0 8px 20px rgba(0,0,0,0.25);
+  }
 
-.kpi-row{display:flex;gap:16px;flex-wrap:wrap;margin-top:16px}
-.kpi{flex:1;min-width:180px;background:var(--card-light);padding:16px;border-radius:10px;border:1px solid var(--border);text-align:center}
-.kpi .kpi-title { font-size: 14px; font-weight: 600; color: var(--muted); margin-bottom: 8px; }
-.kpi .kpi-value { font-size: 24px; font-weight: 800; color: #fff; }
+  /* Efek 'glow' & scale untuk Tombol Aksen (Oranye) */
+  #addAssetBtn, #saveAssetBtn {
+    transition: transform 0.2s ease, box-shadow 0.2s ease, opacity 0.2s ease;
+    will-change: transform;
+  }
+  #addAssetBtn:hover, #saveAssetBtn:hover {
+    transform: scale(1.03);
+    box-shadow: 0 4px 15px rgba(255, 122, 24, 0.3); /* Bayangan warna aksen */
+    opacity: 1; /* Override hover:opacity-90 */
+  }
 
-table{width:100%;border-collapse:collapse;margin-top:12px;font-size:14px}
-th,td{padding:12px 14px;border-bottom:1px solid var(--border)}
-th{color:var(--muted);font-weight:600;text-transform:uppercase;font-size:12px}
-.table-wrap{overflow-y:auto;overflow-x:hidden;max-height:450px}
-tr:hover { background-color: rgba(255, 255, 255, 0.03); }
-label{display:block;font-size:13px;color:var(--muted);margin-top:10px; margin-bottom: 4px;}
-input,select,textarea{width:100%;background:var(--card-light);border:1px solid var(--border);color:#fff;border-radius:8px;padding:9px 12px;font-size:14px}
-input:focus, select:focus, textarea:focus {
-  outline: none;
-  border-color: var(--accent);
-  box-shadow: 0 0 0 3px rgba(255, 122, 24, 0.2);
-}
-textarea{min-height:70px}
+  /* Transisi untuk Tombol Aksi Tabel */
+  .action-btn:hover {
+     transform: scale(1.05);
+  }
 
-.action-buttons { display: flex; gap: 6px; }
-.btn-icon {
-  background: var(--card-light); border: 1px solid var(--border); color: var(--muted);
-  border-radius: 6px; padding: 6px; cursor: pointer; transition: all 0.2s ease;
-  width: 32px; height: 32px; display: inline-flex; align-items: center; justify-content: center;
-}
-.btn-icon svg { width: 16px; height: 16px; }
-.btn-icon:hover { background: var(--accent); color: #fff; border-color: var(--accent); }
-.btn-icon.delete:hover { background: var(--error); border-color: var(--error); }
-
-footer{margin-top:32px;text-align:center;color:var(--muted);font-size:13px;padding:16px 0}
-mark{background:rgba(255,235,59,0.25);padding:0 2px;border-radius:2px}
-
-/* Layar Verifikasi */
-#authVerificationScreen {
-  position: fixed; inset: 0; 
-  background: var(--login-bg); 
-  z-index: 10000;
-  display: flex; /* Tampil by default */
-  align-items: center; 
-  justify-content: center; 
-  padding: 16px;
-  color: var(--login-text);
-  font-family: 'Roboto', sans-serif;
-  text-align: center;
-}
-#authBox {
-  width: 400px; max-width: 100%;
-  background: var(--login-card); 
-  padding: 30px 40px;
-  border-radius: 12px; 
-  border: 1px solid var(--login-border);
-  box-shadow: var(--login-shadow);
-}
-#authBox h3 { color: var(--login-text); font-size: 1.3rem; font-weight: 600; margin-top: 0; margin-bottom: 10px; }
-#authBox p { font-size: 1rem; color: #555; margin-top: 15px; line-height: 1.6; }
-#authBox a {
-  display: none; /* Sembunyi by default */
-  margin-top: 20px; padding: 12px 20px; border-radius: 8px;
-  background-color: var(--login-primary); color: white;
-  font-weight: 700; text-decoration: none; transition: background-color 0.3s;
-}
-#authBox a:hover { background-color: #B01B22; }
-
-/* Spinner Animasi */
-.spinner {
-  width: 40px; height: 40px;
-  border: 4px solid #f3f3f3;
-  border-top-color: var(--login-primary);
-  border-radius: 50%;
-  animation: spin 1s linear infinite;
-  margin: 0 auto 20px auto;
-}
-@keyframes spin { 100% { transform: rotate(360deg); } }
-
-/* Loading Spinner (untuk data) */
-#loader {
-  position: fixed; inset: 0;
-  background: rgba(0, 0, 0, 0.5);
-  display: none; /* Sembunyi by default */
-  align-items: center; justify-content: center;
-  z-index: 10000; color: white;
-  font-size: 1.2rem; flex-direction: column; gap: 10px;
-}
-#loader::after {
-  content: ''; width: 40px; height: 40px;
-  border: 4px solid #fff; border-top-color: var(--accent);
-  border-radius: 50%; animation: spin 1s linear infinite;
-}
+  /* Transisi untuk baris tabel */
+  #asset-table-body tr {
+    transition: background-color 0.2s ease;
+  }
+  
+  /* Transisi halus untuk input form */
+  .input, .search {
+    border: 1px solid #334155; /* Ganti border Tailwind */
+    transition: border-color 0.2s ease, box-shadow 0.2s ease;
+  }
+  .input:focus, .search:focus {
+    border-color: #ff7a18; /* accent */
+    box-shadow: 0 0 0 3px rgba(255, 122, 24, 0.15); /* Ganti ring default */
+  }
+  
+  /* Ganti 'border-l-4' di sidebar dengan 'inset shadow' */
+  .nav-item.active {
+    position: relative;
+    box-shadow: inset 4px 0 0px #ff7a18;
+  }
+  
+  @keyframes spin { 100% { transform: rotate(360deg); } }
 </style>
+<script>
+  // Konfigurasi Tailwind
+  tailwind.config = {
+    theme: {
+      extend: {
+        colors: {
+          'primary': '#007bff',
+          'primary-hover': '#0069d9',
+          'accent': '#ff7a18',
+          'dark-bg': '#0f172a',
+          'dark-card': '#1e293b',
+          'dark-border': '#334155',
+          'dark-text': '#f1f5f9',
+          'dark-muted': '#94a3b8',
+          'error': '#dc3545',
+        },
+      },
+    },
+  };
+</script>
 </head>
-<body>
+<body class="bg-dark-bg text-dark-text">
 
-<!-- Layar Verifikasi Otentikasi -->
-<div id="authVerificationScreen">
-  <div id="authBox">
+<div id="authVerificationScreen" class="fixed inset-0 z-50 flex items-center justify-center bg-gray-100 text-gray-800 p-4 text-center">
+  <div class="bg-white p-8 md:p-12 rounded-lg shadow-2xl">
     <div class="spinner" id="authSpinner"></div>
-    <h3 id="authMessage">Memverifikasi Sesi Admin...</h3>
-    <p id="authSubMessage">Mengecek otentikasi Anda dengan Firebase...</p>
-    <a href="../index.html" id="authBackButton">Kembali ke Admin Dashboard</a>
+    <h3 id="authMessage" class="text-xl font-bold mb-2">Memverifikasi Sesi Admin...</h3>
+    <p id="authSubMessage" class="text-gray-600">Mengecek otentikasi Anda dengan Firebase...</p>
+    <a href="../index.html" id="authBackButton" class="mt-6 inline-block rounded-md bg-red-600 px-6 py-3 text-sm font-bold text-white shadow-md transition hover:bg-red-700" style="display: none;">Kembali ke Admin Dashboard</a>
   </div>
 </div>
 
-<div id="loader">Memuat data dari Firebase...</div>
+<div id="appContainer" class="hidden min-h-screen md:flex">
+  
+  <nav class="w-64 bg-dark-card border-r border-dark-border flex-shrink-0 flex flex-col">
+    <div class="p-6 text-center border-b border-dark-border">
+      <h2 class="text-2xl font-bold text-white">ZEPPELIN</h2>
+      <span class="text-sm font-semibold text-accent">IT ASSET MANAGER</span>
+    </div>
+    <ul class="py-6 space-y-2 flex-grow">
+      <li>
+        <a href="#dashboard" class="nav-item active flex items-center gap-3 px-6 py-3 text-dark-text font-semibold bg-dark-bg">
+          <i class="fa-solid fa-chart-pie w-5 text-center"></i>
+          <span>Dashboard</span>
+        </a>
+      </li>
+      <li>
+        <a href="#assets" class="nav-item flex items-center gap-3 px-6 py-3 text-dark-muted font-semibold transition hover:text-dark-text hover:bg-dark-bg/50">
+          <i class="fa-solid fa-boxes-stacked w-5 text-center"></i>
+          <span>Database Aset</span>
+        </a>
+      </li>
+      <li>
+        <a href="#vendors" class="nav-item flex items-center gap-3 px-6 py-3 text-dark-muted font-semibold transition hover:text-dark-text hover:bg-dark-bg/50">
+          <i class="fa-solid fa-store w-5 text-center"></i>
+          <span>Vendor</span>
+        </a>
+      </li>
+    </ul>
+    <div class="p-6 border-t border-dark-border">
+      <div class="text-sm text-dark-muted">Logged in as:</div>
+      <div id="userEmailDisplay" class="text-sm font-bold text-accent truncate">...</div>
+      <button id="logoutBtn" class="mt-4 w-full text-center py-2 px-4 rounded-md bg-dark-bg text-dark-muted font-semibold border border-dark-border transition hover:bg-red-600/20 hover:text-red-400 hover:border-red-500">
+        <i class="fa-solid fa-right-from-bracket mr-2"></i>Logout
+      </button>
+    </div>
+  </nav>
 
-<!-- Konten Aplikasi -->
-<div class="app-content">
-  <div class="wrap">
-  <header>
-  <div class="brand">
-  <div id="logoWrap">
-  <div class="logo-placeholder" id="logoFallback" style="display:flex">Z</div>
-  </div>
-  <div>
-  <h1>Zeppelin — Asset Manager</h1>
-  <div class="sub" id="subhead">
-    <span class="breadcrumb"><a href="../index.html">Admin Dashboard</a> / Asset Manager</span>
-  </div>
-  </div>
-  </div>
-  <div class="controls no-print">
-  
-  <div id="userInfo" class="small" style="text-align: right; color: white;">
-    Logged in as:<br>
-    <strong id="userEmailDisplay" style="color: var(--accent);"></strong>
-  </div>
-  <button id="logoutBtn" class="btn-ghost" title="Logout" style="color: var(--error); border-color: var(--error);">
-    <i class="fa-solid fa-right-from-bracket"></i>
-  </button>
-  
-  <input aria-label="Cari asset" class="search" id="globalSearch" placeholder="Cari: jenis, brand, serial..."/>
-  <button class="btn" id="downloadExcelBtn">Download Excel</button>
-  <button class="btn-ghost" id="backupBtn">Backup JSON</button>
-  <button class="btn-ghost" id="restoreBtn">Restore JSON</button>
-  <button class="btn" id="printReportBtn" title="Cetak laporan PDF">Cetak Laporan (PDF)</button>
-  <input accept="application/json, .json, .csv" id="fileInput" style="display:none" type="file"/>
-  <div id="filterControls" style="display:flex;gap:8px;align-items:center;">
-  <select class="search" id="filterType" title="Filter by jenis"><option value="">All Jenis</option></select>
-  <select class="search" id="filterQc" title="Filter by QC"><option value="">All QC</option><option value="Belum QC">Belum QC</option><option value="Lulus QC">Lulus QC</option><option value="Gagal QC">Gagal QC</option></select>
-  <select class="search" id="filterLoc" title="Filter by Lokasi"><option value="">All Lokasi</option></select>
-  <select class="search" id="filterPic" title="Filter by PIC"><option value="">All PIC</option></select>
-  </div>
-  </div>
-  </header>
-  <section class="card">
-  <h2 style="margin:0;color:var(--accent)">Dashboard Statistik</h2>
-  <div class="kpi-row" style="margin-top:12px">
-  <div class="kpi">
-    <div class="kpi-title">Total Asset</div>
-    <div class="kpi-value" id="kpiTotal">0</div>
-  </div>
-  <div class="kpi">
-    <div class="kpi-title">PC & Laptop</div>
-    <div class="kpi-value" id="kpiPC">0</div>
-  </div>
-  <div class="kpi">
-    <div class="kpi-title">Status QC</div>
-    <div class="kpi-value" id="kpiQC" style="font-size: 18px;">L:0 G:0 B:0</div>
-  </div>
-  </div>
-  <div style="display:flex;gap:12px;flex-wrap:wrap; margin-top: 20px;">
-  <div style="flex:1;min-width:420px">
-  <canvas aria-label="Chart kategori" height="140" id="barCategories"></canvas>
-  </div>
-  <div style="width:320px">
-  <canvas aria-label="Chart QC" height="140" id="pieQc"></canvas>
-  </div>
-  </div>
-  </section>
-  <div class="grid" style="margin-top:24px">
-  <aside class="card">
-  <div class="form-section">
-    <h4><i class="fa-solid fa-box" style="margin-right: 8px;"></i> Detail Barang</h4>
-    <label>Nama Barang</label>
-    <input id="name" placeholder="Contoh: Laptop Dell Latitude"/>
-    <label>Jenis</label>
-    <select id="itemType">
-    <option>Laptop</option>
-    <option>Desktop</option>
-    <option>Monitor</option>
-    <option>Keyboard</option>
-    <option>Mouse</option>
-    <option>SATA Cable</option>
-    <option>LAN Cable</option>
-    <option>Power Cable</option>
-    <option>UPS</option>
-    <option>SSD</option>
-    <option>HDD</option>
-    <option>Other</option>
-    </select>
-    <label>Serial / Tag ID</label>
-    <input id="serial" placeholder="SN atau Tag ID (opsional)"/>
-    <label>Qty</label>
-    <input id="qty" min="1" type="number" value="1"/>
-  </div>
-  
-  <div class="form-section">
-    <h4><i class="fa-solid fa-check-circle" style="margin-right: 8px;"></i> Status & Lokasi</h4>
-    <label>Status QC</label>
-    <select id="qcStatus"><option>Belum QC</option><option>Lulus QC</option><option>Gagal QC</option></select>
-    <label>Software Terinstal (pisahkan koma)</label>
-    <input id="software" placeholder="Contoh: Radmin, VNC, Accurate"/>
-    <label>Lokasi</label>
-    <input id="location" placeholder="Ruang / Rack / Gudang"/>
-    <label>PIC</label>
-    <input id="pic" placeholder="Penanggung jawab / Nama"/>
-  </div>
+  <main class="flex-1 overflow-y-auto p-8 md:p-10">
+    
+    <div id="page-dashboard" class="page active">
+      <h1 class="text-3xl font-bold text-white mb-6">Dashboard</h1>
+      
+      <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
+        <div class="kpi-card bg-dark-card p-6 rounded-lg shadow-lg border border-dark-border">
+          <div class="flex items-center justify-between">
+            <span class="text-sm font-semibold text-dark-muted uppercase">Total Aset</span>
+            <i class="fa-solid fa-boxes-stacked text-2xl text-accent"></i>
+          </div>
+          <div id="kpi-total-assets" class="text-4xl font-extrabold text-white mt-4">0</div>
+        </div>
+        <div class="kpi-card bg-dark-card p-6 rounded-lg shadow-lg border border-dark-border">
+          <div class="flex items-center justify-between">
+            <span class="text-sm font-semibold text-dark-muted uppercase">Nilai Aset</span>
+            <i class="fa-solid fa-dollar-sign text-2xl text-green-500"></i>
+          </div>
+          <div id="kpi-total-value" class="text-4xl font-extrabold text-white mt-4">Rp 0</div>
+        </div>
+        <div class="kpi-card bg-dark-card p-6 rounded-lg shadow-lg border border-dark-border">
+          <div class="flex items-center justify-between">
+            <span class="text-sm font-semibold text-dark-muted uppercase">Diterapkan</span>
+            <i class="fa-solid fa-user-check text-2xl text-blue-500"></i>
+          </div>
+          <div id="kpi-deployed" class="text-4xl font-extrabold text-white mt-4">0</div>
+        </div>
+        <div class="kpi-card bg-dark-card p-6 rounded-lg shadow-lg border border-dark-border">
+          <div class="flex items-center justify-between">
+            <span class="text-sm font-semibold text-dark-muted uppercase">Dalam Stok</span>
+            <i class="fa-solid fa-warehouse text-2xl text-yellow-500"></i>
+          </div>
+          <div id="kpi-in-stock" class="text-4xl font-extrabold text-white mt-4">0</div>
+        </div>
+      </div>
 
-  <div class="form-section">
-    <h4><i class="fa-solid fa-info-circle" style="margin-right: 8px;"></i> Opsional</h4>
-    <label>Tanggal Pembelian (opsional)</label>
-    <input id="purchaseDate" type="date"/>
-    <label>Warranty Until (opsional)</label>
-    <input id="warrantyUntil" type="date"/>
-    <label>Keterangan</label>
-    <textarea id="notes" placeholder="Catatan tambahan, kondisi fisik, license keys..."></textarea>
-  </div>
-  
-  <div style="display:flex;gap:8px;margin-top:20px">
-    <button class="btn" id="addBtn">Tambah Item</button>
-    <button class="btn-ghost" id="updateBtn" style="width:auto">Clear / Reset</button>
-  </div>
-  </aside>
-  
-  <main>
-  <div class="card">
-  <div style="display:flex;justify-content:space-between;align-items:center">
-  <div>
-  <h3>Daftar Asset</h3>
-  <div class="muted">Klik ikon untuk update.</div>
-  </div>
-  <div class="muted">Total: <span id="totalCount">0</span></div>
-  </div>
-  <div class="table-wrap">
-  <table id="assetTable">
-  <thead>
-  <tr><th>ID</th><th>Nama</th><th>Jenis</th><th>Serial</th><th>Qty</th><th>Software</th><th>PIC</th><th>Lokasi</th><th>QC</th><th>Actions</th></tr>
-  </thead>
-  <tbody></tbody>
-  </table>
-  </div>
-  </div>
-  <div style="height:24px"></div>
-  <div class="card">
-  <h3>QC Checklist (Laptop &amp; Desktop)</h3>
-  <div class="muted">Centang item yang OK. Simpan QC ke asset tertentu.</div>
-  <div id="qcList" style="margin-top:10px;display:grid;grid-template-columns:1fr 1fr;gap:6px"></div>
-  <div style="display:flex;gap:8px;margin-top:12px">
-  <input id="qcTargetId" placeholder="Masukkan Asset ID untuk simpan QC"/>
-  <button class="btn" id="saveQcBtn">Simpan QC</button>
-  <button class="btn-ghost" id="clearQcBtn">Reset</button>
-  </div>
-  </div>
+      <div class="grid grid-cols-1 lg:grid-cols-5 gap-6 mt-8">
+        <div class="lg:col-span-3 bg-dark-card p-6 rounded-lg shadow-lg border border-dark-border">
+          <h3 class="text-xl font-semibold text-white mb-4">Aset Berdasarkan Kategori</h3>
+          <canvas id="categoryChart" height="150"></canvas>
+        </div>
+        <div class="lg:col-span-2 bg-dark-card p-6 rounded-lg shadow-lg border border-dark-border">
+          <h3 class="text-xl font-semibold text-white mb-4">Aset Berdasarkan Status</h3>
+          <canvas id="statusChart" height="150"></canvas>
+        </div>
+      </div>
+    </div>
+
+    <div id="page-assets" class="page">
+      <div class="flex items-center justify-between mb-6">
+        <h1 class="text-3xl font-bold text-white">Database Aset</h1>
+        <button id="addAssetBtn" class="py-2 px-5 rounded-md bg-accent text-black font-bold shadow-md transition hover:opacity-90">
+          <i class="fa-solid fa-plus mr-2"></i>Tambah Aset Baru
+        </button>
+      </div>
+      
+      <div class="bg-dark-card p-4 rounded-lg shadow-lg border border-dark-border mb-6 flex flex-wrap gap-4">
+        <div class="relative flex-grow min-w-[250px]">
+          <i class="fa-solid fa-search absolute left-4 top-1/2 -translate-y-1/2 text-dark-muted"></i>
+          <input id="searchInput" type="text" placeholder="Cari berdasarkan nama, serial, atau PIC..." class="search w-full bg-dark-bg pl-10 pr-4 py-2 rounded-md focus:border-accent focus:ring-accent focus:ring-1">
+        </div>
+        <select id="filterStatus" class="search bg-dark-bg rounded-md focus:border-accent focus:ring-accent focus:ring-1">
+          <option value="">Semua Status</option>
+          <option value="Deployed">Deployed</option>
+          <option value="In Stock">In Stock</option>
+          <option value="In Repair">In Repair</option>
+          <option value="Disposed">Disposed</option>
+        </select>
+        <select id="filterCategory" class="search bg-dark-bg rounded-md focus:border-accent focus:ring-accent focus:ring-1">
+          <option value="">Semua Kategori</option>
+          <option value="Laptop">Laptop</option>
+          <option value="Desktop">Desktop</option>
+          <option value="Monitor">Monitor</option>
+          <option value="Periferal">Periferal</option>
+          <option value="Jaringan">Jaringan</option>
+          <option value="Lainnya">Lainnya</option>
+        </select>
+        <button id="exportExcelBtn" class="py-2 px-4 rounded-md bg-dark-bg text-dark-muted font-semibold border border-dark-border transition hover:bg-green-600/20 hover:text-green-400 hover:border-green-500">
+          <i class="fa-solid fa-file-excel mr-2"></i>Export
+        </button>
+      </div>
+
+      <div class="bg-dark-card rounded-lg shadow-lg border border-dark-border overflow-hidden">
+        <div class="overflow-x-auto">
+          <table class="w-full min-w-[1000px]">
+            <thead class="bg-dark-bg/50">
+              <tr>
+                <th class="p-4 text-left text-xs font-medium text-dark-muted uppercase tracking-wider">Nama Aset</th>
+                <th class="p-4 text-left text-xs font-medium text-dark-muted uppercase tracking-wider">Kategori</th>
+                <th class="p-4 text-left text-xs font-medium text-dark-muted uppercase tracking-wider">Status</th>
+                <th class="p-4 text-left text-xs font-medium text-dark-muted uppercase tracking-wider">Serial</th>
+                <th class="p-4 text-left text-xs font-medium text-dark-muted uppercase tracking-wider">PIC</th>
+                <th class="p-4 text-left text-xs font-medium text-dark-muted uppercase tracking-wider">Tgl. Beli</th>
+                <th class="p-4 text-right text-xs font-medium text-dark-muted uppercase tracking-wider">Aksi</th>
+              </tr>
+            </thead>
+            <tbody id="asset-table-body" class="divide-y divide-dark-border">
+              <tr><td colspan="7" class="p-6 text-center text-dark-muted">Memuat data aset...</td></tr>
+            </tbody>
+          </table>
+        </div>
+      </div>
+    </div>
+
+    <div id="page-vendors" class="page">
+      <h1 class="text-3xl font-bold text-white mb-6">Manajemen Vendor</h1>
+      <div class="bg-dark-card p-10 rounded-lg shadow-lg border border-dark-border text-center">
+        <i class="fa-solid fa-store text-5xl text-dark-muted mb-4"></i>
+        <h2 class="text-2xl font-bold text-white">Fitur Sedang Dikembangkan</h2>
+        <p class="text-dark-muted mt-2">Halaman untuk mengelola data vendor dan kontak akan tersedia di sini.</p>
+      </div>
+    </div>
+
   </main>
-  </div>
-  <footer>© 2025 Zeppelin | Developed by Bima Adhitya</footer>
-  </div>
-</div> <!-- Penutup .app-content -->
+</div>
 
-<!-- CDN (graceful fallback if blocked) -->
-<script crossorigin="anonymous" integrity="" src="https://cdn.jsdelivr.net/npm/chart.js"></script>
-<script crossorigin="anonymous" integrity="" src="https://cdn.jsdelivr.net/npm/xlsx/dist/xlsx.full.min.js"></script>
+<div id="loader" class="modal-backdrop fixed inset-0 z-[99] bg-black/60 items-center justify-center">
+  <div class="spinner !border-t-accent"></div>
+</div>
 
-<!-- Firebase SDKs v8 (Sama seperti index.html) -->
+<div id="assetModal" class="modal-backdrop fixed inset-0 z-50 bg-black/60 items-center justify-center p-4">
+  <div class="bg-dark-card rounded-lg shadow-2xl border border-dark-border w-full max-w-3xl max-h-[90vh] flex flex-col">
+    <div class="flex items-center justify-between p-5 border-b border-dark-border">
+      <h3 id="assetModalTitle" class="text-xl font-bold text-white">Tambah Aset Baru</h3>
+      <button id="closeAssetModal" class="text-dark-muted hover:text-white transition text-3xl font-light">&times;</button>
+    </div>
+    <form id="assetForm" class="flex-grow overflow-y-auto p-6 space-y-6">
+      <input type="hidden" id="assetId">
+      
+      <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
+        <div>
+          <label for="assetName" class="block text-sm font-medium text-dark-muted mb-1">Nama Aset*</label>
+          <input type="text" id="assetName" required class="input w-full bg-dark-bg rounded-md focus:border-accent focus:ring-accent focus:ring-1">
+        </div>
+        <div>
+          <label for="serialNumber" class="block text-sm font-medium text-dark-muted mb-1">Serial Number*</label>
+          <input type="text" id="serialNumber" required class="input w-full bg-dark-bg rounded-md focus:border-accent focus:ring-accent focus:ring-1">
+        </div>
+      </div>
+      
+      <div class="grid grid-cols-1 md:grid-cols-3 gap-6">
+        <div>
+          <label for="category" class="block text-sm font-medium text-dark-muted mb-1">Kategori*</label>
+          <select id="category" required class="input w-full bg-dark-bg rounded-md focus:border-accent focus:ring-accent focus:ring-1">
+            <option value="Laptop">Laptop</option>
+            <option value="Desktop">Desktop</option>
+            <option value="Monitor">Monitor</option>
+            <option value="Periferal">Periferal</option>
+            <option value="Jaringan">Jaringan</option>
+            <option value="Lainnya">Lainnya</option>
+          </select>
+        </div>
+        <div>
+          <label for="status" class="block text-sm font-medium text-dark-muted mb-1">Status*</label>
+          <select id="status" required class="input w-full bg-dark-bg rounded-md focus:border-accent focus:ring-accent focus:ring-1">
+            <option value="In Stock">In Stock</option>
+            <option value="Deployed">Deployed</option>
+            <option value="In Repair">In Repair</option>
+            <option value="Disposed">Disposed</option>
+          </select>
+        </div>
+        <div>
+          <label for="pic" class="block text-sm font-medium text-dark-muted mb-1">PIC (User)</label>
+          <input type="text" id="pic" placeholder="Nama pengguna (jika 'Deployed')" class="input w-full bg-dark-bg rounded-md focus:border-accent focus:ring-accent focus:ring-1">
+        </div>
+      </div>
+
+      <div class="grid grid-cols-1 md:grid-cols-3 gap-6">
+        <div>
+          <label for="purchaseDate" class="block text-sm font-medium text-dark-muted mb-1">Tgl. Pembelian</label>
+          <input type="date" id="purchaseDate" class="input w-full bg-dark-bg rounded-md focus:border-accent focus:ring-accent focus:ring-1">
+        </div>
+        <div>
+          <label for="cost" class="block text-sm font-medium text-dark-muted mb-1">Harga Beli (Rp)</label>
+          <input type="number" id="cost" placeholder="10000000" class="input w-full bg-dark-bg rounded-md focus:border-accent focus:ring-accent focus:ring-1">
+        </div>
+        <div>
+          <label for="vendor" class="block text-sm font-medium text-dark-muted mb-1">Vendor</label>
+          <input type="text" id="vendor" placeholder="Nama toko/vendor" class="input w-full bg-dark-bg rounded-md focus:border-accent focus:ring-accent focus:ring-1">
+        </div>
+      </div>
+      
+      <div>
+        <label for="notes" class="block text-sm font-medium text-dark-muted mb-1">Catatan</label>
+        <textarea id="notes" rows="3" placeholder="Spesifikasi, riwayat perbaikan singkat, dll..." class="input w-full bg-dark-bg rounded-md focus:border-accent focus:ring-accent focus:ring-1"></textarea>
+      </div>
+
+    </form>
+    <div class="flex items-center justify-end p-5 border-t border-dark-border bg-dark-bg/50 rounded-b-lg">
+      <button id="cancelAssetModal" type="button" class="py-2 px-5 rounded-md bg-dark-bg text-dark-muted font-bold border border-dark-border transition hover:bg-dark-border">Batal</button>
+      <button id="saveAssetBtn" type="submit" form="assetForm" class="ml-3 py-2 px-5 rounded-md bg-accent text-black font-bold shadow-md transition hover:opacity-90">Simpan Aset</button>
+    </div>
+  </div>
+</div>
+
+<div id="viewAssetModal" class="modal-backdrop fixed inset-0 z-50 bg-black/60 items-center justify-center p-4">
+  <div class="bg-dark-card rounded-lg shadow-2xl border border-dark-border w-full max-w-3xl max-h-[90vh] flex flex-col">
+    <div class="flex items-center justify-between p-5 border-b border-dark-border">
+      <h3 id="viewModalTitle" class="text-xl font-bold text-white">Detail Aset</h3>
+      <button id="closeViewModal" class="text-dark-muted hover:text-white transition text-3xl font-light">&times;</button>
+    </div>
+    <div class="flex-grow overflow-y-auto p-6 space-y-6">
+      
+      <div class="grid grid-cols-2 md:grid-cols-3 gap-6">
+        <div class="info-group">
+          <span class="text-sm font-medium text-dark-muted">Nama Aset</span>
+          <p id="view-assetName" class="text-lg font-semibold text-white"></p>
+        </div>
+        <div class="info-group">
+          <span class="text-sm font-medium text-dark-muted">Serial Number</span>
+          <p id="view-serialNumber" class="text-lg font-semibold text-white"></p>
+        </div>
+        <div class="info-group">
+          <span class="text-sm font-medium text-dark-muted">Kategori</span>
+          <p id="view-category" class="text-lg font-semibold text-white"></p>
+        </div>
+        <div class="info-group">
+          <span class="text-sm font-medium text-dark-muted">Status</span>
+          <p id="view-status" class="text-lg font-semibold text-white"></p>
+        </div>
+        <div class="info-group">
+          <span class="text-sm font-medium text-dark-muted">PIC</span>
+          <p id="view-pic" class="text-lg font-semibold text-white"></p>
+        </div>
+        <div class="info-group">
+          <span class="text-sm font-medium text-dark-muted">Tgl. Pembelian</span>
+          <p id="view-purchaseDate" class="text-lg font-semibold text-white"></p>
+        </div>
+        <div class="info-group">
+          <span class="text-sm font-medium text-dark-muted">Harga Beli</span>
+          <p id="view-cost" class="text-lg font-semibold text-white"></p>
+        </div>
+        <div class="info-group">
+          <span class="text-sm font-medium text-dark-muted">Vendor</span>
+          <p id="view-vendor" class="text-lg font-semibold text-white"></p>
+        </div>
+      </div>
+      
+      <div>
+        <span class="text-sm font-medium text-dark-muted">Catatan</span>
+        <p id="view-notes" class="text-base text-white bg-dark-bg/50 p-4 rounded-md mt-1 whitespace-pre-wrap"></p>
+      </div>
+
+      <div>
+        <h4 class="text-lg font-semibold text-white mb-2 border-t border-dark-border pt-4">Riwayat Aset</h4>
+        <div id="view-history" class="space-y-3 max-h-48 overflow-y-auto bg-dark-bg/50 p-4 rounded-md">
+          <p class="text-dark-muted text-sm">Memuat riwayat...</p>
+        </div>
+      </div>
+
+    </div>
+  </div>
+</div>
+
+
+<script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/xlsx/dist/xlsx.full.min.js"></script>
+
 <script src="https://www.gstatic.com/firebasejs/8.10.1/firebase-app.js"></script>
 <script src="https://www.gstatic.com/firebasejs/8.10.1/firebase-auth.js"></script>
 <script src="https://www.gstatic.com/firebasejs/8.10.1/firebase-firestore.js"></script>
 
-<!-- Inline SVG untuk Ikon Aksi -->
-<svg width="0" height="0" style="position:absolute">
-  <defs>
-    <svg id="icon-edit" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 20 20" fill="currentColor">
-      <path d="M17.414 2.586a2 2 0 00-2.828 0L7 10.172V13h2.828l7.586-7.586a2 2 0 000-2.828z" />
-      <path fill-rule="evenodd" d="M2 6a2 2 0 012-2h4a1 1 0 010 2H4v10h10v-4a1 1 0 112 0v4a2 2 0 01-2 2H4a2 2 0 01-2-2V6z" clip-rule="evenodd" />
-    </svg>
-    <svg id="icon-delete" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 20 20" fill="currentColor">
-      <path fill-rule="evenodd" d="M9 2a1 1 0 00-.894.553L7.382 4H4a1 1 0 000 2v10a2 2 0 002 2h8a2 2 0 002-2V6a1 1 0 100-2h-3.382l-.724-1.447A1 1 0 0011 2H9zM7 8a1 1 0 012 0v6a1 1 0 11-2 0V8zm5-1a1 1 0 00-1 1v6a1 1 0 102 0V8a1 1 0 00-1-1z" clip-rule="evenodd" />
-    </svg>
-    <svg id="icon-detail" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 20 20" fill="currentColor">
-      <path d="M10 12a2 2 0 100-4 2 2 0 000 4z" />
-      <path fill-rule="evenodd" d="M.458 10C1.732 5.943 5.522 3 10 3s8.268 2.943 9.542 7c-1.274 4.057-5.022 7-9.542 7S1.732 14.057.458 10zM14 10a4 4 0 11-8 0 4 4 0 018 0z" clip-rule="evenodd" />
-    </svg>
-  </defs>
-</svg>
-
-<!-- Detail Modal (table-style) -->
-<div id="detailModalOverlay" style="display:none; position:fixed; inset:0; background:rgba(2,6,23,0.6); align-items:center; justify-content:center; z-index:9999;">
-<div aria-modal="true" id="detailModal" role="dialog" style="width:min(680px,95%); background:var(--card); border-radius:14px; padding:20px; border:1px solid rgba(255,255,255,0.1); box-shadow:0 12px 40px rgba(2,6,23,0.7);">
-<div style="display:flex;justify-content:space-between;align-items:center;gap:12px;margin-bottom:12px">
-<h3 style="margin:0;color:var(--accent)" id="detailModalTitle">Detail Perangkat</h3>
-<div style="display:flex;gap:8px">
-<button class="btn-ghost" id="copyIdBtn" title="Salin ID">Salin ID</button>
-<button class="btn" id="closeDetailBtn">Tutup</button>
-</div>
-</div>
-<div style="overflow:auto; max-height:60vh; background: var(--card-light); border-radius: 8px; padding: 4px;">
-<table style="width:100%; border-collapse:collapse; font-size:14px;">
-<tbody id="detailTableBody"></tbody>
-</table>
-</div>
-<div style="display:flex;justify-content:flex-end;margin-top:16px;gap:8px">
-<button class="btn-ghost" id="editFromDetailBtn">Edit Item Ini</button>
-<button class="btn" id="closeDetailBtn2">Tutup</button>
-</div>
-</div>
-</div>
-
-
-<!-- (PERBAIKAN BESAR)
-  SEMUA JavaScript sekarang ada di dalam satu blok skrip
-  yang ditempatkan TEPAT SEBELUM tag </body>.
-  Ini memastikan semua HTML ada sebelum skrip berjalan.
--->
 <script>
   // Konfigurasi Firebase Anda dari index.html
   const firebaseConfig = {
@@ -400,662 +469,680 @@ mark{background:rgba(255,235,59,0.25);padding:0 2px;border-radius:2px}
     if(!t){ 
       t=document.createElement('div'); 
       t.id='toastMsg'; 
-      t.style.position='fixed'; 
-      t.style.right='18px'; 
-      t.style.bottom='18px'; 
-      t.style.color='#fff'; 
-      t.style.padding='10px 16px'; 
-      t.style.borderRadius='8px'; 
-      t.style.boxShadow='0 6px 18px rgba(0,0,0,0.4)'; 
-      t.style.zIndex='10001';
-      t.style.transition = 'opacity 0.3s ease';
+      Object.assign(t.style, {
+        position: 'fixed', right: '20px', bottom: '20px', zIndex: '10000',
+        padding: '12px 20px', borderRadius: '8px', color: 'white',
+        fontWeight: '600', boxShadow: '0 4px 12px rgba(0,0,0,0.3)',
+        transition: 'opacity 0.3s ease',
+        background: isError ? '#dc3545' : '#1db954'
+      });
       document.body.appendChild(t); 
     } 
     t.textContent=txt; 
-    t.style.background = isError ? 'var(--error)' : 'var(--success)';
     t.style.opacity='1'; 
-    setTimeout(()=> t.style.opacity='0', isError ? 4000 : 2200); 
+    setTimeout(()=> { t.style.opacity='0'; setTimeout(() => t.remove(), 300); }, isError ? 4000 : 2500); 
   }
   window.showToast = showToast;
     
   // --- Helper Functions (Lokal) ---
   function debounce(fn, ms){ let t; return function(){ clearTimeout(t); t=setTimeout(()=>fn.apply(this,arguments), ms||200); }; }
-  window.escapeHtml = function(s){ if(s==null) return ''; return String(s).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;'); };
   function $(sel){ return document.querySelector(sel); }
   function $all(sel){ return Array.from(document.querySelectorAll(sel)); }
-
-  // --- Firebase Globals ---
-  let fb_app, fb_db_firestore, fb_auth, fb_userId, fb_assetsCollectionRef;
   
-  // --- Selektor Elemen (Pusat) ---
-  // (PERBAIKAN) Elemen-elemen ini SEKARANG dijamin ada
-  const elements = {
-      loader: document.getElementById('loader'),
-      authScreen: document.getElementById('authVerificationScreen'),
-      authMsg: document.getElementById('authMessage'),
-      authSubMsg: document.getElementById('authSubMessage'),
-      authBackBtn: document.getElementById('authBackButton'),
-      authSpinner: document.getElementById('authSpinner'),
-      appContent: document.querySelector('.app-content'),
-      logoutBtn: document.getElementById('logoutBtn'),
-      userEmailDisplay: document.getElementById('userEmailDisplay'),
-      tbody: document.querySelector('#assetTable tbody'),
-      totalCountEl: document.getElementById('totalCount'),
-      kpiTotal: document.getElementById('kpiTotal'),
-      kpiPC: document.getElementById('kpiPC'),
-      kpiQC: document.getElementById('kpiQC'),
-      barCanvas: document.getElementById('barCategories'),
-      pieCanvas: document.getElementById('pieQc'),
-      nameEl: document.getElementById('name'),
-      typeEl: document.getElementById('itemType'),
-      serialEl: document.getElementById('serial'),
-      qtyEl: document.getElementById('qty'),
-      qcStatusEl: document.getElementById('qcStatus'),
-      softwareEl: document.getElementById('software'),
-      locEl: document.getElementById('location'),
-      picEl: document.getElementById('pic'),
-      purchaseEl: document.getElementById('purchaseDate'),
-      warrantyEl: document.getElementById('warrantyUntil'),
-      notesEl: document.getElementById('notes'),
-      addBtn: document.getElementById('addBtn'),
-      updateBtn: document.getElementById('updateBtn'),
-      exportCsvBtn: document.getElementById('exportCsvBtn'),
-      exportJsonBtn: document.getElementById('exportJsonBtn'),
-      importCsvBtn: document.getElementById('importCsvBtn'),
-      importJsonBtn: document.getElementById('importJsonBtn'),
-      csvFile: document.getElementById('csvFile'),
-      jsonFile: document.getElementById('jsonFile'),
-      backupBtn: document.getElementById('backupBtn'),
-      restoreBtn: document.getElementById('restoreBtn'),
-      fileInput: document.getElementById('fileInput'),
-      globalSearch: document.getElementById('globalSearch'),
-      qcListEl: document.getElementById('qcList'),
-      saveQcBtn: document.getElementById('saveQcBtn'),
-      clearQcBtn: document.getElementById('clearQcBtn'),
-      printReportBtn: document.getElementById('printReportBtn'),
-      detailModalOverlay: document.getElementById('detailModalOverlay'),
-      detailModalTitle: document.getElementById('detailModalTitle'),
-      detailTableBody: document.getElementById('detailTableBody'),
-      copyIdBtn: document.getElementById('copyIdBtn'),
-      closeDetailBtn: document.getElementById('closeDetailBtn'),
-      closeDetailBtn2: document.getElementById('closeDetailBtn2'),
-      editFromDetailBtn: document.getElementById('editFromDetailBtn')
-  };
-
-  // --- Logika Modal (Skrip 3) ---
-  (function(els){
-    // (PERBAIKAN) Definisikan di window agar bisa diakses
-    window.showAssetDetail = function(a, qcTemplate = []) {
-      if(!a) return window.showToast('Data tidak ditemukan', true);
-      
-      els.detailModalTitle.textContent = "Detail: " + (a.name || 'N/A');
-      
-      const rows = [
-        ['ID', a.id],
-        ['Nama', a.name || '-'],
-        ['Jenis', a.type || '-'],
-        ['Serial', a.serial || '-'],
-        ['Qty', a.qty || '-'],
-        ['Software', a.software || '-'],
-        ['PIC', a.pic || '-'],
-        ['Lokasi', a.location || '-'],
-        ['Tanggal Pembelian', a.purchaseDate || '-'],
-        ['Warranty Until', a.warrantyUntil || '-'],
-        ['Status QC', a.qcStatus || '-'],
-        ['Keterangan', a.notes || '-']
-      ];
-      if (a.qc) {
-          rows.push(['--- QC CHECKLIST ---', '---']);
-          for (const [key, value] of Object.entries(a.qc)) {
-              const qcItem = qcTemplate.find(item => item.k === key);
-              const label = qcItem ? qcItem.l : key;
-              rows.push([label, value ? '✅ Lulus' : '❌ Gagal']);
-          }
-      }
-
-      els.detailTableBody.innerHTML = rows.map(r=>`<tr><td style="padding:10px 12px; color:var(--muted); width:40%; border-bottom:1px solid var(--border)"><strong>${r[0]}</strong></td><td style="padding:10px 12px; border-bottom:1px solid var(--border); white-space: pre-wrap; word-break: break-word;">${window.escapeHtml(r[1])}</td></tr>`).join('');
-      els.detailModalOverlay.style.display = 'flex';
-      
-      els.editFromDetailBtn.onclick = function(){ 
-        els.detailModalOverlay.style.display='none'; 
-        const editBtnEl = document.querySelector(`#assetTable button[data-action="edit"][data-id="${a.id}"]`); 
-        if(editBtnEl) {
-          editBtnEl.click(); 
-          if (a.qc) {
-              const qcListEl = document.getElementById('qcList');
-              qcListEl.querySelectorAll('input[type=checkbox]').forEach(cb => {
-                  cb.checked = !!a.qc[cb.dataset.k];
-              });
-              document.getElementById('qcTargetId').value = a.id;
-          }
-        }
-      };
-      
-      els.copyIdBtn.onclick = function(){ 
-        try{ 
-          const el = document.createElement('textarea');
-          el.value = a.id;
-          document.body.appendChild(el);
-          el.select();
-          document.execCommand('copy');
-          document.body.removeChild(el);
-          window.showToast && window.showToast('ID disalin'); 
-        }catch(e){ window.showToast('Gagal salin', true); } 
-      };
-    }
+  // ======================================================
+  // PERBAIKAN 2: Fungsi Animasi Count-Up
+  // ======================================================
+  function animateCountUp(el, to) {
+    let from = 0;
+    const duration = 1200; // Durasi animasi
+    const start = performance.now();
     
-    els.closeDetailBtn.addEventListener('click', ()=> els.detailModalOverlay.style.display='none');
-    els.closeDetailBtn2.addEventListener('click', ()=> els.detailModalOverlay.style.display='none');
-    els.detailModalOverlay.addEventListener('click', function(ev){ if(ev.target === els.detailModalOverlay) els.detailModalOverlay.style.display='none'; });
-  })(elements);
-
-  // --- Logika Aplikasi Utama (ZeppelinApp - Skrip 1) ---
-  const ZeppelinApp = (function(els){ // Menerima 'els' sebagai argumen
-    let db = { assets: [] }; 
-    let firestoreListener = null; 
-    const qcTemplate = [
-      {k:'power', l:'Power on / Battery'}, {k:'screen', l:'Screen / Dead pixel'}, {k:'keyboard', l:'Keyboard / Touchpad'},
-      {k:'ram', l:'RAM capacity / detecting'}, {k:'storage', l:'Storage health / SMART'}, {k:'network', l:'Network adapter / Wi-Fi'},
-      {k:'gpu', l:'GPU / Display adapter'}, {k:'bios', l:'BIOS / Boot'}, {k:'os', l:'OS installed / activation'},
-      {k:'drivers', l:'Drivers up-to-date'}, {k:'antivirus', l:'Antivirus status / Whitelisted'}, {k:'vpn', l:'VPN (Radmin/VNC) installed'},
-      {k:'accurate', l:'Accurate / License'}
-    ];
-
-    // Hapus 'const' dari elemen yang sudah ada di 'els'
-    let editId = null; let barChart=null, pieChart=null;
-
-    function detachFirestoreListener() {
-      if (firestoreListener) {
-        firestoreListener(); 
-        firestoreListener = null;
-        console.log("Firestore listener detached.");
+    const step = (timestamp) => {
+      const progress = Math.min((timestamp - start) / duration, 1);
+      const val = Math.floor(progress * to);
+      if (el) el.textContent = val.toLocaleString('id-ID'); // Gunakan format lokal
+      if (progress < 1) {
+        window.requestAnimationFrame(step);
       }
-    }
-
-    // Firestore load function (v8 Syntax)
-    async function loadFirestoreData() {
-      if (!fb_assetsCollectionRef) {
-          console.error("Firestore collection reference not set.");
-          els.loader.textContent = "Error: Koleksi Firestore tidak disetel.";
-          return;
-      }
-
-      detachFirestoreListener();
-      els.loader.style.display = 'flex';
-      console.log("Attaching new Firestore listener...");
-
-      firestoreListener = fb_assetsCollectionRef.onSnapshot((snapshot) => {
-          console.log(`Received snapshot with ${snapshot.docs.length} docs.`);
-          db.assets = []; 
-          snapshot.docs.forEach((doc) => {
-              db.assets.push({ id: doc.id, ...doc.data() });
-          });
-          db.assets.sort((a, b) => (a.name || '').localeCompare(b.name || ''));
-
-          render(); 
-          updateDashboard(); 
-          window.refreshFilterOptions && window.refreshFilterOptions(); 
-          els.loader.style.display = 'none'; 
-      }, (error) => {
-          console.error("Error listening to Firestore:", error);
-          els.loader.textContent = "Error: Gagal memuat data. " + error.message;
-      });
-    }
-
-    function clearForm(){ 
-      editId=null; 
-      els.nameEl.value=''; els.typeEl.selectedIndex=0; els.serialEl.value=''; 
-      els.qtyEl.value=1; els.qcStatusEl.selectedIndex=0; els.softwareEl.value=''; 
-      els.locEl.value=''; els.picEl.value=''; els.purchaseEl.value=''; 
-      els.warrantyEl.value=''; els.notesEl.value=''; 
-      els.addBtn.disabled=false; 
-      els.addBtn.textContent = "Tambah Item";
-      els.updateBtn.textContent='Clear / Reset'; 
-      els.addBtn.onclick = handleAddClick;
-    }
-
-    // Render (BARU: Tombol Ikon)
-    function render(filter){ 
-      els.tbody.innerHTML='';
-      const list = db.assets.filter(a=>{ 
-        if(!filter) return true; 
-        const s=(a.id+' '+a.name+' '+a.type+' '+a.serial+' '+a.pic+' '+a.location+' '+a.notes+' '+(a.software||'')).toLowerCase(); 
-        return s.includes(filter.toLowerCase()); 
-      });
-
-      list.forEach(a=>{
-        const tr = document.createElement('tr');
-        const fields = [
-          a.id, a.name, a.type, a.serial||'', a.qty, 
-          a.software||'', a.pic||'', a.location||'', a.qcStatus||''
-        ];
-        fields.forEach((f, i)=>{
-          const td = document.createElement('td');
-          if (i === 0) td.style.cssText = "max-width: 100px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap;";
-          td.textContent = f;
-          td.setAttribute('data-full', String(f));
-          tr.appendChild(td);
-        });
-        
-        const tdActions = document.createElement('td'); 
-        tdActions.className = 'action-buttons';
-        
-        const btnDetail = document.createElement('button'); 
-        btnDetail.className='btn-icon'; 
-        btnDetail.title = 'Lihat Detail';
-        btnDetail.innerHTML = '<svg><use href="#icon-detail" /></svg>'; 
-        btnDetail.setAttribute('data-action','detail'); 
-        btnDetail.setAttribute('data-id',a.id);
-        
-        const btnEdit = document.createElement('button'); 
-        btnEdit.className='btn-icon'; 
-        btnEdit.title = 'Edit';
-        btnEdit.innerHTML = '<svg><use href="#icon-edit" /></svg>'; 
-        btnEdit.setAttribute('data-action','edit'); 
-        btnEdit.setAttribute('data-id',a.id);
-        
-        const btnDel = document.createElement('button'); 
-        btnDel.className='btn-icon delete'; 
-        btnDel.title = 'Hapus';
-        btnDel.innerHTML = '<svg><use href="#icon-delete" /></svg>'; 
-        btnDel.setAttribute('data-action','del'); 
-        btnDel.setAttribute('data-id',a.id);
-        
-        tdActions.appendChild(btnDetail); 
-        tdActions.appendChild(btnEdit); 
-        tdActions.appendChild(btnDel);
-        tr.appendChild(tdActions);
-        els.tbody.appendChild(tr);
-      });
-      els.totalCountEl.textContent = db.assets.reduce((s,a)=> s + (Number(a.qty)||0), 0);
-    }
-
-    async function handleAddClick() {
-      const quantity = Number(els.qtyEl.value||1);
-      if(!els.nameEl.value.trim()) return showToast('Nama barang tidak boleh kosong', true);
-      
-      const item = { 
-        name: els.nameEl.value.trim(), type: els.typeEl.value, serial: els.serialEl.value.trim(), 
-        qty: quantity, qcStatus: els.qcStatusEl.value, software: els.softwareEl.value.trim(), 
-        location: els.locEl.value.trim(), pic: els.picEl.value.trim(), 
-        purchaseDate: els.purchaseEl.value||'', warrantyUntil: els.warrantyEl.value||'', 
-        notes: els.notesEl.value.trim() 
-      };
-      
-      try {
-        els.addBtn.disabled = true;
-        els.addBtn.textContent = "Menyimpan...";
-        await fb_assetsCollectionRef.add(item); // v8 add
-        clearForm(); 
-        showToast('Item ditambahkan ke Firebase');
-      } catch (e) {
-        console.error("Error adding document: ", e);
-        showToast('Gagal menyimpan: ' + e.message, true);
-      } finally {
-        els.addBtn.disabled = false;
-        els.addBtn.textContent = "Tambah Item";
-      }
-    }
-    els.addBtn.addEventListener('click', handleAddClick);
-
-
-    // Table actions (v8 Syntax)
-    els.tbody.addEventListener('click', e=>{
-      const btn = e.target.closest('button'); if(!btn) return; 
-      const id = btn.getAttribute('data-id'); 
-      const action = btn.getAttribute('data-action');
-      
-      const idx = db.assets.findIndex(a=>a.id===id);
-      if (idx < 0) {
-          return showToast("Error: Item tidak ditemukan.", true);
-      }
-
-      const docRef = fb_assetsCollectionRef.doc(id); // v8 doc ref
-      const a = db.assets[idx]; 
-
-      if (action === 'detail') {
-          window.showAssetDetail(a, qcTemplate); // Ini SEKARANG Bekerja
-          return;
-      }
-
-      if(action==='edit'){ 
-        editId=a.id; 
-        els.nameEl.value=a.name||''; els.typeEl.value=a.type||'Laptop'; els.serialEl.value=a.serial||''; 
-        els.qtyEl.value=a.qty||1; els.qcStatusEl.value=a.qcStatus||'Belum QC'; els.softwareEl.value=a.software||''; 
-        els.locEl.value=a.location||''; els.picEl.value=a.pic||''; els.purchaseEl.value=a.purchaseDate||''; 
-        els.warrantyEl.value=a.warrantyUntil||''; els.notesEl.value=a.notes||''; 
-        
-        els.addBtn.disabled = false; 
-        els.addBtn.textContent = "Simpan Perubahan";
-        els.updateBtn.textContent='Batal Edit'; 
-        
-        els.updateBtn.onclick = clearForm; // Tombol "Clear" menjadi "Batal"
-        
-        els.addBtn.onclick = async function() { 
-          const updatedItem = { 
-            name:els.nameEl.value.trim(), type:els.typeEl.value, serial:els.serialEl.value.trim(), 
-            qty:Number(els.qtyEl.value||1), qcStatus:els.qcStatusEl.value, software:els.softwareEl.value.trim(), 
-            location:els.locEl.value.trim(), pic:els.picEl.value.trim(), 
-            purchaseDate:els.purchaseEl.value||'', warrantyUntil:els.warrantyEl.value||'', 
-            notes:els.notesEl.value.trim() 
-          };
-          try {
-              els.addBtn.disabled = true;
-              els.addBtn.textContent = "Updating...";
-              await docRef.update(updatedItem); // v8 update
-              clearForm(); 
-              showToast('Item diperbarui di Firebase');
-          } catch (e) {
-              console.error("Error updating document: ", e);
-              showToast('Gagal update: ' + e.message, true);
-          } finally {
-              clearForm();
-          }
-        };
-        
-        els.nameEl.focus();
-        window.scrollTo({top: els.nameEl.closest('aside').offsetTop - 20, behavior:'smooth'}); 
-      }
-      else if(action==='del'){ 
-        if(confirm(`Hapus item ini dari Firebase?\nID: ${id}\nNama: ${a.name}`)){ 
-          docRef.delete() 
-              .then(() => {
-                  showToast('Item dihapus dari Firebase');
-              })
-              .catch(e => {
-                  console.error("Error deleting document: ", e);
-                  showToast('Gagal hapus: ' + e.message, true);
-              });
-        } 
-      }
-    });
-
-    els.updateBtn.onclick = clearForm; 
-
-    // CSV / JSON helpers
-    function csvSafe(s){ if(s==null) return ''; return '"'+String(s).replace(/"/g,'""')+'"'; }
-    function toCsv(rows){ const heads=['id','name','type','serial','qty','software','pic','location','purchaseDate','warrantyUntil','qcStatus','notes']; const lines=[heads.join(',')]; rows.forEach(r=>{ const arr=[r.id, csvSafe(r.name), csvSafe(r.type), csvSafe(r.serial), r.qty, csvSafe(r.software), csvSafe(r.pic), csvSafe(r.location), r.purchaseDate||'', r.warrantyUntil||'', csvSafe(r.qcStatus), csvSafe(r.notes)]; lines.push(arr.join(',')); }); return lines.join('\n'); }
-
-    els.exportCsvBtn.addEventListener('click', ()=>{ const csv = toCsv(db.assets); const blob = new Blob([csv], {type:'text/text/csv;charset=utf-8;'}); const a = document.createElement('a'); a.href = URL.createObjectURL(blob); a.download = 'assets_export_'+Date.now()+'.csv'; a.click(); URL.revokeObjectURL(a.href); showToast('CSV diexport'); });
-    els.exportJsonBtn.addEventListener('click', ()=>{ const blob = new Blob([JSON.stringify(db,null,2)], {type:'application/json'}); const a = document.createElement('a'); a.href = URL.createObjectURL(blob); a.download = 'assets_export_'+Date.now()+'.json'; a.click(); URL.revokeObjectURL(a.href); showToast('JSON diexport'); });
-
-    els.importCsvBtn.addEventListener('click', ()=> els.csvFile.click()); 
-    els.importJsonBtn.addEventListener('click', ()=> els.jsonFile.click());
-    els.backupBtn.addEventListener('click', ()=> els.exportJsonBtn.click());
-    els.restoreBtn.addEventListener('click', ()=> els.jsonFile.click());
-
-    // --- IMPORT FUNCTIONS (BATCH WRITE) (v8 Syntax) ---
-    async function processBatchImport(items) {
-      if (!items || items.length === 0) {
-          return showToast("Tidak ada item untuk diimpor", true);
-      }
-      
-      els.loader.style.display = 'flex';
-      els.loader.textContent = `Mengimpor ${items.length} item...`;
-
-      try {
-          let batch = fb_db_firestore.batch(); // v8 batch
-          let count = 0;
-          for (const item of items) {
-              let newItem = { ...item };
-              if (newItem.id) delete newItem.id; 
-              const docRef = fb_assetsCollectionRef.doc(); // v8 doc
-              batch.set(docRef, newItem); // v8 set
-              
-              count++;
-              if (count % 499 === 0) {
-                  await batch.commit();
-                  batch = fb_db_firestore.batch();
-                  els.loader.textContent = `Mengimpor ${count} / ${items.length}...`;
-              }
-          }
-          
-          if (count % 499 !== 0) {
-              await batch.commit();
-          }
-          
-          showToast(`Berhasil impor ${items.length} item ke Firebase`);
-      } catch (e) {
-          console.error("Batch import error: ", e);
-          showToast("Gagal impor: " + e.message, true);
-      } finally {
-          els.loader.style.display = 'none';
-      }
-    }
-
-    els.csvFile.addEventListener('change', async e=>{ const f = e.target.files[0]; if(!f) return; const txt = await f.text(); parseCsv(txt); els.csvFile.value=''; });
-    els.jsonFile.addEventListener('change', async e=>{ const f = e.target.files[0]; if(!f) return; try{ const txt = await f.text(); const data = JSON.parse(txt); const arr = Array.isArray(data.assets) ? data.assets : (Array.isArray(data) ? data : null); if(arr) { await processBatchImport(arr); } else showToast('JSON tidak berisi array "assets"', true); }catch(err){ showToast('Gagal import JSON: '+err.message, true); } els.jsonFile.value=''; });
-    
-    els.fileInput.addEventListener('change', async e=>{ const f = e.target.files[0]; if(!f) return; try{ const txt = await f.text(); const data = JSON.parse(txt); if(data && Array.isArray(data.assets)){ if(confirm(`Anda akan MENIMPA SEMUA data saat ini dengan ${data.assets.length} item dari file backup. Lanjutkan?`)) { 
-      showToast("Restore = Import JSON. Memproses...", false);
-      await processBatchImport(data.assets);
-    } } else showToast('File JSON tidak valid untuk restore', true); }catch(err){ showToast('Gagal: '+err.message, true); } els.fileInput.value=''; });
-
-
-    function parseCsv(txt){ const lines = txt.split(/\r?\n/).filter(l=>l.trim()); if(lines.length<2) return showToast('CSV kosong', true); const heads = splitCsvLine(lines[0]); const arr=[]; for(let i=1;i<lines.length;i++){ const cols = splitCsvLine(lines[i]); if(cols.length<2) continue; const obj = { name: cols[1]||'Unknown', type: cols[2]||'Other', serial: cols[3]||'', qty: Number(cols[4]||1), software: cols[5]||'', pic: cols[6]||'', location: cols[7]||'', purchaseDate: cols[8]||'', warrantyUntil: cols[9]||'', qcStatus: cols[10]||'Belum QC', notes: cols[11]||'' }; arr.push(obj); }
-      processBatchImport(arr);
-    }
-
-    function splitCsvLine(line){ const res=[]; let cur=''; let inq=false; for(let i=0;i<line.length;i++){ const ch=line[i]; if(ch==='"'){ if(inq && line[i+1]==='"'){ cur+='"'; i++; continue; } inq=!inq; continue; } if(ch===',' && !inq){ res.push(cur); cur=''; } else cur+=ch; } res.push(cur); return res.map(s=>s.replace(/^"|"$/g,'')); }
-    
-    els.globalSearch.addEventListener('input', debounce(e=>{ render(e.target.value); window.highlightSearch && window.highlightSearch(e.target.value); }, 180));
-
-    // QC UI (v8 Syntax)
-    qcTemplate.forEach(it=>{ const el=document.createElement('label'); el.style.display='flex'; el.style.alignItems='center'; el.style.gap='8px'; const cb = document.createElement('input'); cb.type='checkbox'; cb.dataset.k=it.k; const span=document.createElement('span'); span.className='small'; span.textContent = it.l; el.appendChild(cb); el.appendChild(span); els.qcListEl.appendChild(el); });
-    
-    els.saveQcBtn.addEventListener('click', async () => { 
-      const target = document.getElementById('qcTargetId').value.trim(); 
-      if(!target) return showToast('Masukkan Asset ID pada field QC target.', true); 
-      const idx = db.assets.findIndex(a=>a.id===target); 
-      if(idx<0) return showToast('Asset ID tidak ditemukan di data lokal.', true); 
-      
-      const checked = {}; 
-      els.qcListEl.querySelectorAll('input[type=checkbox]').forEach(cb=> checked[cb.dataset.k]=!!cb.checked); 
-      
-      const docRef = fb_assetsCollectionRef.doc(target); // v8 doc
-      try {
-          await docRef.update({ qc: checked, qcStatus: els.qcStatusEl.value }); // v8 update
-          showToast('QC tersimpan pada asset '+target);
-      } catch (e) {
-          console.error("Error saving QC:", e);
-          showToast("Gagal simpan QC: " + e.message, true);
-      }
-    });
-    els.clearQcBtn.addEventListener('click', ()=> els.qcListEl.querySelectorAll('input[type=checkbox]').forEach(cb=>cb.checked=false));
-
-
-    // Excel with SheetJS (sama)
-    els.downloadExcelBtn.addEventListener('click', ()=>{ try{ if(typeof XLSX === 'undefined') throw new Error('SheetJS tidak tersedia'); const data = db.assets.map(a=>({ ID:a.id, Nama:a.name, Jenis:a.type, Serial:a.serial, Qty:a.qty, Software:a.software, PIC:a.pic, Lokasi:a.location, Purchase:a.purchaseDate, Warranty:a.warrantyUntil, QC:a.qcStatus })); const ws = XLSX.utils.json_to_sheet(data); const wb = XLSX.utils.book_new(); XLSX.utils.book_append_sheet(wb, ws, 'Assets'); XLSX.writeFile(wb, 'Zeppelin_Asset_'+Date.now()+'.xlsx'); showToast('Excel diunduh'); }catch(e){ showToast('Gagal generate Excel: '+e.message, true); } });
-
-    // Dashboard (sama)
-    function updateDashboard(){ const total = db.assets.reduce((s,a)=>s + (Number(a.qty)||0),0); const pcCount = db.assets.reduce((s,a)=> s + ((a.type==='Laptop' || a.type==='Desktop') ? Number(a.qty)||0 : 0), 0); let lulus=0,gagal=0,belum=0; db.assets.forEach(a=>{ if(!a.qcStatus || a.qcStatus==='Belum QC') belum += Number(a.qty)||0; else if(a.qcStatus==='Lulus QC') lulus += Number(a.qty)||0; else if(a.qcStatus==='Gagal QC') gagal += Number(a.qty)||0; }); els.kpiTotal.textContent = total; els.kpiPC.textContent = pcCount; els.kpiQC.textContent = `L:${lulus} G:${gagal} B:${belum}`;
-      const categories = {}; db.assets.forEach(a=> categories[a.type] = (categories[a.type]||0) + (Number(a.qty)||0)); const labels = Object.keys(categories); const values = labels.map(l=>categories[l]); try{ if(window.Chart){ if(barChart){ barChart.data.labels = labels; barChart.data.datasets[0].data = values; barChart.update(); } else { barChart = new Chart(els.barCanvas, { type:'bar', data:{ labels: labels.length?labels:['-'], datasets:[{ label:'Jumlah', data: values.length?values:[0], backgroundColor:'#ff7a18' }]}, options:{responsive:true,plugins:{legend:{display:false}}, scales:{y:{beginAtZero:true}}} }); } const pieData = [lulus,gagal,belum]; if(pieChart){ pieChart.data.datasets[0].data = pieData; pieChart.update(); } else { pieChart = new Chart(els.pieCanvas, { type:'pie', data:{ labels:['Lulus','Gagal','Belum'], datasets:[{ data: pieData, backgroundColor:['#1db954','#ff4d4f','#ffd166'] }]}, options:{responsive:true,plugins:{legend:{position:'bottom'}}} }); } } }catch(e){ /* ignore chart errors */ }
-    }
-
-    // expose minimal API for external scripts
-    return { 
-      loadFirestoreData,
-      detachFirestoreListener,
-      render, 
-      getDB: ()=>db, 
-      updateDashboard, 
-      clearForm, 
-      qcTemplate, // (BARU) Ekspor template QC
     };
-  })(elements); // (PERBAIKAN) Pass elements object
-
-  window.ZeppelinApp = ZeppelinApp;
+    window.requestAnimationFrame(step);
+  }
   
-  // (PERBAIKAN) Pindahkan Logika Skrip ke-2 ke sini
-  (function(els){
+  function animateCurrencyUp(el, to) {
+    let from = 0;
+    const duration = 1200;
+    const start = performance.now();
     
-    window.refreshFilterOptions = function() { 
-      if (!window.ZeppelinApp) return;
-      const assets = window.ZeppelinApp.getDB().assets || [];
-      const typeSet=new Set(); const locSet=new Set(); const picSet=new Set(); 
-      assets.forEach(a=>{ if(a.type) typeSet.add(a.type); if(a.location) locSet.add(a.location); if(a.pic) picSet.add(a.pic); }); 
-      const selType=$('#filterType'); const selLoc=$('#filterLoc'); const selPic=$('#filterPic'); 
-      // (PERBAIKAN) Tambahkan null check
-      if(!selType || !selLoc || !selPic) return; 
-      
-      [selType,selLoc,selPic].forEach(s=>{ 
-        if(s) { while(s.options.length>1) s.remove(1); }
-      }); 
-      
-      const sortSet = (s) => Array.from(s).sort((a,b) => a.localeCompare(b));
-      
-      sortSet(typeSet).forEach(v=> selType.add(new Option(v,v))); 
-      sortSet(locSet).forEach(v=> selLoc.add(new Option(v,v))); 
-      sortSet(picSet).forEach(v=> selPic.add(new Option(v,v))); 
-    }
-
-    function applyFiltersAndSearch(){ 
-      const search = ($('#globalSearch') && $('#globalSearch').value) || ''; 
-      const fType = ($('#filterType') && $('#filterType').value) || ''; 
-      const fQc = ($('#filterQc') && $('#filterQc').value) || ''; 
-      const fLoc = ($('#filterLoc') && $('#filterLoc').value) || ''; 
-      const fPic = ($('#filterPic') && $('#filterPic').value) || ''; 
-      
-      if(typeof window.ZeppelinApp.render === 'function'){ 
-        window.ZeppelinApp.render(search);
-        const rows = $all('#assetTable tbody tr'); 
-        rows.forEach(r=>{ 
-          const t = r; 
-          let show = true; 
-          try {
-              if(fType && t.children[2] && !t.children[2].textContent.includes(fType)) show=false; 
-              if(fQc && t.children[8] && !t.children[8].textContent.includes(fQc)) show=false; 
-              if(fLoc && t.children[7] && !t.children[7].textContent.includes(fLoc)) show=false; 
-              if(fPic && t.children[6] && !t.children[6].textContent.includes(fPic)) show=false; 
-          } catch (e) {
-              console.warn("Error applying filter to row: ", e, r);
-          }
-          t.style.display = show ? '' : 'none'; 
-        });
+    const step = (timestamp) => {
+      const progress = Math.min((timestamp - start) / duration, 1);
+      const val = Math.floor(progress * to);
+      if (el) el.textContent = formatRupiah(val); // Gunakan fungsi formatRupiah
+      if (progress < 1) {
+        window.requestAnimationFrame(step);
       }
-      highlightSearch(search);
-    }
-
-    window.highlightSearch = function(q){ 
-      const tbody = document.querySelector('#assetTable tbody'); 
-      if(!tbody) return; 
-      const ql=(q||'').trim().toLowerCase(); 
-      tbody.querySelectorAll('tr').forEach(tr=>{ 
-        Array.from(tr.children).forEach((td, idx)=>{ 
-          if(idx === tr.children.length-1) return; 
-          const text = td.getAttribute('data-full') || td.textContent; 
-          if(ql && text.toLowerCase().includes(ql)){ 
-            const regex = new RegExp('('+escapeRegex(ql)+')','gi'); 
-            td.innerHTML = window.escapeHtml(text).replace(regex,'<mark>$1</mark>'); 
-          } else { 
-            td.textContent = text; 
-          } 
-        }); 
-      }); 
-    }
-    function escapeRegex(s){ return s.replace(/[-\/\\^$*+?.()|[\]{}]/g, '\\$&'); }
-
-    function enableSorting(){ const headers = $all('#assetTable thead th'); headers.forEach((th, idx)=>{ if(idx === headers.length-1) return; th.style.cursor='pointer'; th.addEventListener('click', ()=>{ const tbody = document.querySelector('#assetTable tbody'); if(!tbody) return; const rows = Array.from(tbody.querySelectorAll('tr')).filter(r=>r.style.display !== 'none'); const asc = th.dataset.asc === 'true' ? false : true; th.dataset.asc = asc; rows.sort((a,b)=>{ const aText = a.children[idx].textContent.trim().toLowerCase(); const bText = b.children[idx].textContent.trim().toLowerCase(); if(!isNaN(parseFloat(aText)) && !isNaN(parseFloat(bText))){ return asc ? (parseFloat(aText) - parseFloat(bText)) : (parseFloat(bText) - parseFloat(aText)); } return asc ? aText.localeCompare(bText) : bText.localeCompare(aText); }); rows.forEach(r=>tbody.appendChild(r)); }); }); }
-
-    function attachPrintReport(){ 
-      const btn = els.printReportBtn; 
-      if(!btn) return; 
-      btn.addEventListener('click', ()=>{ 
-        if (!window.ZeppelinApp) return;
-        const db = window.ZeppelinApp.getDB();
-        const assets = db.assets || []; 
-        const total = assets.reduce((s,a)=> s + (Number(a.qty)||0), 0); 
-        const pcCount = db.assets.reduce((s,a)=> s + ((a.type==='Laptop' || a.type==='Desktop') ? Number(a.qty)||0 : 0), 0); 
-        const date = new Date().toLocaleString('id-ID'); 
-        let html = `<!doctype html><html><head><meta charset="utf-8"><title>Laporan Asset</title><style>body{font-family:Inter,Arial,Helvetica,sans-serif;color:#0b1220;margin:24px}.header{display:flex;align-items:center;gap:16px;margin-bottom:12px}.logo{width:56px;height:56px;border-radius:8px;background:#ff7a18;display:flex;align-items:center;justify-content:center;font-weight:800;color:#08101a}h1{margin:0;font-size:20px}.muted{color:#6b7280;font-size:13px}.kpi-row{display:flex;gap:12px;margin:12px 0}.kpi{padding:10px;border-radius:8px;border:1px solid #e6e9ef;min-width:160px;text-align:center}table{width:100%;border-collapse:collapse;margin-top:12px;font-size:12px}th,td{padding:8px;border:1px solid #eee;text-align:left}</style></head><body>`; 
-        html += `<div class="header"><div class="logo">Z</div><div><h1>Laporan Asset — Zeppelin</h1><div class="muted">Dicetak: ${date}</div></div></div>`; 
-        html += `<div class="kpi-row"><div class="kpi"><strong>Total Asset</strong><div>${total}</div></div><div class="kpi"><strong>PC (Laptop/Desktop)</strong><div>${pcCount}</div></div></div>`; 
-        html += `<table><thead><tr><th>ID</th><th>Nama</th><th>Jenis</th><th>Serial</th><th>Qty</th><th>PIC</th><th>Lokasi</th><th>QC</th></tr></thead><tbody>`; 
-        assets.forEach(a=>{ html += `<tr><td>${window.escapeHtml(a.id)}</td><td>${window.escapeHtml(a.name)}</td><td>${window.escapeHtml(a.type)}</td><td>${window.escapeHtml(a.serial||'')}</td><td>${a.qty}</td><td>${window.escapeHtml(a.pic||'')}</td><td>${window.escapeHtml(a.location||'')}</td><td>${window.escapeHtml(a.qcStatus||'')}</td></tr>`; }); 
-        html += `</tbody></table></body></html>`; 
-        const win = window.open('','_blank','width=900,height=700'); 
-        if(win){ win.document.write(html); win.document.close(); setTimeout(()=> win.print(), 500); } else showToast('Pop-up diblokir. Izinkan pop-up untuk mencetak.', true); 
-      }); 
-    }
-
-    function attachFilterHandlers(){ ['#globalSearch','#filterType','#filterQc','#filterLoc','#filterPic'].forEach(id=>{ const el=$(id); if(el) { el.addEventListener('input', ()=> applyFiltersAndSearch()); el.addEventListener('change', ()=> applyFiltersAndSearch()); } }); }
-
-    // Panggil fungsi-fungsi ini
-    attachFilterHandlers(); 
-    enableSorting(); 
-    attachPrintReport(); 
-    
-  })(elements); // (PERBAIKAN) Pass elements object
+    };
+    window.requestAnimationFrame(step);
+  }
+  // ======================================================
   
-
-  // Inisialisasi Firebase dan Auth
-  async function initFirebase() {
-      try {
-          fb_app = firebase.initializeApp(firebaseConfig);
-          fb_db_firestore = firebase.firestore();
-          fb_auth = firebase.auth();
-          console.log("Firebase App Initialized (v8). Waiting for Auth...");
-
-          // Listener status otentikasi
-          fb_auth.onAuthStateChanged(async (user) => {
-              if (user && user.uid === ADMIN_UID) {
-                  // --- USER ADALAH ADMIN ---
-                  console.log("Admin user authenticated:", user.uid);
-                  elements.authMsg.textContent = "Verifikasi Berhasil!";
-                  elements.authSubMsg.textContent = "Selamat datang, Admin. Memuat data aset...";
-                  
-                  fb_userId = user.uid;
-                  
-                  fb_assetsCollectionRef = fb_db_firestore.collection('users').doc(fb_userId).collection('assets');
-                  console.log("Firestore collection path:", `users/${fb_userId}/assets`);
-
-                  elements.userEmailDisplay.textContent = user.email;
-                  
-                  await ZeppelinApp.loadFirestoreData();
-                  elements.authScreen.style.display = 'none';
-                  elements.appContent.style.display = 'block';
-
-              } else {
-                  // --- BUKAN ADMIN / TIDAK LOGIN ---
-                  if(user) {
-                      console.log("Access Denied. User is not admin:", user.uid);
-                      await fb_auth.signOut(); 
-                  } else {
-                      console.log("Access Denied. User not logged in.");
-                  }
-                  
-                  elements.authSpinner.style.display = 'none';
-                  elements.authMsg.textContent = "Akses Ditolak";
-                  elements.authSubMsg.textContent = "Anda harus login sebagai Admin untuk mengakses halaman ini.";
-                  elements.authBackBtn.style.display = 'inline-block';
-                  
-                  fb_userId = null;
-                  elements.authScreen.style.display = 'flex'; 
-                  elements.appContent.style.display = 'none'; 
-                  elements.loader.style.display = 'none';
-                  ZeppelinApp.detachFirestoreListener(); 
-              }
-          });
-
-          // Event listener untuk logout
-          elements.logoutBtn.addEventListener('click', async () => {
-              if (confirm("Apakah Anda yakin ingin logout?")) {
-                  await fb_auth.signOut();
-              }
-          });
-
-      } catch (e) {
-          console.error("Firebase initialization failed:", e);
-          elements.authSpinner.style.display = 'none';
-          elements.authMsg.textContent = "Error Firebase";
-          elements.authSubMsg.textContent = "Gagal inisialisasi Firebase: " + e.message;
-          elements.authBackBtn.style.display = 'inline-block';
-      }
+  function formatRupiah(angka) {
+    if (isNaN(angka)) return "Rp 0";
+    return new Intl.NumberFormat('id-ID', {
+      style: 'currency',
+      currency: 'IDR',
+      minimumFractionDigits: 0,
+      maximumFractionDigits: 0
+    }).format(angka);
+  }
+  function formatDate(isoString) {
+    if (!isoString) return '-';
+    try {
+      return new Date(isoString).toLocaleDateString('id-ID', {
+        day: '2-digit', month: 'short', year: 'numeric'
+      });
+    } catch (e) {
+      return isoString; // fallback
+    }
   }
 
-  // Mulai aplikasi
-  initFirebase();
+  // --- Variabel Global Aplikasi ---
+  let fb_app, fb_db, fb_auth, fb_userId, fb_assetsCollectionRef;
+  let allAssetsCache = [];
+  let assetListener = null;
+  let categoryChartInstance = null;
+  let statusChartInstance = null;
+  let currentEditingId = null;
+  
+  // ==================================================================
+  // TITIK MASUK UTAMA APLIKASI
+  // ==================================================================
+  window.addEventListener('load', () => {
+    // 1. Inisialisasi Firebase
+    try {
+      fb_app = firebase.initializeApp(firebaseConfig);
+      fb_db = firebase.firestore();
+      fb_auth = firebase.auth();
+      console.log("Firebase App Initialized (v8). Waiting for Auth...");
+      
+      // 2. Pasang Listener Otentikasi
+      fb_auth.onAuthStateChanged(authVerificationHandler);
+      
+      // 3. Pasang Semua Event Listener UI
+      attachUIListeners();
+
+    } catch (e) {
+      console.error("Firebase initialization failed:", e);
+      showAuthError("Error Firebase", "Gagal inisialisasi Firebase: " + e.message);
+    }
+  });
+
+  // ==================================================================
+  // FUNGSI INTI
+  // ==================================================================
+
+  /**
+   * Menangani status login user. Ini adalah gerbang utama aplikasi.
+   */
+  async function authVerificationHandler(user) {
+    const els = {
+      authScreen: $("#authVerificationScreen"),
+      authMsg: $("#authMessage"),
+      authSubMsg: $("#authSubMessage"),
+      authBackBtn: $("#authBackButton"),
+      authSpinner: $("#authSpinner"),
+      appContainer: $("#appContainer"),
+      userEmailDisplay: $("#userEmailDisplay")
+    };
+
+    if (user && user.uid === ADMIN_UID) {
+        // --- USER ADALAH ADMIN ---
+        console.log("Admin user authenticated:", user.uid);
+        els.authMsg.textContent = "Verifikasi Berhasil!";
+        els.authSubMsg.textContent = "Selamat datang, Admin. Memuat data aset...";
+        
+        fb_userId = user.uid;
+        
+        // Tentukan path ke koleksi data
+        fb_assetsCollectionRef = fb_db.collection('users').doc(fb_userId).collection('assets');
+        console.log("Firestore collection path:", `users/${fb_userId}/assets`);
+
+        els.userEmailDisplay.textContent = user.email;
+        
+        // Muat data aset
+        await loadAssetData();
+        
+        // Tampilkan aplikasi
+        els.authScreen.style.display = 'none';
+        els.appContainer.style.display = 'flex';
+
+    } else {
+        // --- BUKAN ADMIN / TIDAK LOGIN ---
+        if(user) {
+            console.log("Access Denied. User is not admin:", user.uid);
+            await fb_auth.signOut(); 
+        } else {
+            console.log("Access Denied. User not logged in.");
+        }
+        
+        showAuthError("Akses Ditolak", "Anda harus login sebagai Admin untuk mengakses halaman ini.");
+        
+        fb_userId = null;
+        els.authScreen.style.display = 'flex'; 
+        els.appContainer.style.display = 'none'; 
+        $('#loader').style.display = 'none';
+        if (assetListener) assetListener(); // Hentikan listener data
+    }
+  }
+
+  /**
+   * Menampilkan pesan error di layar verifikasi.
+   */
+  function showAuthError(title, message) {
+    $("#authSpinner").style.display = 'none';
+    $("#authMessage").textContent = title;
+    $("#authSubMessage").textContent = message;
+    $("#authBackButton").style.display = 'inline-block';
+  }
+
+  /**
+   * Memasang semua event listener untuk UI (Tombol, Form, Navigasi).
+   */
+  function attachUIListeners() {
+    // Navigasi Sidebar
+    $all('.nav-item').forEach(item => {
+      item.addEventListener('click', (e) => {
+        e.preventDefault();
+        const targetId = item.getAttribute('href').substring(1); // e.g., 'dashboard'
+        
+        // Hapus 'active' dari semua
+        $all('.nav-item').forEach(nav => {
+          // PERBAIKAN 4: Menghapus 'border-l-4' dan 'border-accent'
+          nav.classList.remove('active', 'bg-dark-bg');
+          nav.classList.add('text-dark-muted');
+        });
+        $all('.page').forEach(page => page.classList.remove('active'));
+
+        // Tambah 'active' ke target
+        // PERBAIKAN 4: Menghapus 'border-l-4' dan 'border-accent'
+        item.classList.add('active', 'bg-dark-bg');
+        item.classList.remove('text-dark-muted');
+        $('#page-' + targetId).classList.add('active');
+      });
+    });
+
+    // Tombol Logout
+    $('#logoutBtn').addEventListener('click', async () => {
+      if (confirm("Apakah Anda yakin ingin logout?")) {
+        await fb_auth.signOut();
+      }
+    });
+
+    // Tombol Tambah Aset (Buka Modal)
+    $('#addAssetBtn').addEventListener('click', () => openAssetModal());
+
+    // Tombol Modal Aset
+    $('#closeAssetModal').addEventListener('click', () => $('#assetModal').classList.remove('active'));
+    $('#cancelAssetModal').addEventListener('click', () => $('#assetModal').classList.remove('active'));
+    $('#assetForm').addEventListener('submit', saveAsset);
+
+    // Tombol Modal Lihat Detail
+    $('#closeViewModal').addEventListener('click', () => $('#viewAssetModal').classList.remove('active'));
+
+    // Filter & Search
+    $('#searchInput').addEventListener('input', debounce(() => renderAssetTable(allAssetsCache), 300));
+    $('#filterStatus').addEventListener('change', () => renderAssetTable(allAssetsCache));
+    $('#filterCategory').addEventListener('change', () => renderAssetTable(allAssetsCache));
+
+    // Tombol Aksi di Tabel (View, Edit, Delete)
+    $('#asset-table-body').addEventListener('click', handleTableActions);
     
+    // Tombol Export
+    $('#exportExcelBtn').addEventListener('click', exportToExcel);
+  }
+
+  // ==================================================================
+  // FUNGSI DATA (CRUD & RENDER)
+  // ==================================================================
+
+  /**
+   * (CREATE / UPDATE) Menyimpan data aset ke Firestore.
+   */
+  async function saveAsset(e) {
+    e.preventDefault();
+    const loader = $('#loader');
+    loader.style.display = 'flex';
+
+    const assetData = {
+      name: $('#assetName').value,
+      serial: $('#serialNumber').value,
+      category: $('#category').value,
+      status: $('#status').value,
+      pic: $('#pic').value,
+      purchaseDate: $('#purchaseDate').value,
+      cost: parseFloat($('#cost').value) || 0,
+      vendor: $('#vendor').value,
+      notes: $('#notes').value,
+      lastUpdate: firebase.firestore.FieldValue.serverTimestamp()
+    };
+
+    const assetId = $('#assetId').value;
+    let logMessage = "";
+
+    try {
+      if (assetId) {
+        // --- UPDATE ---
+        const docRef = fb_assetsCollectionRef.doc(assetId);
+        const oldDoc = allAssetsCache.find(a => a.id === assetId);
+        if (oldDoc && oldDoc.status !== assetData.status) {
+          logMessage = `Status diubah dari '${oldDoc.status}' menjadi '${assetData.status}'.`;
+        } else {
+          logMessage = "Detail aset diperbarui.";
+        }
+        
+        await docRef.update(assetData);
+        await addAssetLog(assetId, logMessage, "Update");
+        showToast('Aset berhasil diperbarui');
+        
+      } else {
+        // --- CREATE ---
+        assetData.createdAt = firebase.firestore.FieldValue.serverTimestamp();
+        const docRef = await fb_assetsCollectionRef.add(assetData);
+        logMessage = `Aset dibuat dengan status '${assetData.status}'.`;
+        await addAssetLog(docRef.id, logMessage, "Create");
+        showToast('Aset baru berhasil ditambahkan');
+      }
+      
+      $('#assetModal').classList.remove('active');
+      
+    } catch (e) {
+      console.error("Error saving asset: ", e);
+      showToast('Gagal menyimpan aset: ' + e.message, true);
+    } finally {
+      loader.style.display = 'none';
+    }
+  }
+
+  /**
+   * (READ) Memuat data aset dari Firestore.
+   */
+  function loadAssetData() {
+    if (assetListener) assetListener(); // Hentikan listener lama
+    
+    const loader = $('#loader');
+    loader.style.display = 'flex';
+
+    assetListener = fb_assetsCollectionRef.orderBy('name', 'asc').onSnapshot((snapshot) => {
+        console.log(`(DATA AKTUAL) Menerima ${snapshot.docs.length} dokumen aset.`);
+        allAssetsCache = snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() }));
+        
+        renderAssetTable(allAssetsCache);
+        updateDashboard(allAssetsCache);
+        
+        loader.style.display = 'none';
+    }, (error) => {
+        console.error("Error listening to Firestore:", error);
+        showToast('Gagal memuat data aset: ' + error.message, true);
+        loader.style.display = 'none';
+    });
+  }
+
+  /**
+   * (DELETE) Menghapus aset dari Firestore.
+   */
+  async function deleteAsset(id) {
+    if (!id) return;
+    const asset = allAssetsCache.find(a => a.id === id);
+    if (!asset) {
+      showToast('Error: Aset tidak ditemukan.', true);
+      return;
+    }
+
+    if (!confirm(`Yakin ingin menghapus aset ini?\n\nNama: ${asset.name}\nSerial: ${asset.serial}`)) {
+      return;
+    }
+    
+    const loader = $('#loader');
+    loader.style.display = 'flex';
+    
+    try {
+      await fb_assetsCollectionRef.doc(id).delete();
+      showToast('Aset berhasil dihapus');
+    } catch (e) {
+      console.error("Error deleting asset: ", e);
+      showToast('Gagal menghapus aset: ' + e.message, true);
+    } finally {
+      loader.style.display = 'none';
+    }
+  }
+  
+  /**
+   * (Helper) Menambah log ke sub-koleksi aset.
+   */
+  async function addAssetLog(assetId, message, type) {
+    if (!assetId) return;
+    try {
+      const logData = {
+        message: message,
+        type: type,
+        timestamp: firebase.firestore.FieldValue.serverTimestamp(),
+        adminEmail: fb_auth.currentUser.email
+      };
+      await fb_assetsCollectionRef.doc(assetId).collection('history').add(logData);
+    } catch (e) {
+      console.error("Error writing asset log: ", e);
+    }
+  }
+
+
+  // ==================================================================
+  // FUNGSI RENDER & UI
+  // ==================================================================
+
+  /**
+   * Merender ulang isi tabel aset berdasarkan data dan filter.
+   */
+  function renderAssetTable(assets) {
+    const tableBody = $('#asset-table-body');
+    if (!tableBody) return;
+    
+    const searchTerm = $('#searchInput').value.toLowerCase();
+    const statusFilter = $('#filterStatus').value;
+    const categoryFilter = $('#filterCategory').value;
+
+    const filteredAssets = assets.filter(asset => {
+      const searchMatch = !searchTerm ||
+        (asset.name && asset.name.toLowerCase().includes(searchTerm)) ||
+        (asset.serial && asset.serial.toLowerCase().includes(searchTerm)) ||
+        (asset.pic && asset.pic.toLowerCase().includes(searchTerm));
+      
+      const statusMatch = !statusFilter || asset.status === statusFilter;
+      const categoryMatch = !categoryFilter || asset.category === categoryFilter;
+
+      return searchMatch && statusMatch && categoryMatch;
+    });
+
+    if (filteredAssets.length === 0) {
+      tableBody.innerHTML = `<tr><td colspan="7" class="p-6 text-center text-dark-muted">Tidak ada aset yang ditemukan.</td></tr>`;
+      return;
+    }
+
+    tableBody.innerHTML = filteredAssets.map(asset => {
+      let statusClass = '';
+      switch (asset.status) {
+        case 'Deployed': statusClass = 'bg-blue-600/20 text-blue-400'; break;
+        case 'In Stock': statusClass = 'bg-yellow-600/20 text-yellow-400'; break;
+        case 'In Repair': statusClass = 'bg-orange-600/20 text-orange-400'; break;
+        case 'Disposed': statusClass = 'bg-gray-600/20 text-gray-400'; break;
+        default: statusClass = 'bg-dark-border text-dark-muted';
+      }
+
+      return `
+        <tr class="hover:bg-dark-bg/30">
+          <td class="p-4 align-top">
+            <div class="font-bold text-white">${asset.name || '-'}</div>
+            <div class="text-xs text-dark-muted">${asset.id}</div>
+          </td>
+          <td class="p-4 align-top text-sm">${asset.category || '-'}</td>
+          <td class="p-4 align-top">
+            <span class="px-3 py-1 text-xs font-bold rounded-full ${statusClass}">
+              ${asset.status || '-'}
+            </span>
+          </td>
+          <td class="p-4 align-top text-sm font-mono">${asset.serial || '-'}</td>
+          <td class="p-4 align-top text-sm">${asset.pic || '-'}</td>
+          <td class="p-4 align-top text-sm">${formatDate(asset.purchaseDate)}</td>
+          <td class="p-4 align-top text-right">
+            <div class="flex items-center justify-end gap-2">
+              <button data-action="view" data-id="${asset.id}" class="action-btn bg-dark-card text-dark-muted border border-dark-border hover:border-blue-500 hover:text-blue-500">Lihat</button>
+              <button data-action="edit" data-id="${asset.id}" class="action-btn bg-dark-card text-dark-muted border border-dark-border hover:border-accent hover:text-accent">Edit</button>
+              <button data-action="delete" data-id="${asset.id}" class="action-btn bg-dark-card text-dark-muted border border-dark-border hover:border-error hover:text-error">Hapus</button>
+            </div>
+          </td>
+        </tr>
+      `;
+    }).join('');
+  }
+
+  /**
+   * Memperbarui kartu KPI dan Chart di Dashboard.
+   */
+  function updateDashboard(assets) {
+    let totalValue = 0;
+    let deployedCount = 0;
+    let inStockCount = 0;
+    const categoryCounts = {};
+    const statusCounts = {};
+
+    assets.forEach(asset => {
+      totalValue += (asset.cost || 0);
+      
+      if (asset.status === 'Deployed') deployedCount++;
+      if (asset.status === 'In Stock') inStockCount++;
+
+      const category = asset.category || 'Lainnya';
+      categoryCounts[category] = (categoryCounts[category] || 0) + 1;
+      
+      const status = asset.status || 'Unknown';
+      statusCounts[status] = (statusCounts[status] || 0) + 1;
+    });
+
+    // Update KPI
+    // PERBAIKAN 2: Menggunakan fungsi animasi
+    animateCountUp($('#kpi-total-assets'), assets.length);
+    animateCurrencyUp($('#kpi-total-value'), totalValue);
+    animateCountUp($('#kpi-deployed'), deployedCount);
+    animateCountUp($('#kpi-in-stock'), inStockCount);
+
+    // Update Chart Kategori (Bar)
+    const catCtx = $('#categoryChart').getContext('2d');
+    const catLabels = Object.keys(categoryCounts);
+    const catData = Object.values(categoryCounts);
+    
+    if (categoryChartInstance) categoryChartInstance.destroy();
+    categoryChartInstance = new Chart(catCtx, {
+      type: 'bar',
+      data: {
+        labels: catLabels,
+        datasets: [{
+          label: 'Jumlah Aset',
+          data: catData,
+          backgroundColor: '#ff7a18',
+          borderRadius: 4,
+        }]
+      },
+      options: {
+        responsive: true,
+        plugins: { legend: { display: false } },
+        scales: {
+          y: { beginAtZero: true, ticks: { color: '#94a3b8' }, grid: { color: '#334155' } },
+          x: { ticks: { color: '#94a3b8' }, grid: { display: false } }
+        }
+      }
+    });
+
+    // Update Chart Status (Doughnut)
+    const statusCtx = $('#statusChart').getContext('2d');
+    const statusLabels = Object.keys(statusCounts);
+    const statusData = Object.values(statusCounts);
+    
+    if (statusChartInstance) statusChartInstance.destroy();
+    statusChartInstance = new Chart(statusCtx, {
+      type: 'doughnut',
+      data: {
+        labels: statusLabels,
+        datasets: [{
+          data: statusData,
+          backgroundColor: ['#3b82f6', '#f59e0b', '#f97316', '#6b7280'],
+          borderColor: '#1e293b',
+          borderWidth: 3,
+        }]
+      },
+      options: {
+        responsive: true,
+        plugins: {
+          legend: { position: 'bottom', labels: { color: '#94a3b8', boxWidth: 12, padding: 20 } }
+        }
+      }
+    });
+  }
+
+  /**
+   * Menangani klik pada tombol di dalam tabel aset.
+   */
+  function handleTableActions(e) {
+    const target = e.target.closest('button[data-action]');
+    if (!target) return;
+
+    const action = target.dataset.action;
+    const id = target.dataset.id;
+    const asset = allAssetsCache.find(a => a.id === id);
+
+    if (!asset) {
+      showToast('Error: Aset tidak ditemukan lagi.', true);
+      return;
+    }
+
+    if (action === 'view') {
+      openViewModal(asset);
+    } else if (action === 'edit') {
+      openAssetModal(asset);
+    } else if (action === 'delete') {
+      deleteAsset(id);
+    }
+  }
+
+  /**
+   * Membuka dan mengisi modal untuk Tambah/Edit Aset.
+   */
+  function openAssetModal(asset = null) {
+    const modal = $('#assetModal');
+    const form = $('#assetForm');
+    form.reset();
+    
+    if (asset) {
+      // --- MODE EDIT ---
+      currentEditingId = asset.id;
+      $('#assetModalTitle').textContent = 'Edit Aset';
+      $('#assetId').value = asset.id;
+      $('#assetName').value = asset.name || '';
+      $('#serialNumber').value = asset.serial || '';
+      $('#category').value = asset.category || 'Lainnya';
+      $('#status').value = asset.status || 'In Stock';
+      $('#pic').value = asset.pic || '';
+      $('#purchaseDate').value = asset.purchaseDate || '';
+      $('#cost').value = asset.cost || 0;
+      $('#vendor').value = asset.vendor || '';
+      $('#notes').value = asset.notes || '';
+    } else {
+      // --- MODE TAMBAH ---
+      currentEditingId = null;
+      $('#assetModalTitle').textContent = 'Tambah Aset Baru';
+      $('#assetId').value = '';
+    }
+    modal.classList.add('active');
+  }
+  
+  /**
+   * Membuka dan mengisi modal untuk Lihat Detail Aset.
+   */
+  async function openViewModal(asset) {
+    const modal = $('#viewAssetModal');
+    
+    // Isi info dasar
+    $('#viewModalTitle').textContent = `Detail: ${asset.name}`;
+    $('#view-assetName').textContent = asset.name || '-';
+    $('#view-serialNumber').textContent = asset.serial || '-';
+    $('#view-category').textContent = asset.category || '-';
+    $('#view-status').textContent = asset.status || '-';
+    $('#view-pic').textContent = asset.pic || '-';
+    $('#view-purchaseDate').textContent = formatDate(asset.purchaseDate);
+    $('#view-cost').textContent = formatRupiah(asset.cost || 0);
+    $('#view-vendor').textContent = asset.vendor || '-';
+    $('#view-notes').textContent = asset.notes || '(Tidak ada catatan)';
+    
+    // Tampilkan modal
+    modal.classList.add('active');
+    
+    // Ambil dan tampilkan riwayat
+    const historyContainer = $('#view-history');
+    historyContainer.innerHTML = `<p class="text-dark-muted text-sm">Memuat riwayat...</p>`;
+    
+    try {
+      const historyQuery = fb_assetsCollectionRef.doc(asset.id).collection('history').orderBy('timestamp', 'desc').limit(10);
+      const snapshot = await historyQuery.get();
+      
+      if (snapshot.empty) {
+        historyContainer.innerHTML = `<p class="text-dark-muted text-sm">(Tidak ada riwayat tersimpan)</p>`;
+        return;
+      }
+      
+      historyContainer.innerHTML = snapshot.docs.map(doc => {
+        const log = doc.data();
+        const timestamp = log.timestamp ? log.timestamp.toDate().toLocaleString('id-ID') : 'Baru saja';
+        return `
+          <div class="text-sm">
+            <span class="font-bold text-accent">[${log.type}]</span>
+            <span class="text-dark-muted">${timestamp}</span>
+            <p class="text-white ml-2">${log.message} (by ${log.adminEmail || 'Admin'})</p>
+          </div>
+        `;
+      }).join('<hr class="border-dark-border/50 my-2">');
+
+    } catch (e) {
+      console.error("Error fetching asset history: ", e);
+      historyContainer.innerHTML = `<p class="text-error text-sm">Gagal memuat riwayat.</p>`;
+    }
+  }
+  
+  /**
+   * Meng-export data yang difilter ke Excel.
+   */
+  function exportToExcel() {
+    const searchTerm = $('#searchInput').value.toLowerCase();
+    const statusFilter = $('#filterStatus').value;
+    const categoryFilter = $('#filterCategory').value;
+
+    const filteredAssets = allAssetsCache.filter(asset => {
+      const searchMatch = !searchTerm ||
+        (asset.name && asset.name.toLowerCase().includes(searchTerm)) ||
+        (asset.serial && asset.serial.toLowerCase().includes(searchTerm)) ||
+        (asset.pic && asset.pic.toLowerCase().includes(searchTerm));
+      const statusMatch = !statusFilter || asset.status === statusFilter;
+      const categoryMatch = !categoryFilter || asset.category === categoryFilter;
+      return searchMatch && statusMatch && categoryMatch;
+    });
+
+    if (filteredAssets.length === 0) {
+      showToast('Tidak ada data untuk diexport', true);
+      return;
+    }
+
+    const dataToExport = filteredAssets.map(a => ({
+      'ID Aset': a.id,
+      'Nama Aset': a.name,
+      'Kategori': a.category,
+      'Status': a.status,
+      'Serial Number': a.serial,
+      'PIC': a.pic,
+      'Tgl Beli': a.purchaseDate,
+      'Harga Beli': a.cost,
+      'Vendor': a.vendor,
+      'Catatan': a.notes,
+      'Update Terakhir': a.lastUpdate ? a.lastUpdate.toDate().toLocaleString('id-ID') : '',
+    }));
+    
+    try {
+      const ws = XLSX.utils.json_to_sheet(dataToExport);
+      const wb = XLSX.utils.book_new();
+      XLSX.utils.book_append_sheet(wb, ws, 'Aset IT');
+      XLSX.writeFile(wb, `Export_Aset_IT_${new Date().toISOString().slice(0,10)}.xlsx`);
+      showToast('Data berhasil diexport ke Excel');
+    } catch(e) {
+      console.error("Gagal export Excel: ", e);
+      showToast('Gagal export Excel', true);
+    }
+  }
+
 </script>
 
 </body>
