@@ -243,8 +243,8 @@ mark{background:rgba(255,235,59,0.25);padding:0 2px;border-radius:2px}
     <div class="spinner" id="authSpinner"></div>
     <h3 id="authMessage">Memverifikasi Sesi Admin...</h3>
     <p id="authSubMessage">Mengecek otentikasi Anda dengan Firebase...</p>
-    <!-- Ganti URL ini jika lokasi index.html Anda berbeda -->
-    <a href="index.html" id="authBackButton">Kembali ke Admin Dashboard</a>
+    <!-- (PERBAIKAN) Menggunakan ../ untuk kembali ke root -->
+    <a href="../index.html" id="authBackButton">Kembali ke Admin Dashboard</a>
   </div>
 </div>
 
@@ -256,14 +256,14 @@ mark{background:rgba(255,235,59,0.25);padding:0 2px;border-radius:2px}
   <header>
   <div class="brand">
   <div id="logoWrap">
-  <img alt="Zeppelin Logo" class="logo-img" onerror="this.style.display='none';document.getElementById('logoFallback').style.display='flex'" src="asset.png"/>
-  <div class="logo-placeholder" id="logoFallback" style="display:none">Z</div>
+  <!-- (PERBAIKAN) Menghapus <img>, hanya pakai placeholder -->
+  <div class="logo-placeholder" id="logoFallback" style="display:flex">Z</div>
   </div>
   <div>
   <h1>Zeppelin — Asset Manager</h1>
   <div class="sub" id="subhead">
     <!-- (BARU) Breadcrumb -->
-    <span class="breadcrumb"><a href="index.html">Admin Dashboard</a> / Asset Manager</span>
+    <span class="breadcrumb"><a href="../index.html">Admin Dashboard</a> / Asset Manager</span>
   </div>
   </div>
   </div>
@@ -282,6 +282,7 @@ mark{background:rgba(255,235,59,0.25);padding:0 2px;border-radius:2px}
   <button class="btn" id="downloadExcelBtn">Download Excel</button>
   <button class="btn-ghost" id="backupBtn">Backup JSON</button>
   <button class="btn-ghost" id="restoreBtn">Restore JSON</button>
+  <button class="btn" id="printReportBtn" title="Cetak laporan PDF">Cetak Laporan (PDF)</button>
   <input accept="application/json, .json, .csv" id="fileInput" style="display:none" type="file"/>
   <div id="filterControls" style="display:flex;gap:8px;align-items:center;">
   <select class="search" id="filterType" title="Filter by jenis"><option value="">All Jenis</option></select>
@@ -433,635 +434,6 @@ mark{background:rgba(255,235,59,0.25);padding:0 2px;border-radius:2px}
   </defs>
 </svg>
 
-
-<!-- Firebase Integration & Core App Logic -->
-<script>
-  // Konfigurasi Firebase Anda dari index.html
-  const firebaseConfig = {
-      apiKey: "AIzaSyA9wgSalrlTcveIZi2i-WND86z1i9JYHKw",
-      authDomain: "it-support-53eeb.firebaseapp.com",
-      databaseURL: "https://it-support-53eeb-default-rtdb.firebaseio.com",
-      projectId: "it-support-53eeb",
-      storageBucket: "it-support-53eeb.firebasestorage.app",
-      messagingSenderId: "573924501146",
-      appId: "1:573924501146:web:12f34306ed675472322123",
-      measurementId: "G-33K6DDE1VR"
-  };
-  
-  // ID Admin dari index.html
-  const ADMIN_UID = "Ogy9lUbGHbSu8wYIYx2gQsTtFDF2";
-
-  /* Central constants and small helpers */
-  (function(){
-    function debounce(fn, ms){ let t; return function(){ clearTimeout(t); t=setTimeout(()=>fn.apply(this,arguments), ms||200); }; }
-    window.escapeHtml = function(s){ if(s==null) return ''; return String(s).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;'); };
-
-    // Firebase globals
-    let fb_app, fb_db_firestore, fb_auth, fb_userId, fb_assetsCollectionRef;
-    
-    // Elemen UI
-    const loader = document.getElementById('loader');
-    const authScreen = document.getElementById('authVerificationScreen');
-    const authMsg = document.getElementById('authMessage');
-    const authSubMsg = document.getElementById('authSubMessage');
-    const authBackBtn = document.getElementById('authBackButton');
-    const authSpinner = document.getElementById('authSpinner');
-    
-    const appContent = document.querySelector('.app-content');
-    const logoutBtn = document.getElementById('logoutBtn');
-    const userEmailDisplay = document.getElementById('userEmailDisplay');
-
-    // The main app is exposed as window.ZeppelinApp for debugging if needed
-    const ZeppelinApp = (function(){
-      let db = { assets: [] }; 
-      let firestoreListener = null; 
-      const qcTemplate = [
-        {k:'power', l:'Power on / Battery'}, {k:'screen', l:'Screen / Dead pixel'}, {k:'keyboard', l:'Keyboard / Touchpad'},
-        {k:'ram', l:'RAM capacity / detecting'}, {k:'storage', l:'Storage health / SMART'}, {k:'network', l:'Network adapter / Wi-Fi'},
-        {k:'gpu', l:'GPU / Display adapter'}, {k:'bios', l:'BIOS / Boot'}, {k:'os', l:'OS installed / activation'},
-        {k:'drivers', l:'Drivers up-to-date'}, {k:'antivirus', l:'Antivirus status / Whitelisted'}, {k:'vpn', l:'VPN (Radmin/VNC) installed'},
-        {k:'accurate', l:'Accurate / License'}
-      ];
-
-      // elements cached
-      const tbody = document.querySelector('#assetTable tbody');
-      const totalCountEl = document.getElementById('totalCount');
-      const kpiTotal = document.getElementById('kpiTotal');
-      const kpiPC = document.getElementById('kpiPC');
-      const kpiQC = document.getElementById('kpiQC');
-      const barCanvas = document.getElementById('barCategories');
-      const pieCanvas = document.getElementById('pieQc');
-
-      const nameEl = document.getElementById('name');
-      const typeEl = document.getElementById('itemType');
-      const serialEl = document.getElementById('serial');
-      const qtyEl = document.getElementById('qty');
-      const qcStatusEl = document.getElementById('qcStatus');
-      const softwareEl = document.getElementById('software');
-      const locEl = document.getElementById('location');
-      const picEl = document.getElementById('pic');
-      const purchaseEl = document.getElementById('purchaseDate');
-      const warrantyEl = document.getElementById('warrantyUntil');
-      const notesEl = document.getElementById('notes');
-
-      const addBtn = document.getElementById('addBtn');
-      const updateBtn = document.getElementById('updateBtn');
-      const exportCsvBtn = document.getElementById('exportCsvBtn');
-      const exportJsonBtn = document.getElementById('exportJsonBtn');
-      const importCsvBtn = document.getElementById('importCsvBtn');
-      const importJsonBtn = document.getElementById('importJsonBtn');
-      const csvFile = document.getElementById('csvFile');
-      const jsonFile = document.getElementById('jsonFile');
-      const backupBtn = document.getElementById('backupBtn');
-      const restoreBtn = document.getElementById('restoreBtn');
-      const fileInput = document.getElementById('fileInput');
-      const globalSearch = document.getElementById('globalSearch');
-
-      let editId = null; let barChart=null, pieChart=null;
-
-      function detachFirestoreListener() {
-        if (firestoreListener) {
-          firestoreListener(); 
-          firestoreListener = null;
-          console.log("Firestore listener detached.");
-        }
-      }
-
-      // Firestore load function (v8 Syntax)
-      async function loadFirestoreData() {
-        if (!fb_assetsCollectionRef) {
-            console.error("Firestore collection reference not set.");
-            loader.textContent = "Error: Koleksi Firestore tidak disetel.";
-            return;
-        }
-
-        detachFirestoreListener();
-        loader.style.display = 'flex';
-        console.log("Attaching new Firestore listener...");
-
-        firestoreListener = fb_assetsCollectionRef.onSnapshot((snapshot) => {
-            console.log(`Received snapshot with ${snapshot.docs.length} docs.`);
-            db.assets = []; 
-            snapshot.docs.forEach((doc) => {
-                db.assets.push({ id: doc.id, ...doc.data() });
-            });
-            db.assets.sort((a, b) => (a.name || '').localeCompare(b.name || ''));
-
-            render(); 
-            updateDashboard(); 
-            window.refreshFilterOptions && window.refreshFilterOptions(); 
-            loader.style.display = 'none'; 
-        }, (error) => {
-            console.error("Error listening to Firestore:", error);
-            loader.textContent = "Error: Gagal memuat data. " + error.message;
-        });
-      }
-
-      function clearForm(){ 
-        editId=null; 
-        nameEl.value=''; typeEl.selectedIndex=0; serialEl.value=''; 
-        qtyEl.value=1; qcStatusEl.selectedIndex=0; softwareEl.value=''; 
-        locEl.value=''; picEl.value=''; purchaseEl.value=''; 
-        warrantyEl.value=''; notesEl.value=''; 
-        addBtn.disabled=false; 
-        addBtn.textContent = "Tambah Item";
-        updateBtn.textContent='Clear / Reset'; 
-      }
-
-      // Render (BARU: Tombol Ikon)
-      function render(filter){ 
-        tbody.innerHTML='';
-        const list = db.assets.filter(a=>{ 
-          if(!filter) return true; 
-          const s=(a.id+' '+a.name+' '+a.type+' '+a.serial+' '+a.pic+' '+a.location+' '+a.notes+' '+(a.software||'')).toLowerCase(); 
-          return s.includes(filter.toLowerCase()); 
-        });
-
-        list.forEach(a=>{
-          const tr = document.createElement('tr');
-          // (BARU) Mengurangi kolom, memindahkan 'purchase' & 'warranty' ke detail
-          const fields = [
-            a.id, a.name, a.type, a.serial||'', a.qty, 
-            a.software||'', a.pic||'', a.location||'', a.qcStatus||''
-          ];
-          fields.forEach((f, i)=>{
-            const td = document.createElement('td');
-            // Sembunyikan ID di mobile jika perlu, tapi untuk admin biarkan
-            // if (i === 0) td.style.cssText = "max-width: 100px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap;";
-            td.textContent = f;
-            td.setAttribute('data-full', String(f));
-            tr.appendChild(td);
-          });
-          
-          // (BARU) Tombol Aksi dengan Ikon
-          const tdActions = document.createElement('td'); 
-          tdActions.className = 'action-buttons';
-          
-          const btnDetail = document.createElement('button'); 
-          btnDetail.className='btn-icon'; 
-          btnDetail.title = 'Lihat Detail';
-          btnDetail.innerHTML = '<svg><use href="#icon-detail" /></svg>'; 
-          btnDetail.setAttribute('data-action','detail'); 
-          btnDetail.setAttribute('data-id',a.id);
-          
-          const btnEdit = document.createElement('button'); 
-          btnEdit.className='btn-icon'; 
-          btnEdit.title = 'Edit';
-          btnEdit.innerHTML = '<svg><use href="#icon-edit" /></svg>'; 
-          btnEdit.setAttribute('data-action','edit'); 
-          btnEdit.setAttribute('data-id',a.id);
-          
-          const btnDel = document.createElement('button'); 
-          btnDel.className='btn-icon delete'; 
-          btnDel.title = 'Hapus';
-          btnDel.innerHTML = '<svg><use href="#icon-delete" /></svg>'; 
-          btnDel.setAttribute('data-action','del'); 
-          btnDel.setAttribute('data-id',a.id);
-          
-          tdActions.appendChild(btnDetail); 
-          tdActions.appendChild(btnEdit); 
-          tdActions.appendChild(btnDel);
-          tr.appendChild(tdActions);
-          tbody.appendChild(tr);
-        });
-        totalCountEl.textContent = db.assets.reduce((s,a)=> s + (Number(a.qty)||0), 0);
-      }
-
-      // Add (v8 Syntax)
-      addBtn.addEventListener('click', async () => {
-        const quantity = Number(qtyEl.value||1);
-        if(!nameEl.value.trim()) return showToast('Nama barang tidak boleh kosong', true);
-        
-        const item = { 
-          name: nameEl.value.trim(), type: typeEl.value, serial: serialEl.value.trim(), 
-          qty: quantity, qcStatus: qcStatusEl.value, software: softwareEl.value.trim(), 
-          location: locEl.value.trim(), pic: picEl.value.trim(), 
-          purchaseDate: purchaseEl.value||'', warrantyUntil: warrantyEl.value||'', 
-          notes: notesEl.value.trim() 
-        };
-        
-        try {
-          addBtn.disabled = true;
-          addBtn.textContent = "Menyimpan...";
-          await fb_assetsCollectionRef.add(item); // v8 add
-          clearForm(); 
-          showToast('Item ditambahkan ke Firebase');
-        } catch (e) {
-          console.error("Error adding document: ", e);
-          showToast('Gagal menyimpan: ' + e.message, true);
-        } finally {
-          addBtn.disabled = false;
-          addBtn.textContent = "Tambah Item";
-        }
-      });
-
-      // Table actions (v8 Syntax)
-      tbody.addEventListener('click', e=>{
-        const btn = e.target.closest('button'); if(!btn) return; 
-        const id = btn.getAttribute('data-id'); 
-        const action = btn.getAttribute('data-action');
-        
-        const idx = db.assets.findIndex(a=>a.id===id);
-        if (idx < 0) {
-            return showToast("Error: Item tidak ditemukan.", true);
-        }
-
-        const docRef = fb_assetsCollectionRef.doc(id); // v8 doc ref
-        const a = db.assets[idx]; 
-
-        if (action === 'detail') {
-            // Panggil fungsi modal detail
-            window.showAssetDetail(a);
-            return;
-        }
-
-        if(action==='edit'){ 
-          editId=a.id; 
-          nameEl.value=a.name||''; typeEl.value=a.type||'Laptop'; serialEl.value=a.serial||''; 
-          qtyEl.value=a.qty||1; qcStatusEl.value=a.qcStatus||'Belum QC'; softwareEl.value=a.software||''; 
-          locEl.value=a.location||''; picEl.value=a.pic||''; purchaseEl.value=a.purchaseDate||''; 
-          warrantyEl.value=a.warrantyUntil||''; notesEl.value=a.notes||''; 
-          addBtn.disabled=true; 
-          addBtn.textContent = "Simpan Perubahan";
-          updateBtn.textContent='Batal Edit'; 
-          
-          updateBtn.onclick = resetAction; // Sekarang tombol "Clear" menjadi "Batal"
-          addBtn.onclick = async function() { // Tombol "Tambah" menjadi "Simpan"
-            const updatedItem = { 
-              name:nameEl.value.trim(), type:typeEl.value, serial:serialEl.value.trim(), 
-              qty:Number(qtyEl.value||1), qcStatus:qcStatusEl.value, software:softwareEl.value.trim(), 
-              location:locEl.value.trim(), pic:picEl.value.trim(), 
-              purchaseDate:purchaseEl.value||'', warrantyUntil:warrantyEl.value||'', 
-              notes:notesEl.value.trim() 
-            };
-            try {
-                addBtn.disabled = true;
-                addBtn.textContent = "Updating...";
-                await docRef.update(updatedItem); // v8 update
-                clearForm(); 
-                addBtn.onclick = addBtn.addEventListener('click', addBtn.onclick); // Kembalikan event
-                showToast('Item diperbarui di Firebase');
-            } catch (e) {
-                console.error("Error updating document: ", e);
-                showToast('Gagal update: ' + e.message, true);
-            } finally {
-                addBtn.disabled = false;
-                addBtn.textContent = "Tambah Item";
-            }
-          };
-          
-          nameEl.focus();
-          window.scrollTo({top: nameEl.closest('aside').offsetTop - 20, behavior:'smooth'}); 
-        }
-        else if(action==='del'){ 
-          if(confirm(`Hapus item ini dari Firebase?\nID: ${id}\nNama: ${a.name}`)){ 
-            docRef.delete() 
-                .then(() => {
-                    showToast('Item dihapus dari Firebase');
-                })
-                .catch(e => {
-                    console.error("Error deleting document: ", e);
-                    showToast('Gagal hapus: ' + e.message, true);
-                });
-          } 
-        }
-      });
-
-      // Ganti fungsi addBtn.onclick ke addBtn asli
-      const originalAddBtnClick = addBtn.onclick;
-      function resetAction(){ 
-        clearForm(); 
-        addBtn.onclick = originalAddBtnClick; // Kembalikan listener asli
-      }
-      updateBtn.onclick = resetAction;
-
-      // CSV / JSON helpers (sama)
-      function csvSafe(s){ if(s==null) return ''; return '"'+String(s).replace(/"/g,'""')+'"'; }
-      function toCsv(rows){ const heads=['id','name','type','serial','qty','software','pic','location','purchaseDate','warrantyUntil','qcStatus','notes']; const lines=[heads.join(',')]; rows.forEach(r=>{ const arr=[r.id, csvSafe(r.name), csvSafe(r.type), csvSafe(r.serial), r.qty, csvSafe(r.software), csvSafe(r.pic), csvSafe(r.location), r.purchaseDate||'', r.warrantyUntil||'', csvSafe(r.qcStatus), csvSafe(r.notes)]; lines.push(arr.join(',')); }); return lines.join('\n'); }
-
-      exportCsvBtn.addEventListener('click', ()=>{ const csv = toCsv(db.assets); const blob = new Blob([csv], {type:'text/text/csv;charset=utf-8;'}); const a = document.createElement('a'); a.href = URL.createObjectURL(blob); a.download = 'assets_export_'+Date.now()+'.csv'; a.click(); URL.revokeObjectURL(a.href); showToast('CSV diexport'); });
-      exportJsonBtn.addEventListener('click', ()=>{ const blob = new Blob([JSON.stringify(db,null,2)], {type:'application/json'}); const a = document.createElement('a'); a.href = URL.createObjectURL(blob); a.download = 'assets_export_'+Date.now()+'.json'; a.click(); URL.revokeObjectURL(a.href); showToast('JSON diexport'); });
-
-      importCsvBtn.addEventListener('click', ()=> csvFile.click()); importJsonBtn.addEventListener('click', ()=> jsonFile.click());
-      backupBtn.addEventListener('click', ()=> exportJsonBtn.click());
-      restoreBtn.addEventListener('click', ()=> jsonFile.click());
-
-      // --- IMPORT FUNCTIONS (BATCH WRITE) (v8 Syntax) ---
-      async function processBatchImport(items) {
-        if (!items || items.length === 0) {
-            return showToast("Tidak ada item untuk diimpor", true);
-        }
-        
-        loader.style.display = 'flex';
-        loader.textContent = `Mengimpor ${items.length} item...`;
-
-        try {
-            let batch = fb_db_firestore.batch(); // v8 batch
-            let count = 0;
-            for (const item of items) {
-                let newItem = { ...item };
-                if (newItem.id) delete newItem.id; 
-                const docRef = fb_assetsCollectionRef.doc(); // v8 doc
-                batch.set(docRef, newItem); // v8 set
-                
-                count++;
-                if (count % 499 === 0) {
-                    await batch.commit();
-                    batch = fb_db_firestore.batch();
-                    loader.textContent = `Mengimpor ${count} / ${items.length}...`;
-                }
-            }
-            
-            if (count % 499 !== 0) {
-                await batch.commit();
-            }
-            
-            showToast(`Berhasil impor ${items.length} item ke Firebase`);
-        } catch (e) {
-            console.error("Batch import error: ", e);
-            showToast("Gagal impor: " + e.message, true);
-        } finally {
-            loader.style.display = 'none';
-        }
-      }
-
-      csvFile.addEventListener('change', async e=>{ const f = e.target.files[0]; if(!f) return; const txt = await f.text(); parseCsv(txt); csvFile.value=''; });
-      jsonFile.addEventListener('change', async e=>{ const f = e.target.files[0]; if(!f) return; try{ const txt = await f.text(); const data = JSON.parse(txt); const arr = Array.isArray(data.assets) ? data.assets : (Array.isArray(data) ? data : null); if(arr) { await processBatchImport(arr); } else showToast('JSON tidak berisi array "assets"', true); }catch(err){ showToast('Gagal import JSON: '+err.message, true); } jsonFile.value=''; });
-      
-      fileInput.addEventListener('change', async e=>{ const f = e.target.files[0]; if(!f) return; try{ const txt = await f.text(); const data = JSON.parse(txt); if(data && Array.isArray(data.assets)){ if(confirm(`Anda akan MENIMPA SEMUA data saat ini dengan ${data.assets.length} item dari file backup. Lanjutkan?`)) { 
-        showToast("Restore = Import JSON. Memproses...", false);
-        await processBatchImport(data.assets);
-      } } else showToast('File JSON tidak valid untuk restore', true); }catch(err){ showToast('Gagal: '+err.message, true); } fileInput.value=''; });
-
-
-      function parseCsv(txt){ const lines = txt.split(/\r?\n/).filter(l=>l.trim()); if(lines.length<2) return showToast('CSV kosong', true); const heads = splitCsvLine(lines[0]); const arr=[]; for(let i=1;i<lines.length;i++){ const cols = splitCsvLine(lines[i]); if(cols.length<2) continue; const obj = { name: cols[1]||'Unknown', type: cols[2]||'Other', serial: cols[3]||'', qty: Number(cols[4]||1), software: cols[5]||'', pic: cols[6]||'', location: cols[7]||'', purchaseDate: cols[8]||'', warrantyUntil: cols[9]||'', qcStatus: cols[10]||'Belum QC', notes: cols[11]||'' }; arr.push(obj); }
-        processBatchImport(arr);
-      }
-
-      function splitCsvLine(line){ const res=[]; let cur=''; let inq=false; for(let i=0;i<line.length;i++){ const ch=line[i]; if(ch==='"'){ if(inq && line[i+1]==='"'){ cur+='"'; i++; continue; } inq=!inq; continue; } if(ch===',' && !inq){ res.push(cur); cur=''; } else cur+=ch; } res.push(cur); return res.map(s=>s.replace(/^"|"$/g,'')); }
-      
-      globalSearch.addEventListener('input', debounce(e=>{ render(e.target.value); window.highlightSearch && window.highlightSearch(e.target.value); }, 180));
-
-      // QC UI (v8 Syntax)
-      const qcListEl = document.getElementById('qcList'); qcTemplate.forEach(it=>{ const el=document.createElement('label'); el.style.display='flex'; el.style.alignItems='center'; el.style.gap='8px'; const cb = document.createElement('input'); cb.type='checkbox'; cb.dataset.k=it.k; const span=document.createElement('span'); span.className='small'; span.textContent = it.l; el.appendChild(cb); el.appendChild(span); qcListEl.appendChild(el); });
-      
-      document.getElementById('saveQcBtn').addEventListener('click', async () => { 
-        const target = document.getElementById('qcTargetId').value.trim(); 
-        if(!target) return showToast('Masukkan Asset ID pada field QC target.', true); 
-        const idx = db.assets.findIndex(a=>a.id===target); 
-        if(idx<0) return showToast('Asset ID tidak ditemukan di data lokal.', true); 
-        
-        const checked = {}; 
-        qcListEl.querySelectorAll('input[type=checkbox]').forEach(cb=> checked[cb.dataset.k]=!!cb.checked); 
-        
-        const docRef = fb_assetsCollectionRef.doc(target); // v8 doc
-        try {
-            await docRef.update({ qc: checked, qcStatus: qcStatusEl.value }); // v8 update
-            showToast('QC tersimpan pada asset '+target);
-        } catch (e) {
-            console.error("Error saving QC:", e);
-            showToast("Gagal simpan QC: " + e.message, true);
-        }
-      });
-      document.getElementById('clearQcBtn').addEventListener('click', ()=> qcListEl.querySelectorAll('input[type=checkbox]').forEach(cb=>cb.checked=false));
-
-      // Print
-      // document.getElementById('printBtn').addEventListener('click', ()=> window.print());
- 
-      // Excel with SheetJS (try/catch)
-      document.getElementById('downloadExcelBtn').addEventListener('click', ()=>{ try{ if(typeof XLSX === 'undefined') throw new Error('SheetJS tidak tersedia'); const data = db.assets.map(a=>({ ID:a.id, Nama:a.name, Jenis:a.type, Serial:a.serial, Qty:a.qty, Software:a.software, PIC:a.pic, Lokasi:a.location, Purchase:a.purchaseDate, Warranty:a.warrantyUntil, QC:a.qcStatus })); const ws = XLSX.utils.json_to_sheet(data); const wb = XLSX.utils.book_new(); XLSX.utils.book_append_sheet(wb, ws, 'Assets'); XLSX.writeFile(wb, 'Zeppelin_Asset_'+Date.now()+'.xlsx'); showToast('Excel diunduh'); }catch(e){ showToast('Gagal generate Excel: '+e.message, true); } });
-
-      // Dashboard (sama)
-      function updateDashboard(){ const total = db.assets.reduce((s,a)=>s + (Number(a.qty)||0),0); const pcCount = db.assets.reduce((s,a)=> s + ((a.type==='Laptop' || a.type==='Desktop') ? Number(a.qty)||0 : 0), 0); let lulus=0,gagal=0,belum=0; db.assets.forEach(a=>{ if(!a.qcStatus || a.qcStatus==='Belum QC') belum += Number(a.qty)||0; else if(a.qcStatus==='Lulus QC') lulus += Number(a.qty)||0; else if(a.qcStatus==='Gagal QC') gagal += Number(a.qty)||0; }); kpiTotal.textContent = total; kpiPC.textContent = pcCount; kpiQC.textContent = `L:${lulus} G:${gagal} B:${belum}`;
-        const categories = {}; db.assets.forEach(a=> categories[a.type] = (categories[a.type]||0) + (Number(a.qty)||0)); const labels = Object.keys(categories); const values = labels.map(l=>categories[l]); try{ if(window.Chart){ if(barChart){ barChart.data.labels = labels; barChart.data.datasets[0].data = values; barChart.update(); } else { barChart = new Chart(barCanvas, { type:'bar', data:{ labels: labels.length?labels:['-'], datasets:[{ label:'Jumlah', data: values.length?values:[0], backgroundColor:'#ff7a18' }]}, options:{responsive:true,plugins:{legend:{display:false}}, scales:{y:{beginAtZero:true}}} }); } const pieData = [lulus,gagal,belum]; if(pieChart){ pieChart.data.datasets[0].data = pieData; pieChart.update(); } else { pieChart = new Chart(pieCanvas, { type:'pie', data:{ labels:['Lulus','Gagal','Belum'], datasets:[{ data: pieData, backgroundColor:['#1db954','#ff4d4f','#ffd166'] }]}, options:{responsive:true,plugins:{legend:{position:'bottom'}}} }); } } }catch(e){ /* ignore chart errors */ }
-      }
-
-      // ...
-      
-      document.addEventListener('DOMContentLoaded', ()=>{ 
-        attachFilterHandlers(); 
-        enableSorting(); 
-        // initTheme(); // (BARU) Hapus panggilan ini, karena tombolnya tidak ada
-        attachPrintReport(); 
-      });
- 
-    })();
-
-    window.ZeppelinApp = ZeppelinApp;
-
-    // Inisialisasi Firebase dan Auth
-    async function initFirebase() {
-        try {
-            fb_app = firebase.initializeApp(firebaseConfig);
-            fb_db_firestore = firebase.firestore();
-            fb_auth = firebase.auth();
-            console.log("Firebase App Initialized (v8). Waiting for Auth...");
-
-            // Listener status otentikasi
-            fb_auth.onAuthStateChanged(async (user) => {
-                if (user && user.uid === ADMIN_UID) {
-                    // --- USER ADALAH ADMIN ---
-                    console.log("Admin user authenticated:", user.uid);
-                    authMsg.textContent = "Verifikasi Berhasil!";
-                    authSubMsg.textContent = "Selamat datang, Admin. Memuat data aset...";
-                    
-                    fb_userId = user.uid;
-                    
-                    fb_assetsCollectionRef = fb_db_firestore.collection('users').doc(fb_userId).collection('assets');
-                    console.log("Firestore collection path:", `users/${fb_userId}/assets`);
-
-                    // Tampilkan UI
-                    userEmailDisplay.textContent = user.email;
-                    
-                    // Muat data aset, lalu sembunyikan auth screen
-                    await ZeppelinApp.loadFirestoreData();
-                    authScreen.style.display = 'none';
-                    appContent.style.display = 'block';
-
-                } else {
-                    // --- BUKAN ADMIN / TIDAK LOGIN ---
-                    if(user) {
-                        console.log("Access Denied. User is not admin:", user.uid);
-                        await fb_auth.signOut(); // Logout paksa jika bukan admin
-                    } else {
-                        console.log("Access Denied. User not logged in.");
-                    }
-                    
-                    // (BARU) Tampilkan pesan "Akses Ditolak"
-                    authSpinner.style.display = 'none';
-                    authMsg.textContent = "Akses Ditolak";
-                    authSubMsg.textContent = "Anda harus login sebagai Admin untuk mengakses halaman ini.";
-                    authBackBtn.style.display = 'inline-block';
-                    
-                    fb_userId = null;
-                    authScreen.style.display = 'flex'; 
-                    appContent.style.display = 'none'; 
-                    loader.style.display = 'none';
-                    ZeppelinApp.detachFirestoreListener(); 
-                }
-            });
-
-            // Event listener untuk logout
-            logoutBtn.addEventListener('click', async () => {
-                if (confirm("Apakah Anda yakin ingin logout?")) {
-                    await fb_auth.signOut();
-                    // onAuthStateChanged akan menangani sisanya
-                }
-            });
-
-        } catch (e) {
-            console.error("Firebase initialization failed:", e);
-            authSpinner.style.display = 'none';
-            authMsg.textContent = "Error Firebase";
-            authSubMsg.textContent = "Gagal inisialisasi Firebase: " + e.message;
-            authBackBtn.style.display = 'inline-block';
-        }
-    }
-
-    // Mulai aplikasi
-    initFirebase();
-
-
-  })();
-
-  // small toast helper
-  function showToast(txt, isError = false){ 
-    let t = document.getElementById('toastMsg'); 
-    if(!t){ 
-      t=document.createElement('div'); 
-      t.id='toastMsg'; 
-      t.style.position='fixed'; 
-      t.style.right='18px'; 
-      t.style.bottom='18px'; 
-      t.style.color='#fff'; 
-      t.style.padding='10px 16px'; 
-      t.style.borderRadius='8px'; 
-      t.style.boxShadow='0 6px 18px rgba(0,0,0,0.4)'; 
-      t.style.zIndex='10001';
-      t.style.transition = 'opacity 0.3s ease';
-      document.body.appendChild(t); 
-    } 
-    t.textContent=txt; 
-    t.style.background = isError ? 'var(--error)' : 'var(--success)';
-    t.style.opacity='1'; 
-    setTimeout(()=> t.style.opacity='0', isError ? 4000 : 2200); 
-  }
-
-  // expose showToast globally for reuse
-  window.showToast = showToast;
-
-</script>
-<script>
-/* Additional features: filters, sort, live highlight, theme toggle, auto-backup, print report
-   This script now uses the exposed window.ZeppelinApp.getDB()
-*/
-(function(){
-  function $(sel){ return document.querySelector(sel); }
-  function $all(sel){ return Array.from(document.querySelectorAll(sel)); }
-
-  window.refreshFilterOptions = function() { 
-    if (!window.ZeppelinApp) return;
-    const assets = window.ZeppelinApp.getDB().assets || [];
-    const typeSet=new Set(); const locSet=new Set(); const picSet=new Set(); 
-    assets.forEach(a=>{ if(a.type) typeSet.add(a.type); if(a.location) locSet.add(a.location); if(a.pic) picSet.add(a.pic); }); 
-    const selType=$('#filterType'); const selLoc=$('#filterLoc'); const selPic=$('#filterPic'); 
-    if(!selType||!selLoc||!selPic) return; 
-    [selType,selLoc,selPic].forEach(s=>{ while(s.options.length>1) s.remove(1); }); 
-    
-    // Sort options alphabetically
-    const sortSet = (s) => Array.from(s).sort((a,b) => a.localeCompare(b));
-    
-    sortSet(typeSet).forEach(v=> selType.add(new Option(v,v))); 
-    sortSet(locSet).forEach(v=> selLoc.add(new Option(v,v))); 
-    sortSet(picSet).forEach(v=> selPic.add(new Option(v,v))); 
-  }
-
-  function applyFiltersAndSearch(){ 
-    const search = ($('#globalSearch') && $('#globalSearch').value) || ''; 
-    const fType = ($('#filterType') && $('#filterType').value) || ''; 
-    const fQc = ($('#filterQc') && $('#filterQc').value) || ''; 
-    const fLoc = ($('#filterLoc') && $('#filterLoc').value) || ''; 
-    const fPic = ($('#filterPic') && $('#filterPic').value) || ''; 
-    
-    if(typeof window.ZeppelinApp.render === 'function'){ 
-      window.ZeppelinApp.render(search);
-      const rows = $all('#assetTable tbody tr'); 
-      rows.forEach(r=>{ 
-        const t = r; 
-        let show = true; 
-        try {
-            // (BARU) Update indeks kolom
-            if(fType && t.children[2] && !t.children[2].textContent.includes(fType)) show=false; 
-            if(fQc && t.children[8] && !t.children[8].textContent.includes(fQc)) show=false; 
-            if(fLoc && t.children[7] && !t.children[7].textContent.includes(fLoc)) show=false; 
-            if(fPic && t.children[6] && !t.children[6].textContent.includes(fPic)) show=false; 
-        } catch (e) {
-            console.warn("Error applying filter to row: ", e, r);
-        }
-        t.style.display = show ? '' : 'none'; 
-      });
-    }
-    highlightSearch(search);
-  }
-
-  // highlightSearch: only operate on text cells (avoid actions)
-  window.highlightSearch = function(q){ 
-    const tbody = document.querySelector('#assetTable tbody'); 
-    if(!tbody) return; 
-    const ql=(q||'').trim().toLowerCase(); 
-    tbody.querySelectorAll('tr').forEach(tr=>{ 
-      Array.from(tr.children).forEach((td, idx)=>{ 
-        if(idx === tr.children.length-1) return; // Skip actions column
-        const text = td.getAttribute('data-full') || td.textContent; 
-        if(ql && text.toLowerCase().includes(ql)){ 
-          const regex = new RegExp('('+escapeRegex(ql)+')','gi'); 
-          td.innerHTML = window.escapeHtml(text).replace(regex,'<mark>$1</mark>'); 
-        } else { 
-          td.textContent = text; // Reset
-        } 
-      }); 
-    }); 
-  }
-  function escapeRegex(s){ return s.replace(/[-\/\\^$*+?.()|[\]{}]/g, '\\$&'); }
-
-  function enableSorting(){ const headers = $all('#assetTable thead th'); headers.forEach((th, idx)=>{ if(idx === headers.length-1) return; th.style.cursor='pointer'; th.addEventListener('click', ()=>{ const tbody = document.querySelector('#assetTable tbody'); if(!tbody) return; const rows = Array.from(tbody.querySelectorAll('tr')).filter(r=>r.style.display !== 'none'); const asc = th.dataset.asc === 'true' ? false : true; th.dataset.asc = asc; rows.sort((a,b)=>{ const aText = a.children[idx].textContent.trim().toLowerCase(); const bText = b.children[idx].textContent.trim().toLowerCase(); if(!isNaN(parseFloat(aText)) && !isNaN(parseFloat(bText))){ return asc ? (parseFloat(aText) - parseFloat(bText)) : (parseFloat(bText) - parseFloat(aText)); } return asc ? aText.localeCompare(bText) : bText.localeCompare(aText); }); rows.forEach(r=>tbody.appendChild(r)); }); }); }
-
-  function initTheme(){ const btn = $('#themeToggle'); if(!btn) return; const current = localStorage.getItem('zepp_theme') || 'dark'; document.documentElement.setAttribute('data-theme', current); applyTheme(current); btn.addEventListener('click', ()=>{ const t = (localStorage.getItem('zepp_theme')||'dark') === 'dark' ? 'light' : 'dark'; localStorage.setItem('zepp_theme', t); applyTheme(t); }); }
-  function applyTheme(t){ if(t==='light'){ document.documentElement.style.setProperty('--bg','#f7fafc'); document.documentElement.style.setProperty('--card','#ffffff'); document.documentElement.style.setProperty('--card-light','#f1f5f9'); document.documentElement.style.setProperty('--muted','#6b7280'); document.documentElement.style.setProperty('--accent','#0ea5a4'); document.documentElement.style.setProperty('--border','#e2e8f0'); document.body.style.color = '#1a202c'; } else { document.documentElement.style.removeProperty('--bg'); document.documentElement.style.removeProperty('--card'); document.documentElement.style.removeProperty('--card-light'); document.documentElement.style.removeProperty('--muted'); document.documentElement.style.removeProperty('--accent'); document.documentElement.style.removeProperty('--border'); document.body.style.color = '#e6eef6'; } }
-
-  function attachPrintReport(){ 
-    const btn = $('#printReportBtn'); 
-    if(!btn) return; 
-    btn.addEventListener('click', ()=>{ 
-      if (!window.ZeppelinApp) return;
-      const db = window.ZeppelinApp.getDB();
-      const assets = db.assets || []; 
-      const total = assets.reduce((s,a)=> s + (Number(a.qty)||0), 0); 
-      const pcCount = assets.reduce((s,a)=> s + ((a.type==='Laptop' || a.type==='Desktop') ? Number(a.qty)||0 : 0), 0); 
-      const date = new Date().toLocaleString('id-ID'); 
-      let html = `<!doctype html><html><head><meta charset="utf-8"><title>Laporan Asset</title><style>body{font-family:Inter,Arial,Helvetica,sans-serif;color:#0b1220;margin:24px}.header{display:flex;align-items:center;gap:16px;margin-bottom:12px}.logo{width:56px;height:56px;border-radius:8px;background:#ff7a18;display:flex;align-items:center;justify-content:center;font-weight:800;color:#08101a}h1{margin:0;font-size:20px}.muted{color:#6b7280;font-size:13px}.kpi-row{display:flex;gap:12px;margin:12px 0}.kpi{padding:10px;border-radius:8px;border:1px solid #e6e9ef;min-width:160px;text-align:center}table{width:100%;border-collapse:collapse;margin-top:12px;font-size:12px}th,td{padding:8px;border:1px solid #eee;text-align:left}</style></head><body>`; 
-      html += `<div class="header"><div class="logo">Z</div><div><h1>Laporan Asset — Zeppelin</h1><div class="muted">Dicetak: ${date}</div></div></div>`; 
-      html += `<div class="kpi-row"><div class="kpi"><strong>Total Asset</strong><div>${total}</div></div><div class="kpi"><strong>PC (Laptop/Desktop)</strong><div>${pcCount}</div></div></div>`; 
-      html += `<table><thead><tr><th>ID</th><th>Nama</th><th>Jenis</th><th>Serial</th><th>Qty</th><th>PIC</th><th>Lokasi</th><th>QC</th></tr></thead><tbody>`; 
-      assets.forEach(a=>{ html += `<tr><td>${window.escapeHtml(a.id)}</td><td>${window.escapeHtml(a.name)}</td><td>${window.escapeHtml(a.type)}</td><td>${window.escapeHtml(a.serial||'')}</td><td>${a.qty}</td><td>${window.escapeHtml(a.pic||'')}</td><td>${window.escapeHtml(a.location||'')}</td><td>${window.escapeHtml(a.qcStatus||'')}</td></tr>`; }); 
-      html += `</tbody></table></body></html>`; 
-      const win = window.open('','_blank','width=900,height=700'); 
-      if(win){ win.document.write(html); win.document.close(); setTimeout(()=> win.print(), 500); } else showToast('Pop-up diblokir. Izinkan pop-up untuk mencetak.', true); 
-    }); 
-  }
-
-  function attachFilterHandlers(){ ['#globalSearch','#filterType','#filterQc','#filterLoc','#filterPic'].forEach(id=>{ const el=$(id); if(el) { el.addEventListener('input', ()=> applyFiltersAndSearch()); el.addEventListener('change', ()=> applyFiltersAndSearch()); } }); }
-
-  document.addEventListener('DOMContentLoaded', ()=>{ 
-    attachFilterHandlers(); 
-    enableSorting(); 
-    initTheme(); 
-    attachPrintReport(); 
-  });
-
-})();
-</script>
-
 <!-- Detail Modal (table-style) -->
 <div id="detailModalOverlay" style="display:none; position:fixed; inset:0; background:rgba(2,6,23,0.6); align-items:center; justify-content:center; z-index:9999;">
 <div aria-modal="true" id="detailModal" role="dialog" style="width:min(680px,95%); background:var(--card); border-radius:14px; padding:20px; border:1px solid rgba(255,255,255,0.1); box-shadow:0 12px 40px rgba(2,6,23,0.7);">
@@ -1084,83 +456,691 @@ mark{background:rgba(255,235,59,0.25);padding:0 2px;border-radius:2px}
 </div>
 </div>
 
+
+<!-- (PERBAIKAN BESAR)
+  SEMUA JavaScript sekarang ada di dalam satu blok skrip
+  yang ditempatkan TEPAT SEBELUM tag </body>.
+  Ini memastikan semua HTML ada sebelum skrip berjalan.
+-->
 <script>
-(function(){
-  function $(sel){ return document.querySelector(sel); }
-  const overlay = $('#detailModalOverlay');
-  const modalTitle = $('#detailModalTitle');
-  const tbody = document.getElementById('detailTableBody');
-  const copyBtn = document.getElementById('copyIdBtn');
-  const closeBtn = document.getElementById('closeDetailBtn');
-  const closeBtn2 = document.getElementById('closeDetailBtn2');
-  const editBtn = document.getElementById('editFromDetailBtn');
+  // Konfigurasi Firebase Anda dari index.html
+  const firebaseConfig = {
+      apiKey: "AIzaSyA9wgSalrlTcveIZi2i-WND86z1i9JYHKw",
+      authDomain: "it-support-53eeb.firebaseapp.com",
+      databaseURL: "https://it-support-53eeb-default-rtdb.firebaseio.com",
+      projectId: "it-support-53eeb",
+      storageBucket: "it-support-53eeb.firebasestorage.app",
+      messagingSenderId: "573924501146",
+      appId: "1:573924501146:web:12f34306ed675472322123",
+      measurementId: "G-33K6DDE1VR"
+  };
   
-  // (BARU) Global function untuk memicu modal
-  window.showAssetDetail = function(a) {
-    if(!a) return window.showToast('Data tidak ditemukan', true);
+  // ID Admin dari index.html
+  const ADMIN_UID = "Ogy9lUbGHbSu8wYIYx2gQsTtFDF2";
+
+  // --- Toast Helper (Global) ---
+  function showToast(txt, isError = false){ 
+    let t = document.getElementById('toastMsg'); 
+    if(!t){ 
+      t=document.createElement('div'); 
+      t.id='toastMsg'; 
+      t.style.position='fixed'; 
+      t.style.right='18px'; 
+      t.style.bottom='18px'; 
+      t.style.color='#fff'; 
+      t.style.padding='10px 16px'; 
+      t.style.borderRadius='8px'; 
+      t.style.boxShadow='0 6px 18px rgba(0,0,0,0.4)'; 
+      t.style.zIndex='10001';
+      t.style.transition = 'opacity 0.3s ease';
+      document.body.appendChild(t); 
+    } 
+    t.textContent=txt; 
+    t.style.background = isError ? 'var(--error)' : 'var(--success)';
+    t.style.opacity='1'; 
+    setTimeout(()=> t.style.opacity='0', isError ? 4000 : 2200); 
+  }
+  window.showToast = showToast;
     
-    modalTitle.textContent = "Detail: " + (a.name || 'N/A');
-    
-    const rows = [
-      ['ID', a.id],
-      ['Nama', a.name || '-'],
-      ['Jenis', a.type || '-'],
-      ['Serial', a.serial || '-'],
-      ['Qty', a.qty || '-'],
-      ['Software', a.software || '-'],
-      ['PIC', a.pic || '-'],
-      ['Lokasi', a.location || '-'],
-      ['Tanggal Pembelian', a.purchaseDate || '-'],
-      ['Warranty Until', a.warrantyUntil || '-'],
-      ['Status QC', a.qcStatus || '-'],
-      ['Keterangan', a.notes || '-']
-    ];
-    // Tampilkan data QC jika ada
-    if (a.qc) {
-        rows.push(['--- QC CHECKLIST ---', '---']);
-        for (const [key, value] of Object.entries(a.qc)) {
-            // Coba cari label dari template
-            const qcItem = ZeppelinApp.qcTemplate.find(item => item.k === key);
-            const label = qcItem ? qcItem.l : key;
-            rows.push([label, value ? '✅ Lulus' : '❌ Gagal']);
+  // --- Helper Functions (Lokal) ---
+  function debounce(fn, ms){ let t; return function(){ clearTimeout(t); t=setTimeout(()=>fn.apply(this,arguments), ms||200); }; }
+  window.escapeHtml = function(s){ if(s==null) return ''; return String(s).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;'); };
+  function $(sel){ return document.querySelector(sel); }
+  function $all(sel){ return Array.from(document.querySelectorAll(sel)); }
+
+  // --- Firebase Globals ---
+  let fb_app, fb_db_firestore, fb_auth, fb_userId, fb_assetsCollectionRef;
+  
+  // --- Selektor Elemen (Pusat) ---
+  // (PERBAIKAN) Elemen-elemen ini SEKARANG dijamin ada
+  const elements = {
+      loader: document.getElementById('loader'),
+      authScreen: document.getElementById('authVerificationScreen'),
+      authMsg: document.getElementById('authMessage'),
+      authSubMsg: document.getElementById('authSubMessage'),
+      authBackBtn: document.getElementById('authBackButton'),
+      authSpinner: document.getElementById('authSpinner'),
+      appContent: document.querySelector('.app-content'),
+      logoutBtn: document.getElementById('logoutBtn'),
+      userEmailDisplay: document.getElementById('userEmailDisplay'),
+      tbody: document.querySelector('#assetTable tbody'),
+      totalCountEl: document.getElementById('totalCount'),
+      kpiTotal: document.getElementById('kpiTotal'),
+      kpiPC: document.getElementById('kpiPC'),
+      kpiQC: document.getElementById('kpiQC'),
+      barCanvas: document.getElementById('barCategories'),
+      pieCanvas: document.getElementById('pieQc'),
+      nameEl: document.getElementById('name'),
+      typeEl: document.getElementById('itemType'),
+      serialEl: document.getElementById('serial'),
+      qtyEl: document.getElementById('qty'),
+      qcStatusEl: document.getElementById('qcStatus'),
+      softwareEl: document.getElementById('software'),
+      locEl: document.getElementById('location'),
+      picEl: document.getElementById('pic'),
+      purchaseEl: document.getElementById('purchaseDate'),
+      warrantyEl: document.getElementById('warrantyUntil'),
+      notesEl: document.getElementById('notes'),
+      addBtn: document.getElementById('addBtn'),
+      updateBtn: document.getElementById('updateBtn'),
+      exportCsvBtn: document.getElementById('exportCsvBtn'),
+      exportJsonBtn: document.getElementById('exportJsonBtn'),
+      importCsvBtn: document.getElementById('importCsvBtn'),
+      importJsonBtn: document.getElementById('importJsonBtn'),
+      csvFile: document.getElementById('csvFile'),
+      jsonFile: document.getElementById('jsonFile'),
+      backupBtn: document.getElementById('backupBtn'),
+      restoreBtn: document.getElementById('restoreBtn'),
+      fileInput: document.getElementById('fileInput'),
+      globalSearch: document.getElementById('globalSearch'),
+      qcListEl: document.getElementById('qcList'),
+      saveQcBtn: document.getElementById('saveQcBtn'),
+      clearQcBtn: document.getElementById('clearQcBtn'),
+      printReportBtn: document.getElementById('printReportBtn'),
+      detailModalOverlay: document.getElementById('detailModalOverlay'),
+      detailModalTitle: document.getElementById('detailModalTitle'),
+      detailTableBody: document.getElementById('detailTableBody'),
+      copyIdBtn: document.getElementById('copyIdBtn'),
+      closeDetailBtn: document.getElementById('closeDetailBtn'),
+      closeDetailBtn2: document.getElementById('closeDetailBtn2'),
+      editFromDetailBtn: document.getElementById('editFromDetailBtn')
+  };
+
+  // --- Logika Modal (Skrip 3) ---
+  (function(els){
+    // (PERBAIKAN) Definisikan di window agar bisa diakses
+    window.showAssetDetail = function(a, qcTemplate = []) {
+      if(!a) return window.showToast('Data tidak ditemukan', true);
+      
+      els.detailModalTitle.textContent = "Detail: " + (a.name || 'N/A');
+      
+      const rows = [
+        ['ID', a.id],
+        ['Nama', a.name || '-'],
+        ['Jenis', a.type || '-'],
+        ['Serial', a.serial || '-'],
+        ['Qty', a.qty || '-'],
+        ['Software', a.software || '-'],
+        ['PIC', a.pic || '-'],
+        ['Lokasi', a.location || '-'],
+        ['Tanggal Pembelian', a.purchaseDate || '-'],
+        ['Warranty Until', a.warrantyUntil || '-'],
+        ['Status QC', a.qcStatus || '-'],
+        ['Keterangan', a.notes || '-']
+      ];
+      if (a.qc) {
+          rows.push(['--- QC CHECKLIST ---', '---']);
+          for (const [key, value] of Object.entries(a.qc)) {
+              const qcItem = qcTemplate.find(item => item.k === key);
+              const label = qcItem ? qcItem.l : key;
+              rows.push([label, value ? '✅ Lulus' : '❌ Gagal']);
+          }
+      }
+
+      els.detailTableBody.innerHTML = rows.map(r=>`<tr><td style="padding:10px 12px; color:var(--muted); width:40%; border-bottom:1px solid var(--border)"><strong>${r[0]}</strong></td><td style="padding:10px 12px; border-bottom:1px solid var(--border); white-space: pre-wrap; word-break: break-word;">${window.escapeHtml(r[1])}</td></tr>`).join('');
+      els.detailModalOverlay.style.display = 'flex';
+      
+      els.editFromDetailBtn.onclick = function(){ 
+        els.detailModalOverlay.style.display='none'; 
+        const editBtnEl = document.querySelector(`#assetTable button[data-action="edit"][data-id="${a.id}"]`); 
+        if(editBtnEl) {
+          editBtnEl.click(); 
+          if (a.qc) {
+              const qcListEl = document.getElementById('qcList');
+              qcListEl.querySelectorAll('input[type=checkbox]').forEach(cb => {
+                  cb.checked = !!a.qc[cb.dataset.k];
+              });
+              document.getElementById('qcTargetId').value = a.id;
+          }
         }
+      };
+      
+      els.copyIdBtn.onclick = function(){ 
+        try{ 
+          const el = document.createElement('textarea');
+          el.value = a.id;
+          document.body.appendChild(el);
+          el.select();
+          document.execCommand('copy');
+          document.body.removeChild(el);
+          window.showToast && window.showToast('ID disalin'); 
+        }catch(e){ window.showToast('Gagal salin', true); } 
+      };
+    }
+    
+    els.closeDetailBtn.addEventListener('click', ()=> els.detailModalOverlay.style.display='none');
+    els.closeDetailBtn2.addEventListener('click', ()=> els.detailModalOverlay.style.display='none');
+    els.detailModalOverlay.addEventListener('click', function(ev){ if(ev.target === els.detailModalOverlay) els.detailModalOverlay.style.display='none'; });
+  })(elements);
+
+  // --- Logika Aplikasi Utama (ZeppelinApp - Skrip 1) ---
+  const ZeppelinApp = (function(els){ // Menerima 'els' sebagai argumen
+    let db = { assets: [] }; 
+    let firestoreListener = null; 
+    const qcTemplate = [
+      {k:'power', l:'Power on / Battery'}, {k:'screen', l:'Screen / Dead pixel'}, {k:'keyboard', l:'Keyboard / Touchpad'},
+      {k:'ram', l:'RAM capacity / detecting'}, {k:'storage', l:'Storage health / SMART'}, {k:'network', l:'Network adapter / Wi-Fi'},
+      {k:'gpu', l:'GPU / Display adapter'}, {k:'bios', l:'BIOS / Boot'}, {k:'os', l:'OS installed / activation'},
+      {k:'drivers', l:'Drivers up-to-date'}, {k:'antivirus', l:'Antivirus status / Whitelisted'}, {k:'vpn', l:'VPN (Radmin/VNC) installed'},
+      {k:'accurate', l:'Accurate / License'}
+    ];
+
+    // Hapus 'const' dari elemen yang sudah ada di 'els'
+    let editId = null; let barChart=null, pieChart=null;
+
+    function detachFirestoreListener() {
+      if (firestoreListener) {
+        firestoreListener(); 
+        firestoreListener = null;
+        console.log("Firestore listener detached.");
+      }
     }
 
-    tbody.innerHTML = rows.map(r=>`<tr><td style="padding:10px 12px; color:var(--muted); width:40%; border-bottom:1px solid var(--border)"><strong>${r[0]}</strong></td><td style="padding:10px 12px; border-bottom:1px solid var(--border); white-space: pre-wrap; word-break: break-word;">${r[1]}</td></tr>`).join('');
-    overlay.style.display = 'flex';
-    
-    editBtn.onclick = function(){ 
-      overlay.style.display='none'; 
-      const editBtnEl = document.querySelector(`#assetTable button[data-action="edit"][data-id="${a.id}"]`); 
-      if(editBtnEl) {
-        editBtnEl.click(); 
-        if (a.qc) {
-            const qcListEl = document.getElementById('qcList');
-            qcListEl.querySelectorAll('input[type=checkbox]').forEach(cb => {
-                cb.checked = !!a.qc[cb.dataset.k];
-            });
-            document.getElementById('qcTargetId').value = a.id;
-        }
+    // Firestore load function (v8 Syntax)
+    async function loadFirestoreData() {
+      if (!fb_assetsCollectionRef) {
+          console.error("Firestore collection reference not set.");
+          els.loader.textContent = "Error: Koleksi Firestore tidak disetel.";
+          return;
       }
-    };
+
+      detachFirestoreListener();
+      els.loader.style.display = 'flex';
+      console.log("Attaching new Firestore listener...");
+
+      firestoreListener = fb_assetsCollectionRef.onSnapshot((snapshot) => {
+          console.log(`Received snapshot with ${snapshot.docs.length} docs.`);
+          db.assets = []; 
+          snapshot.docs.forEach((doc) => {
+              db.assets.push({ id: doc.id, ...doc.data() });
+          });
+          db.assets.sort((a, b) => (a.name || '').localeCompare(b.name || ''));
+
+          render(); 
+          updateDashboard(); 
+          window.refreshFilterOptions && window.refreshFilterOptions(); 
+          els.loader.style.display = 'none'; 
+      }, (error) => {
+          console.error("Error listening to Firestore:", error);
+          els.loader.textContent = "Error: Gagal memuat data. " + error.message;
+      });
+    }
+
+    function clearForm(){ 
+      editId=null; 
+      els.nameEl.value=''; els.typeEl.selectedIndex=0; els.serialEl.value=''; 
+      els.qtyEl.value=1; els.qcStatusEl.selectedIndex=0; els.softwareEl.value=''; 
+      els.locEl.value=''; els.picEl.value=''; els.purchaseEl.value=''; 
+      els.warrantyEl.value=''; els.notesEl.value=''; 
+      els.addBtn.disabled=false; 
+      els.addBtn.textContent = "Tambah Item";
+      els.updateBtn.textContent='Clear / Reset'; 
+      els.addBtn.onclick = handleAddClick;
+    }
+
+    // Render (BARU: Tombol Ikon)
+    function render(filter){ 
+      els.tbody.innerHTML='';
+      const list = db.assets.filter(a=>{ 
+        if(!filter) return true; 
+        const s=(a.id+' '+a.name+' '+a.type+' '+a.serial+' '+a.pic+' '+a.location+' '+a.notes+' '+(a.software||'')).toLowerCase(); 
+        return s.includes(filter.toLowerCase()); 
+      });
+
+      list.forEach(a=>{
+        const tr = document.createElement('tr');
+        const fields = [
+          a.id, a.name, a.type, a.serial||'', a.qty, 
+          a.software||'', a.pic||'', a.location||'', a.qcStatus||''
+        ];
+        fields.forEach((f, i)=>{
+          const td = document.createElement('td');
+          if (i === 0) td.style.cssText = "max-width: 100px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap;";
+          td.textContent = f;
+          td.setAttribute('data-full', String(f));
+          tr.appendChild(td);
+        });
+        
+        const tdActions = document.createElement('td'); 
+        tdActions.className = 'action-buttons';
+        
+        const btnDetail = document.createElement('button'); 
+        btnDetail.className='btn-icon'; 
+        btnDetail.title = 'Lihat Detail';
+        btnDetail.innerHTML = '<svg><use href="#icon-detail" /></svg>'; 
+        btnDetail.setAttribute('data-action','detail'); 
+        btnDetail.setAttribute('data-id',a.id);
+        
+        const btnEdit = document.createElement('button'); 
+        btnEdit.className='btn-icon'; 
+        btnEdit.title = 'Edit';
+        btnEdit.innerHTML = '<svg><use href="#icon-edit" /></svg>'; 
+        btnEdit.setAttribute('data-action','edit'); 
+        btnEdit.setAttribute('data-id',a.id);
+        
+        const btnDel = document.createElement('button'); 
+        btnDel.className='btn-icon delete'; 
+        btnDel.title = 'Hapus';
+        btnDel.innerHTML = '<svg><use href="#icon-delete" /></svg>'; 
+        btnDel.setAttribute('data-action','del'); 
+        btnDel.setAttribute('data-id',a.id);
+        
+        tdActions.appendChild(btnDetail); 
+        tdActions.appendChild(btnEdit); 
+        tdActions.appendChild(btnDel);
+        tr.appendChild(tdActions);
+        els.tbody.appendChild(tr);
+      });
+      els.totalCountEl.textContent = db.assets.reduce((s,a)=> s + (Number(a.qty)||0), 0);
+    }
+
+    async function handleAddClick() {
+      const quantity = Number(els.qtyEl.value||1);
+      if(!els.nameEl.value.trim()) return showToast('Nama barang tidak boleh kosong', true);
+      
+      const item = { 
+        name: els.nameEl.value.trim(), type: els.typeEl.value, serial: els.serialEl.value.trim(), 
+        qty: quantity, qcStatus: els.qcStatusEl.value, software: els.softwareEl.value.trim(), 
+        location: els.locEl.value.trim(), pic: els.picEl.value.trim(), 
+        purchaseDate: els.purchaseEl.value||'', warrantyUntil: els.warrantyEl.value||'', 
+        notes: els.notesEl.value.trim() 
+      };
+      
+      try {
+        els.addBtn.disabled = true;
+        els.addBtn.textContent = "Menyimpan...";
+        await fb_assetsCollectionRef.add(item); // v8 add
+        clearForm(); 
+        showToast('Item ditambahkan ke Firebase');
+      } catch (e) {
+        console.error("Error adding document: ", e);
+        showToast('Gagal menyimpan: ' + e.message, true);
+      } finally {
+        els.addBtn.disabled = false;
+        els.addBtn.textContent = "Tambah Item";
+      }
+    }
+    els.addBtn.addEventListener('click', handleAddClick);
+
+
+    // Table actions (v8 Syntax)
+    els.tbody.addEventListener('click', e=>{
+      const btn = e.target.closest('button'); if(!btn) return; 
+      const id = btn.getAttribute('data-id'); 
+      const action = btn.getAttribute('data-action');
+      
+      const idx = db.assets.findIndex(a=>a.id===id);
+      if (idx < 0) {
+          return showToast("Error: Item tidak ditemukan.", true);
+      }
+
+      const docRef = fb_assetsCollectionRef.doc(id); // v8 doc ref
+      const a = db.assets[idx]; 
+
+      if (action === 'detail') {
+          window.showAssetDetail(a, qcTemplate); // Ini SEKARANG Bekerja
+          return;
+      }
+
+      if(action==='edit'){ 
+        editId=a.id; 
+        els.nameEl.value=a.name||''; els.typeEl.value=a.type||'Laptop'; els.serialEl.value=a.serial||''; 
+        els.qtyEl.value=a.qty||1; els.qcStatusEl.value=a.qcStatus||'Belum QC'; els.softwareEl.value=a.software||''; 
+        els.locEl.value=a.location||''; els.picEl.value=a.pic||''; els.purchaseEl.value=a.purchaseDate||''; 
+        els.warrantyEl.value=a.warrantyUntil||''; els.notesEl.value=a.notes||''; 
+        
+        els.addBtn.disabled = false; 
+        els.addBtn.textContent = "Simpan Perubahan";
+        els.updateBtn.textContent='Batal Edit'; 
+        
+        els.updateBtn.onclick = clearForm; // Tombol "Clear" menjadi "Batal"
+        
+        els.addBtn.onclick = async function() { 
+          const updatedItem = { 
+            name:els.nameEl.value.trim(), type:els.typeEl.value, serial:els.serialEl.value.trim(), 
+            qty:Number(els.qtyEl.value||1), qcStatus:els.qcStatusEl.value, software:els.softwareEl.value.trim(), 
+            location:els.locEl.value.trim(), pic:els.picEl.value.trim(), 
+            purchaseDate:els.purchaseEl.value||'', warrantyUntil:els.warrantyEl.value||'', 
+            notes:els.notesEl.value.trim() 
+          };
+          try {
+              els.addBtn.disabled = true;
+              els.addBtn.textContent = "Updating...";
+              await docRef.update(updatedItem); // v8 update
+              clearForm(); 
+              showToast('Item diperbarui di Firebase');
+          } catch (e) {
+              console.error("Error updating document: ", e);
+              showToast('Gagal update: ' + e.message, true);
+          } finally {
+              clearForm();
+          }
+        };
+        
+        els.nameEl.focus();
+        window.scrollTo({top: els.nameEl.closest('aside').offsetTop - 20, behavior:'smooth'}); 
+      }
+      else if(action==='del'){ 
+        if(confirm(`Hapus item ini dari Firebase?\nID: ${id}\nNama: ${a.name}`)){ 
+          docRef.delete() 
+              .then(() => {
+                  showToast('Item dihapus dari Firebase');
+              })
+              .catch(e => {
+                  console.error("Error deleting document: ", e);
+                  showToast('Gagal hapus: ' + e.message, true);
+              });
+        } 
+      }
+    });
+
+    els.updateBtn.onclick = clearForm; 
+
+    // CSV / JSON helpers
+    function csvSafe(s){ if(s==null) return ''; return '"'+String(s).replace(/"/g,'""')+'"'; }
+    function toCsv(rows){ const heads=['id','name','type','serial','qty','software','pic','location','purchaseDate','warrantyUntil','qcStatus','notes']; const lines=[heads.join(',')]; rows.forEach(r=>{ const arr=[r.id, csvSafe(r.name), csvSafe(r.type), csvSafe(r.serial), r.qty, csvSafe(r.software), csvSafe(r.pic), csvSafe(r.location), r.purchaseDate||'', r.warrantyUntil||'', csvSafe(r.qcStatus), csvSafe(r.notes)]; lines.push(arr.join(',')); }); return lines.join('\n'); }
+
+    els.exportCsvBtn.addEventListener('click', ()=>{ const csv = toCsv(db.assets); const blob = new Blob([csv], {type:'text/text/csv;charset=utf-8;'}); const a = document.createElement('a'); a.href = URL.createObjectURL(blob); a.download = 'assets_export_'+Date.now()+'.csv'; a.click(); URL.revokeObjectURL(a.href); showToast('CSV diexport'); });
+    els.exportJsonBtn.addEventListener('click', ()=>{ const blob = new Blob([JSON.stringify(db,null,2)], {type:'application/json'}); const a = document.createElement('a'); a.href = URL.createObjectURL(blob); a.download = 'assets_export_'+Date.now()+'.json'; a.click(); URL.revokeObjectURL(a.href); showToast('JSON diexport'); });
+
+    els.importCsvBtn.addEventListener('click', ()=> els.csvFile.click()); 
+    els.importJsonBtn.addEventListener('click', ()=> els.jsonFile.click());
+    els.backupBtn.addEventListener('click', ()=> els.exportJsonBtn.click());
+    els.restoreBtn.addEventListener('click', ()=> els.jsonFile.click());
+
+    // --- IMPORT FUNCTIONS (BATCH WRITE) (v8 Syntax) ---
+    async function processBatchImport(items) {
+      if (!items || items.length === 0) {
+          return showToast("Tidak ada item untuk diimpor", true);
+      }
+      
+      els.loader.style.display = 'flex';
+      els.loader.textContent = `Mengimpor ${items.length} item...`;
+
+      try {
+          let batch = fb_db_firestore.batch(); // v8 batch
+          let count = 0;
+          for (const item of items) {
+              let newItem = { ...item };
+              if (newItem.id) delete newItem.id; 
+              const docRef = fb_assetsCollectionRef.doc(); // v8 doc
+              batch.set(docRef, newItem); // v8 set
+              
+              count++;
+              if (count % 499 === 0) {
+                  await batch.commit();
+                  batch = fb_db_firestore.batch();
+                  els.loader.textContent = `Mengimpor ${count} / ${items.length}...`;
+              }
+          }
+          
+          if (count % 499 !== 0) {
+              await batch.commit();
+          }
+          
+          showToast(`Berhasil impor ${items.length} item ke Firebase`);
+      } catch (e) {
+          console.error("Batch import error: ", e);
+          showToast("Gagal impor: " + e.message, true);
+      } finally {
+          els.loader.style.display = 'none';
+      }
+    }
+
+    els.csvFile.addEventListener('change', async e=>{ const f = e.target.files[0]; if(!f) return; const txt = await f.text(); parseCsv(txt); els.csvFile.value=''; });
+    els.jsonFile.addEventListener('change', async e=>{ const f = e.target.files[0]; if(!f) return; try{ const txt = await f.text(); const data = JSON.parse(txt); const arr = Array.isArray(data.assets) ? data.assets : (Array.isArray(data) ? data : null); if(arr) { await processBatchImport(arr); } else showToast('JSON tidak berisi array "assets"', true); }catch(err){ showToast('Gagal import JSON: '+err.message, true); } els.jsonFile.value=''; });
     
-    copyBtn.onclick = function(){ 
-      try{ 
-        const el = document.createElement('textarea');
-        el.value = a.id;
-        document.body.appendChild(el);
-        el.select();
-        document.execCommand('copy');
-        document.body.removeChild(el);
-        window.showToast && window.showToast('ID disalin'); 
-      }catch(e){ window.showToast('Gagal salin', true); } 
+    els.fileInput.addEventListener('change', async e=>{ const f = e.target.files[0]; if(!f) return; try{ const txt = await f.text(); const data = JSON.parse(txt); if(data && Array.isArray(data.assets)){ if(confirm(`Anda akan MENIMPA SEMUA data saat ini dengan ${data.assets.length} item dari file backup. Lanjutkan?`)) { 
+      showToast("Restore = Import JSON. Memproses...", false);
+      await processBatchImport(data.assets);
+    } } else showToast('File JSON tidak valid untuk restore', true); }catch(err){ showToast('Gagal: '+err.message, true); } els.fileInput.value=''; });
+
+
+    function parseCsv(txt){ const lines = txt.split(/\r?\n/).filter(l=>l.trim()); if(lines.length<2) return showToast('CSV kosong', true); const heads = splitCsvLine(lines[0]); const arr=[]; for(let i=1;i<lines.length;i++){ const cols = splitCsvLine(lines[i]); if(cols.length<2) continue; const obj = { name: cols[1]||'Unknown', type: cols[2]||'Other', serial: cols[3]||'', qty: Number(cols[4]||1), software: cols[5]||'', pic: cols[6]||'', location: cols[7]||'', purchaseDate: cols[8]||'', warrantyUntil: cols[9]||'', qcStatus: cols[10]||'Belum QC', notes: cols[11]||'' }; arr.push(obj); }
+      processBatchImport(arr);
+    }
+
+    function splitCsvLine(line){ const res=[]; let cur=''; let inq=false; for(let i=0;i<line.length;i++){ const ch=line[i]; if(ch==='"'){ if(inq && line[i+1]==='"'){ cur+='"'; i++; continue; } inq=!inq; continue; } if(ch===',' && !inq){ res.push(cur); cur=''; } else cur+=ch; } res.push(cur); return res.map(s=>s.replace(/^"|"$/g,'')); }
+    
+    els.globalSearch.addEventListener('input', debounce(e=>{ render(e.target.value); window.highlightSearch && window.highlightSearch(e.target.value); }, 180));
+
+    // QC UI (v8 Syntax)
+    qcTemplate.forEach(it=>{ const el=document.createElement('label'); el.style.display='flex'; el.style.alignItems='center'; el.style.gap='8px'; const cb = document.createElement('input'); cb.type='checkbox'; cb.dataset.k=it.k; const span=document.createElement('span'); span.className='small'; span.textContent = it.l; el.appendChild(cb); el.appendChild(span); els.qcListEl.appendChild(el); });
+    
+    els.saveQcBtn.addEventListener('click', async () => { 
+      const target = document.getElementById('qcTargetId').value.trim(); 
+      if(!target) return showToast('Masukkan Asset ID pada field QC target.', true); 
+      const idx = db.assets.findIndex(a=>a.id===target); 
+      if(idx<0) return showToast('Asset ID tidak ditemukan di data lokal.', true); 
+      
+      const checked = {}; 
+      els.qcListEl.querySelectorAll('input[type=checkbox]').forEach(cb=> checked[cb.dataset.k]=!!cb.checked); 
+      
+      const docRef = fb_assetsCollectionRef.doc(target); // v8 doc
+      try {
+          await docRef.update({ qc: checked, qcStatus: els.qcStatusEl.value }); // v8 update
+          showToast('QC tersimpan pada asset '+target);
+      } catch (e) {
+          console.error("Error saving QC:", e);
+          showToast("Gagal simpan QC: " + e.message, true);
+      }
+    });
+    els.clearQcBtn.addEventListener('click', ()=> els.qcListEl.querySelectorAll('input[type=checkbox]').forEach(cb=>cb.checked=false));
+
+
+    // Excel with SheetJS (sama)
+    els.downloadExcelBtn.addEventListener('click', ()=>{ try{ if(typeof XLSX === 'undefined') throw new Error('SheetJS tidak tersedia'); const data = db.assets.map(a=>({ ID:a.id, Nama:a.name, Jenis:a.type, Serial:a.serial, Qty:a.qty, Software:a.software, PIC:a.pic, Lokasi:a.location, Purchase:a.purchaseDate, Warranty:a.warrantyUntil, QC:a.qcStatus })); const ws = XLSX.utils.json_to_sheet(data); const wb = XLSX.utils.book_new(); XLSX.utils.book_append_sheet(wb, ws, 'Assets'); XLSX.writeFile(wb, 'Zeppelin_Asset_'+Date.now()+'.xlsx'); showToast('Excel diunduh'); }catch(e){ showToast('Gagal generate Excel: '+e.message, true); } });
+
+    // Dashboard (sama)
+    function updateDashboard(){ const total = db.assets.reduce((s,a)=>s + (Number(a.qty)||0),0); const pcCount = db.assets.reduce((s,a)=> s + ((a.type==='Laptop' || a.type==='Desktop') ? Number(a.qty)||0 : 0), 0); let lulus=0,gagal=0,belum=0; db.assets.forEach(a=>{ if(!a.qcStatus || a.qcStatus==='Belum QC') belum += Number(a.qty)||0; else if(a.qcStatus==='Lulus QC') lulus += Number(a.qty)||0; else if(a.qcStatus==='Gagal QC') gagal += Number(a.qty)||0; }); els.kpiTotal.textContent = total; els.kpiPC.textContent = pcCount; els.kpiQC.textContent = `L:${lulus} G:${gagal} B:${belum}`;
+      const categories = {}; db.assets.forEach(a=> categories[a.type] = (categories[a.type]||0) + (Number(a.qty)||0)); const labels = Object.keys(categories); const values = labels.map(l=>categories[l]); try{ if(window.Chart){ if(barChart){ barChart.data.labels = labels; barChart.data.datasets[0].data = values; barChart.update(); } else { barChart = new Chart(els.barCanvas, { type:'bar', data:{ labels: labels.length?labels:['-'], datasets:[{ label:'Jumlah', data: values.length?values:[0], backgroundColor:'#ff7a18' }]}, options:{responsive:true,plugins:{legend:{display:false}}, scales:{y:{beginAtZero:true}}} }); } const pieData = [lulus,gagal,belum]; if(pieChart){ pieChart.data.datasets[0].data = pieData; pieChart.update(); } else { pieChart = new Chart(els.pieCanvas, { type:'pie', data:{ labels:['Lulus','Gagal','Belum'], datasets:[{ data: pieData, backgroundColor:['#1db954','#ff4d4f','#ffd166'] }]}, options:{responsive:true,plugins:{legend:{position:'bottom'}}} }); } } }catch(e){ /* ignore chart errors */ }
+    }
+
+    // expose minimal API for external scripts
+    return { 
+      loadFirestoreData,
+      detachFirestoreListener,
+      render, 
+      getDB: ()=>db, 
+      updateDashboard, 
+      clearForm, 
+      qcTemplate, // (BARU) Ekspor template QC
     };
-  }
+  })(elements); // (PERBAIKAN) Pass elements object
+
+  window.ZeppelinApp = ZeppelinApp;
   
-  closeBtn && closeBtn.addEventListener('click', ()=> overlay.style.display='none');
-  closeBtn2 && closeBtn2.addEventListener('click', ()=> overlay.style.display='none');
-  overlay && overlay.addEventListener('click', function(ev){ if(ev.target === overlay) overlay.style.display='none'; });
-})();
+  // (PERBAIKAN) Pindahkan Logika Skrip ke-2 ke sini
+  (function(els){
+    
+    window.refreshFilterOptions = function() { 
+      if (!window.ZeppelinApp) return;
+      const assets = window.ZeppelinApp.getDB().assets || [];
+      const typeSet=new Set(); const locSet=new Set(); const picSet=new Set(); 
+      assets.forEach(a=>{ if(a.type) typeSet.add(a.type); if(a.location) locSet.add(a.location); if(a.pic) picSet.add(a.pic); }); 
+      const selType=$('#filterType'); const selLoc=$$('#filterLoc'); const selPic=$('#filterPic'); 
+      // (PERBAIKAN) Tambahkan null check
+      if(!selType || !selLoc || !selPic) return; 
+      
+      [selType,selLoc,selPic].forEach(s=>{ 
+        if(s) { while(s.options.length>1) s.remove(1); }
+      }); 
+      
+      const sortSet = (s) => Array.from(s).sort((a,b) => a.localeCompare(b));
+      
+      sortSet(typeSet).forEach(v=> selType.add(new Option(v,v))); 
+      sortSet(locSet).forEach(v=> selLoc.add(new Option(v,v))); 
+      sortSet(picSet).forEach(v=> selPic.add(new Option(v,v))); 
+    }
+
+    function applyFiltersAndSearch(){ 
+      const search = ($('#globalSearch') && $('#globalSearch').value) || ''; 
+      const fType = ($('#filterType') && $('#filterType').value) || ''; 
+      const fQc = ($('#filterQc') && $('#filterQc').value) || ''; 
+      const fLoc = ($('#filterLoc') && $('#filterLoc').value) || ''; 
+      const fPic = ($('#filterPic') && $('#filterPic').value) || ''; 
+      
+      if(typeof window.ZeppelinApp.render === 'function'){ 
+        window.ZeppelinApp.render(search);
+        const rows = $all('#assetTable tbody tr'); 
+        rows.forEach(r=>{ 
+          const t = r; 
+          let show = true; 
+          try {
+              if(fType && t.children[2] && !t.children[2].textContent.includes(fType)) show=false; 
+              if(fQc && t.children[8] && !t.children[8].textContent.includes(fQc)) show=false; 
+              if(fLoc && t.children[7] && !t.children[7].textContent.includes(fLoc)) show=false; 
+              if(fPic && t.children[6] && !t.children[6].textContent.includes(fPic)) show=false; 
+          } catch (e) {
+              console.warn("Error applying filter to row: ", e, r);
+          }
+          t.style.display = show ? '' : 'none'; 
+        });
+      }
+      highlightSearch(search);
+    }
+
+    window.highlightSearch = function(q){ 
+      const tbody = document.querySelector('#assetTable tbody'); 
+      if(!tbody) return; 
+      const ql=(q||'').trim().toLowerCase(); 
+      tbody.querySelectorAll('tr').forEach(tr=>{ 
+        Array.from(tr.children).forEach((td, idx)=>{ 
+          if(idx === tr.children.length-1) return; 
+          const text = td.getAttribute('data-full') || td.textContent; 
+          if(ql && text.toLowerCase().includes(ql)){ 
+            const regex = new RegExp('('+escapeRegex(ql)+')','gi'); 
+            td.innerHTML = window.escapeHtml(text).replace(regex,'<mark>$1</mark>'); 
+          } else { 
+            td.textContent = text; 
+          } 
+        }); 
+      }); 
+    }
+    function escapeRegex(s){ return s.replace(/[-\/\\^$*+?.()|[\]{}]/g, '\\$&'); }
+
+    function enableSorting(){ const headers = $all('#assetTable thead th'); headers.forEach((th, idx)=>{ if(idx === headers.length-1) return; th.style.cursor='pointer'; th.addEventListener('click', ()=>{ const tbody = document.querySelector('#assetTable tbody'); if(!tbody) return; const rows = Array.from(tbody.querySelectorAll('tr')).filter(r=>r.style.display !== 'none'); const asc = th.dataset.asc === 'true' ? false : true; th.dataset.asc = asc; rows.sort((a,b)=>{ const aText = a.children[idx].textContent.trim().toLowerCase(); const bText = b.children[idx].textContent.trim().toLowerCase(); if(!isNaN(parseFloat(aText)) && !isNaN(parseFloat(bText))){ return asc ? (parseFloat(aText) - parseFloat(bText)) : (parseFloat(bText) - parseFloat(aText)); } return asc ? aText.localeCompare(bText) : bText.localeCompare(aText); }); rows.forEach(r=>tbody.appendChild(r)); }); }); }
+
+    function attachPrintReport(){ 
+      const btn = els.printReportBtn; 
+      if(!btn) return; 
+      btn.addEventListener('click', ()=>{ 
+        if (!window.ZeppelinApp) return;
+        const db = window.ZeppelinApp.getDB();
+        const assets = db.assets || []; 
+        const total = assets.reduce((s,a)=> s + (Number(a.qty)||0), 0); 
+        const pcCount = db.assets.reduce((s,a)=> s + ((a.type==='Laptop' || a.type==='Desktop') ? Number(a.qty)||0 : 0), 0); 
+        const date = new Date().toLocaleString('id-ID'); 
+        let html = `<!doctype html><html><head><meta charset="utf-8"><title>Laporan Asset</title><style>body{font-family:Inter,Arial,Helvetica,sans-serif;color:#0b1220;margin:24px}.header{display:flex;align-items:center;gap:16px;margin-bottom:12px}.logo{width:56px;height:56px;border-radius:8px;background:#ff7a18;display:flex;align-items:center;justify-content:center;font-weight:800;color:#08101a}h1{margin:0;font-size:20px}.muted{color:#6b7280;font-size:13px}.kpi-row{display:flex;gap:12px;margin:12px 0}.kpi{padding:10px;border-radius:8px;border:1px solid #e6e9ef;min-width:160px;text-align:center}table{width:100%;border-collapse:collapse;margin-top:12px;font-size:12px}th,td{padding:8px;border:1px solid #eee;text-align:left}</style></head><body>`; 
+        html += `<div class="header"><div class="logo">Z</div><div><h1>Laporan Asset — Zeppelin</h1><div class="muted">Dicetak: ${date}</div></div></div>`; 
+        html += `<div class="kpi-row"><div class="kpi"><strong>Total Asset</strong><div>${total}</div></div><div class="kpi"><strong>PC (Laptop/Desktop)</strong><div>${pcCount}</div></div></div>`; 
+        html += `<table><thead><tr><th>ID</th><th>Nama</th><th>Jenis</th><th>Serial</th><th>Qty</th><th>PIC</th><th>Lokasi</th><th>QC</th></tr></thead><tbody>`; 
+        assets.forEach(a=>{ html += `<tr><td>${window.escapeHtml(a.id)}</td><td>${window.escapeHtml(a.name)}</td><td>${window.escapeHtml(a.type)}</td><td>${window.escapeHtml(a.serial||'')}</td><td>${a.qty}</td><td>${window.escapeHtml(a.pic||'')}</td><td>${window.escapeHtml(a.location||'')}</td><td>${window.escapeHtml(a.qcStatus||'')}</td></tr>`; }); 
+        html += `</tbody></table></body></html>`; 
+        const win = window.open('','_blank','width=900,height=700'); 
+        if(win){ win.document.write(html); win.document.close(); setTimeout(()=> win.print(), 500); } else showToast('Pop-up diblokir. Izinkan pop-up untuk mencetak.', true); 
+      }); 
+    }
+
+    function attachFilterHandlers(){ ['#globalSearch','#filterType','#filterQc','#filterLoc','#filterPic'].forEach(id=>{ const el=$(id); if(el) { el.addEventListener('input', ()=> applyFiltersAndSearch()); el.addEventListener('change', ()=> applyFiltersAndSearch()); } }); }
+
+    // Panggil fungsi-fungsi ini
+    attachFilterHandlers(); 
+    enableSorting(); 
+    attachPrintReport(); 
+    
+  })(elements); // (PERBAIKAN) Pass elements object
+  
+
+  // Inisialisasi Firebase dan Auth
+  async function initFirebase() {
+      try {
+          fb_app = firebase.initializeApp(firebaseConfig);
+          fb_db_firestore = firebase.firestore();
+          fb_auth = firebase.auth();
+          console.log("Firebase App Initialized (v8). Waiting for Auth...");
+
+          // Listener status otentikasi
+          fb_auth.onAuthStateChanged(async (user) => {
+              if (user && user.uid === ADMIN_UID) {
+                  // --- USER ADALAH ADMIN ---
+                  console.log("Admin user authenticated:", user.uid);
+                  elements.authMsg.textContent = "Verifikasi Berhasil!";
+                  elements.authSubMsg.textContent = "Selamat datang, Admin. Memuat data aset...";
+                  
+                  fb_userId = user.uid;
+                  
+                  fb_assetsCollectionRef = fb_db_firestore.collection('users').doc(fb_userId).collection('assets');
+                  console.log("Firestore collection path:", `users/${fb_userId}/assets`);
+
+                  elements.userEmailDisplay.textContent = user.email;
+                  
+                  await ZeppelinApp.loadFirestoreData();
+                  elements.authScreen.style.display = 'none';
+                  elements.appContent.style.display = 'block';
+
+              } else {
+                  // --- BUKAN ADMIN / TIDAK LOGIN ---
+                  if(user) {
+                      console.log("Access Denied. User is not admin:", user.uid);
+                      await fb_auth.signOut(); 
+                  } else {
+                      console.log("Access Denied. User not logged in.");
+                  }
+                  
+                  elements.authSpinner.style.display = 'none';
+                  elements.authMsg.textContent = "Akses Ditolak";
+                  elements.authSubMsg.textContent = "Anda harus login sebagai Admin untuk mengakses halaman ini.";
+                  elements.authBackBtn.style.display = 'inline-block';
+                  
+                  fb_userId = null;
+                  elements.authScreen.style.display = 'flex'; 
+                  elements.appContent.style.display = 'none'; 
+                  elements.loader.style.display = 'none';
+                  ZeppelinApp.detachFirestoreListener(); 
+              }
+          });
+
+          // Event listener untuk logout
+          elements.logoutBtn.addEventListener('click', async () => {
+              if (confirm("Apakah Anda yakin ingin logout?")) {
+                  await fb_auth.signOut();
+              }
+          });
+
+      } catch (e) {
+          console.error("Firebase initialization failed:", e);
+          elements.authSpinner.style.display = 'none';
+          elements.authMsg.textContent = "Error Firebase";
+          elements.authSubMsg.textContent = "Gagal inisialisasi Firebase: " + e.message;
+          elements.authBackBtn.style.display = 'inline-block';
+      }
+  }
+
+  // Mulai aplikasi
+  initFirebase();
+    
 </script>
+
 </body>
 </html>
