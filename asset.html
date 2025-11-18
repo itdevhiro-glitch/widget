@@ -3,7 +3,7 @@
 <head>
 <meta charset="utf-8"/>
 <meta content="width=device-width,initial-scale=1" name="viewport"/>
-<title>Zeppelin — IT Asset Management (Pro)</title>
+<title>Zeppelin — IT Asset Management (v2)</title>
 <meta content="A professional IT Asset Management (ITAM) dashboard built with Firebase and Tailwind CSS." name="description"/>
 <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css">
 <script src="https://cdn.tailwindcss.com"></script>
@@ -16,19 +16,26 @@
   ::-webkit-scrollbar-thumb { background: #888; border-radius: 4px; }
   ::-webkit-scrollbar-thumb:hover { background: #555; }
   
-  /* ====================================================== */
-  /* PERBAIKAN 1: Transisi Halaman & Modal yang Halus        */
-  /* ====================================================== */
+  /* Transisi Halaman & Modal yang Halus */
   .page, .modal-backdrop {
     opacity: 0;
     visibility: hidden;
-    pointer-events: none; /* Mencegah interaksi saat tersembunyi */
-    transition: opacity 0.3s ease, visibility 0s 0.3s; /* Tunda penghapusan visibility */
+    pointer-events: none;
+    transition: opacity 0.3s ease, visibility 0s 0.3s;
   }
-  .page { display: block; } /* Ganti dari none */
-  .modal-backdrop { display: flex; } /* Tetap flex untuk centering */
   
-  /* Tampilkan saat aktif */
+  /* DIUBAH: .page sekarang 'absolute' untuk menumpuk
+     dan 'overflow-y-auto' untuk scrolling per halaman */
+  .page {
+    position: absolute;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+    overflow-y: auto; 
+  }
+  .modal-backdrop { display: flex; }
+  
   .page.active, .modal-backdrop.active {
     opacity: 1;
     visibility: visible;
@@ -36,10 +43,9 @@
     transition: opacity 0.3s ease;
   }
   
-  /* Beri animasi scale-up untuk konten modal */
-  .modal-backdrop > div { /* Target elemen anak (bg-dark-card) */
+  .modal-backdrop > div {
     transform: scale(0.95);
-    transition: transform 0.3s cubic-bezier(0.175, 0.885, 0.32, 1.275); /* Efek 'bouncy' */
+    transition: transform 0.3s cubic-bezier(0.175, 0.885, 0.32, 1.275);
   }
   .modal-backdrop.active > div {
     transform: scale(1);
@@ -49,11 +55,13 @@
   .spinner {
     width: 40px; height: 40px;
     border: 4px solid #f3f3f3;
-    border-top-color: #D9232D;
+    /* DIUBAH: Menggunakan warna aksen (oranye) agar konsisten */
+    border-top-color: #ff7a18; 
     border-radius: 50%;
     animation: spin 1s linear infinite;
     margin: 0 auto 20px auto;
   }
+  @keyframes spin { 100% { transform: rotate(360deg); } }
 
   /* Tombol Aksi Tabel */
   .action-btn {
@@ -63,59 +71,47 @@
     border-radius: 6px;
     transition: all 0.2s ease;
   }
+  .action-btn:hover {
+     transform: scale(1.05);
+  }
 
-  /* ====================================================== */
-  /* PERBAIKAN 3 & 4: Efek Hover, Input, dan Sidebar        */
-  /* ====================================================== */
-
-  /* Efek 'float' untuk KPI Card */
+  /* Efek Hover, Input, dan Sidebar */
   .kpi-card {
     transition: transform 0.3s ease, box-shadow 0.3s ease;
-    will-change: transform; /* Optimasi performa */
+    will-change: transform;
   }
   .kpi-card:hover {
     transform: translateY(-5px);
     box-shadow: 0 8px 20px rgba(0,0,0,0.25);
   }
 
-  /* Efek 'glow' & scale untuk Tombol Aksen (Oranye) */
   #addAssetBtn, #saveAssetBtn {
     transition: transform 0.2s ease, box-shadow 0.2s ease, opacity 0.2s ease;
     will-change: transform;
   }
   #addAssetBtn:hover, #saveAssetBtn:hover {
     transform: scale(1.03);
-    box-shadow: 0 4px 15px rgba(255, 122, 24, 0.3); /* Bayangan warna aksen */
-    opacity: 1; /* Override hover:opacity-90 */
+    box-shadow: 0 4px 15px rgba(255, 122, 24, 0.3);
+    opacity: 1;
   }
 
-  /* Transisi untuk Tombol Aksi Tabel */
-  .action-btn:hover {
-     transform: scale(1.05);
-  }
-
-  /* Transisi untuk baris tabel */
   #asset-table-body tr {
     transition: background-color 0.2s ease;
   }
   
-  /* Transisi halus untuk input form */
   .input, .search {
-    border: 1px solid #334155; /* Ganti border Tailwind */
+    border: 1px solid #334155;
     transition: border-color 0.2s ease, box-shadow 0.2s ease;
   }
   .input:focus, .search:focus {
-    border-color: #ff7a18; /* accent */
-    box-shadow: 0 0 0 3px rgba(255, 122, 24, 0.15); /* Ganti ring default */
+    border-color: #ff7a18;
+    box-shadow: 0 0 0 3px rgba(255, 122, 24, 0.15);
   }
   
-  /* Ganti 'border-l-4' di sidebar dengan 'inset shadow' */
   .nav-item.active {
     position: relative;
     box-shadow: inset 4px 0 0px #ff7a18;
   }
-  
-  @keyframes spin { 100% { transform: rotate(360deg); } }
 </style>
 <script>
   // Konfigurasi Tailwind
@@ -132,6 +128,8 @@
           'dark-text': '#f1f5f9',
           'dark-muted': '#94a3b8',
           'error': '#dc3545',
+          'success': '#1db954', // Status Lulus
+          'warning': '#f59e0b', // Status Belum
         },
       },
     },
@@ -140,12 +138,12 @@
 </head>
 <body class="bg-dark-bg text-dark-text">
 
-<div id="authVerificationScreen" class="fixed inset-0 z-50 flex items-center justify-center bg-gray-100 text-gray-800 p-4 text-center">
-  <div class="bg-white p-8 md:p-12 rounded-lg shadow-2xl">
+<div id="authVerificationScreen" class="fixed inset-0 z-50 flex items-center justify-center bg-dark-bg text-dark-text p-4 text-center">
+  <div class="bg-dark-card p-8 md:p-12 rounded-lg shadow-2xl border border-dark-border">
     <div class="spinner" id="authSpinner"></div>
-    <h3 id="authMessage" class="text-xl font-bold mb-2">Memverifikasi Sesi Admin...</h3>
-    <p id="authSubMessage" class="text-gray-600">Mengecek otentikasi Anda dengan Firebase...</p>
-    <a href="../index.html" id="authBackButton" class="mt-6 inline-block rounded-md bg-red-600 px-6 py-3 text-sm font-bold text-white shadow-md transition hover:bg-red-700" style="display: none;">Kembali ke Admin Dashboard</a>
+    <h3 id="authMessage" class="text-xl font-bold mb-2 text-white">Memverifikasi Sesi Admin...</h3>
+    <p id="authSubMessage" class="text-dark-muted">Mengecek otentikasi Anda dengan Firebase...</p>
+    <a href="../index.html" id="authBackButton" class="mt-6 inline-block rounded-md bg-error px-6 py-3 text-sm font-bold text-white shadow-md transition hover:bg-red-700" style="display: none;">Kembali ke Admin Dashboard</a>
   </div>
 </div>
 
@@ -185,111 +183,106 @@
     </div>
   </nav>
 
-  <main class="flex-1 overflow-y-auto p-8 md:p-10">
+  <main class="flex-1 relative">
     
-    <div id="page-dashboard" class="page active">
+    <div id="page-dashboard" class="page active p-8 md:p-10">
       <h1 class="text-3xl font-bold text-white mb-6">Dashboard</h1>
       
       <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
         <div class="kpi-card bg-dark-card p-6 rounded-lg shadow-lg border border-dark-border">
           <div class="flex items-center justify-between">
-            <span class="text-sm font-semibold text-dark-muted uppercase">Total Aset</span>
+            <span class="text-sm font-semibold text-dark-muted uppercase">Total Item (Qty)</span>
             <i class="fa-solid fa-boxes-stacked text-2xl text-accent"></i>
           </div>
-          <div id="kpi-total-assets" class="text-4xl font-extrabold text-white mt-4">0</div>
+          <div id="kpi-total-items" class="text-4xl font-extrabold text-white mt-4">0</div>
         </div>
         <div class="kpi-card bg-dark-card p-6 rounded-lg shadow-lg border border-dark-border">
           <div class="flex items-center justify-between">
-            <span class="text-sm font-semibold text-dark-muted uppercase">Nilai Aset</span>
-            <i class="fa-solid fa-dollar-sign text-2xl text-green-500"></i>
+            <span class="text-sm font-semibold text-dark-muted uppercase">Aset Unik</span>
+            <i class="fa-solid fa-hashtag text-2xl text-blue-500"></i>
           </div>
-          <div id="kpi-total-value" class="text-4xl font-extrabold text-white mt-4">Rp 0</div>
+          <div id="kpi-unique-assets" class="text-4xl font-extrabold text-white mt-4">0</div>
         </div>
         <div class="kpi-card bg-dark-card p-6 rounded-lg shadow-lg border border-dark-border">
           <div class="flex items-center justify-between">
-            <span class="text-sm font-semibold text-dark-muted uppercase">Diterapkan</span>
-            <i class="fa-solid fa-user-check text-2xl text-blue-500"></i>
+            <span class="text-sm font-semibold text-dark-muted uppercase">Lulus QC</span>
+            <i class="fa-solid fa-check-double text-2xl text-success"></i>
           </div>
-          <div id="kpi-deployed" class="text-4xl font-extrabold text-white mt-4">0</div>
+          <div id="kpi-lulus-qc" class="text-4xl font-extrabold text-white mt-4">0</div>
         </div>
         <div class="kpi-card bg-dark-card p-6 rounded-lg shadow-lg border border-dark-border">
           <div class="flex items-center justify-between">
-            <span class="text-sm font-semibold text-dark-muted uppercase">Dalam Stok</span>
-            <i class="fa-solid fa-warehouse text-2xl text-yellow-500"></i>
+            <span class="text-sm font-semibold text-dark-muted uppercase">Gagal / Belum QC</span>
+            <i class="fa-solid fa-triangle-exclamation text-2xl text-warning"></i>
           </div>
-          <div id="kpi-in-stock" class="text-4xl font-extrabold text-white mt-4">0</div>
+          <div id="kpi-fail-qc" class="text-4xl font-extrabold text-white mt-4">0</div>
         </div>
       </div>
 
       <div class="grid grid-cols-1 lg:grid-cols-5 gap-6 mt-8">
         <div class="lg:col-span-3 bg-dark-card p-6 rounded-lg shadow-lg border border-dark-border">
-          <h3 class="text-xl font-semibold text-white mb-4">Aset Berdasarkan Kategori</h3>
-          <canvas id="categoryChart" height="150"></canvas>
+          <h3 class="text-xl font-semibold text-white mb-4">Aset Berdasarkan Tipe</h3>
+          <canvas id="typeChart" height="150"></canvas>
         </div>
         <div class="lg:col-span-2 bg-dark-card p-6 rounded-lg shadow-lg border border-dark-border">
-          <h3 class="text-xl font-semibold text-white mb-4">Aset Berdasarkan Status</h3>
-          <canvas id="statusChart" height="150"></canvas>
+          <h3 class="text-xl font-semibold text-white mb-4">Aset Berdasarkan Status QC</h3>
+          <canvas id="qcStatusChart" height="150"></canvas>
         </div>
       </div>
     </div>
 
-    <div id="page-assets" class="page">
+    <div id="page-assets" class="page p-8 md:p-10">
       <div class="flex items-center justify-between mb-6">
         <h1 class="text-3xl font-bold text-white">Database Aset</h1>
-        <button id="addAssetBtn" class="py-2 px-5 rounded-md bg-accent text-black font-bold shadow-md transition hover:opacity-90">
+        <button id="addAssetBtn" class="py-2 px-5 rounded-md bg-accent text-black font-bold shadow-md">
           <i class="fa-solid fa-plus mr-2"></i>Tambah Aset Baru
         </button>
       </div>
       
-      <div class="bg-dark-card p-4 rounded-lg shadow-lg border border-dark-border mb-6 flex flex-wrap gap-4">
-        <div class="relative flex-grow min-w-[250px]">
+      <div class="bg-dark-card p-4 rounded-lg shadow-lg border border-dark-border mb-6 flex flex-col md:flex-row md:items-center md:justify-between gap-4">
+        <div class="relative flex-grow">
           <i class="fa-solid fa-search absolute left-4 top-1/2 -translate-y-1/2 text-dark-muted"></i>
-          <input id="searchInput" type="text" placeholder="Cari berdasarkan nama, serial, atau PIC..." class="search w-full bg-dark-bg pl-10 pr-4 py-2 rounded-md focus:border-accent focus:ring-accent focus:ring-1">
+          <input id="searchInput" type="text" placeholder="Cari berdasarkan nama, serial, lokasi, atau PIC..." class="search w-full bg-dark-bg pl-10 pr-4 py-2 rounded-md focus:ring-accent focus:ring-1">
         </div>
-        <select id="filterStatus" class="search bg-dark-bg rounded-md focus:border-accent focus:ring-accent focus:ring-1">
-          <option value="">Semua Status</option>
-          <option value="Deployed">Deployed</option>
-          <option value="In Stock">In Stock</option>
-          <option value="In Repair">In Repair</option>
-          <option value="Disposed">Disposed</option>
-        </select>
-        <select id="filterCategory" class="search bg-dark-bg rounded-md focus:border-accent focus:ring-accent focus:ring-1">
-          <option value="">Semua Kategori</option>
-          <option value="Laptop">Laptop</option>
-          <option value="Desktop">Desktop</option>
-          <option value="Monitor">Monitor</option>
-          <option value="Periferal">Periferal</option>
-          <option value="Jaringan">Jaringan</option>
-          <option value="Lainnya">Lainnya</option>
-        </select>
-        <button id="exportExcelBtn" class="py-2 px-4 rounded-md bg-dark-bg text-dark-muted font-semibold border border-dark-border transition hover:bg-green-600/20 hover:text-green-400 hover:border-green-500">
-          <i class="fa-solid fa-file-excel mr-2"></i>Export
-        </button>
+        <div class="flex flex-shrink-0 gap-3 flex-wrap md:flex-nowrap">
+          <select id="filterQcStatus" class="search bg-dark-bg rounded-md focus:ring-accent focus:ring-1">
+            <option value="">Semua Status QC</option>
+            <option value="Lulus QC">Lulus QC</option>
+            <option value="Gagal QC">Gagal QC</option>
+            <option value="Belum QC">Belum QC</option>
+          </select>
+          <select id="filterType" class="search bg-dark-bg rounded-md focus:ring-accent focus:ring-1">
+            <option value="">Semua Tipe Aset</option>
+            </select>
+          <button id="exportExcelBtn" class="py-2 px-4 rounded-md bg-dark-bg text-dark-muted font-semibold border border-dark-border transition hover:bg-green-600/20 hover:text-green-400 hover:border-green-500">
+            <i class="fa-solid fa-file-excel mr-2"></i>Export
+          </button>
+        </div>
       </div>
-
       <div class="bg-dark-card rounded-lg shadow-lg border border-dark-border overflow-hidden">
         <div class="overflow-x-auto">
           <table class="w-full min-w-[1000px]">
             <thead class="bg-dark-bg/50">
               <tr>
                 <th class="p-4 text-left text-xs font-medium text-dark-muted uppercase tracking-wider">Nama Aset</th>
-                <th class="p-4 text-left text-xs font-medium text-dark-muted uppercase tracking-wider">Kategori</th>
-                <th class="p-4 text-left text-xs font-medium text-dark-muted uppercase tracking-wider">Status</th>
-                <th class="p-4 text-left text-xs font-medium text-dark-muted uppercase tracking-wider">Serial</th>
+                <th class="p-4 text-left text-xs font-medium text-dark-muted uppercase tracking-wider">Tipe</th>
+                <th class="p-4 text-left text-xs font-medium text-dark-muted uppercase tracking-wider">Status QC</th>
+                <th class="p-4 text-center text-xs font-medium text-dark-muted uppercase tracking-wider">Qty</th>
+                <th class="p-4 text-left text-xs font-medium text-dark-muted uppercase tracking-wider">Lokasi</th>
                 <th class="p-4 text-left text-xs font-medium text-dark-muted uppercase tracking-wider">PIC</th>
-                <th class="p-4 text-left text-xs font-medium text-dark-muted uppercase tracking-wider">Tgl. Beli</th>
+                <th class="p-4 text-left text-xs font-medium text-dark-muted uppercase tracking-wider">Serial</th>
                 <th class="p-4 text-right text-xs font-medium text-dark-muted uppercase tracking-wider">Aksi</th>
               </tr>
             </thead>
             <tbody id="asset-table-body" class="divide-y divide-dark-border">
-              <tr><td colspan="7" class="p-6 text-center text-dark-muted">Memuat data aset...</td></tr>
+              <tr><td colspan="8" class="p-6 text-center text-dark-muted">Memuat data aset...</td></tr>
             </tbody>
           </table>
         </div>
       </div>
     </div>
 
-    <div id="page-vendors" class="page">
+    <div id="page-vendors" class="page p-8 md:p-10">
       <h1 class="text-3xl font-bold text-white mb-6">Manajemen Vendor</h1>
       <div class="bg-dark-card p-10 rounded-lg shadow-lg border border-dark-border text-center">
         <i class="fa-solid fa-store text-5xl text-dark-muted mb-4"></i>
@@ -302,7 +295,7 @@
 </div>
 
 <div id="loader" class="modal-backdrop fixed inset-0 z-[99] bg-black/60 items-center justify-center">
-  <div class="spinner !border-t-accent"></div>
+  <div class="spinner"></div>
 </div>
 
 <div id="assetModal" class="modal-backdrop fixed inset-0 z-50 bg-black/60 items-center justify-center p-4">
@@ -314,68 +307,71 @@
     <form id="assetForm" class="flex-grow overflow-y-auto p-6 space-y-6">
       <input type="hidden" id="assetId">
       
-      <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
-        <div>
+      <div class="grid grid-cols-1 md:grid-cols-3 gap-6">
+        <div class="md:col-span-2">
           <label for="assetName" class="block text-sm font-medium text-dark-muted mb-1">Nama Aset*</label>
-          <input type="text" id="assetName" required class="input w-full bg-dark-bg rounded-md focus:border-accent focus:ring-accent focus:ring-1">
+          <input type="text" id="assetName" required class="input w-full bg-dark-bg rounded-md focus:ring-accent focus:ring-1">
         </div>
         <div>
-          <label for="serialNumber" class="block text-sm font-medium text-dark-muted mb-1">Serial Number*</label>
-          <input type="text" id="serialNumber" required class="input w-full bg-dark-bg rounded-md focus:border-accent focus:ring-accent focus:ring-1">
+          <label for="qty" class="block text-sm font-medium text-dark-muted mb-1">Quantity*</label>
+          <input type="number" id="qty" value="1" required class="input w-full bg-dark-bg rounded-md focus:ring-accent focus:ring-1">
+        </div>
+      </div>
+      
+      <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
+        <div>
+          <label for="type" class="block text-sm font-medium text-dark-muted mb-1">Tipe Aset*</label>
+          <input type="text" id="type" placeholder="e.g., Laptop, Keyboard, HDD" required class="input w-full bg-dark-bg rounded-md focus:ring-accent focus:ring-1">
+        </div>
+        <div>
+          <label for="serialNumber" class="block text-sm font-medium text-dark-muted mb-1">Serial Number</label>
+          <input type="text" id="serialNumber" class="input w-full bg-dark-bg rounded-md focus:ring-accent focus:ring-1">
         </div>
       </div>
       
       <div class="grid grid-cols-1 md:grid-cols-3 gap-6">
         <div>
-          <label for="category" class="block text-sm font-medium text-dark-muted mb-1">Kategori*</label>
-          <select id="category" required class="input w-full bg-dark-bg rounded-md focus:border-accent focus:ring-accent focus:ring-1">
-            <option value="Laptop">Laptop</option>
-            <option value="Desktop">Desktop</option>
-            <option value="Monitor">Monitor</option>
-            <option value="Periferal">Periferal</option>
-            <option value="Jaringan">Jaringan</option>
-            <option value="Lainnya">Lainnya</option>
+          <label for="qcStatus" class="block text-sm font-medium text-dark-muted mb-1">Status QC*</label>
+          <select id="qcStatus" required class="input w-full bg-dark-bg rounded-md focus:ring-accent focus:ring-1">
+            <option value="Lulus QC">Lulus QC</option>
+            <option value="Gagal QC">Gagal QC</option>
+            <option value="Belum QC">Belum QC</option>
           </select>
         </div>
         <div>
-          <label for="status" class="block text-sm font-medium text-dark-muted mb-1">Status*</label>
-          <select id="status" required class="input w-full bg-dark-bg rounded-md focus:border-accent focus:ring-accent focus:ring-1">
-            <option value="In Stock">In Stock</option>
-            <option value="Deployed">Deployed</option>
-            <option value="In Repair">In Repair</option>
-            <option value="Disposed">Disposed</option>
-          </select>
+          <label for="location" class="block text-sm font-medium text-dark-muted mb-1">Lokasi</label>
+          <input type="text" id="location" placeholder="e.g., Ruang IT, Lt. 3 Finance" class="input w-full bg-dark-bg rounded-md focus:ring-accent focus:ring-1">
         </div>
         <div>
           <label for="pic" class="block text-sm font-medium text-dark-muted mb-1">PIC (User)</label>
-          <input type="text" id="pic" placeholder="Nama pengguna (jika 'Deployed')" class="input w-full bg-dark-bg rounded-md focus:border-accent focus:ring-accent focus:ring-1">
+          <input type="text" id="pic" placeholder="Nama pengguna" class="input w-full bg-dark-bg rounded-md focus:ring-accent focus:ring-1">
         </div>
       </div>
 
       <div class="grid grid-cols-1 md:grid-cols-3 gap-6">
         <div>
           <label for="purchaseDate" class="block text-sm font-medium text-dark-muted mb-1">Tgl. Pembelian</label>
-          <input type="date" id="purchaseDate" class="input w-full bg-dark-bg rounded-md focus:border-accent focus:ring-accent focus:ring-1">
+          <input type="date" id="purchaseDate" class="input w-full bg-dark-bg rounded-md focus:ring-accent focus:ring-1">
         </div>
         <div>
-          <label for="cost" class="block text-sm font-medium text-dark-muted mb-1">Harga Beli (Rp)</label>
-          <input type="number" id="cost" placeholder="10000000" class="input w-full bg-dark-bg rounded-md focus:border-accent focus:ring-accent focus:ring-1">
+          <label for="warrantyUntil" class="block text-sm font-medium text-dark-muted mb-1">Garansi Sampai</label>
+          <input type="date" id="warrantyUntil" class="input w-full bg-dark-bg rounded-md focus:ring-accent focus:ring-1">
         </div>
         <div>
-          <label for="vendor" class="block text-sm font-medium text-dark-muted mb-1">Vendor</label>
-          <input type="text" id="vendor" placeholder="Nama toko/vendor" class="input w-full bg-dark-bg rounded-md focus:border-accent focus:ring-accent focus:ring-1">
+          <label for="software" class="block text-sm font-medium text-dark-muted mb-1">Software Terinstall</label>
+          <input type="text" id="software" placeholder="e.g., Win 11, Office 2021" class="input w-full bg-dark-bg rounded-md focus:ring-accent focus:ring-1">
         </div>
       </div>
       
       <div>
         <label for="notes" class="block text-sm font-medium text-dark-muted mb-1">Catatan</label>
-        <textarea id="notes" rows="3" placeholder="Spesifikasi, riwayat perbaikan singkat, dll..." class="input w-full bg-dark-bg rounded-md focus:border-accent focus:ring-accent focus:ring-1"></textarea>
+        <textarea id="notes" rows="3" placeholder="Spesifikasi, riwayat perbaikan singkat, dll..." class="input w-full bg-dark-bg rounded-md focus:ring-accent focus:ring-1"></textarea>
       </div>
 
     </form>
     <div class="flex items-center justify-end p-5 border-t border-dark-border bg-dark-bg/50 rounded-b-lg">
       <button id="cancelAssetModal" type="button" class="py-2 px-5 rounded-md bg-dark-bg text-dark-muted font-bold border border-dark-border transition hover:bg-dark-border">Batal</button>
-      <button id="saveAssetBtn" type="submit" form="assetForm" class="ml-3 py-2 px-5 rounded-md bg-accent text-black font-bold shadow-md transition hover:opacity-90">Simpan Aset</button>
+      <button id="saveAssetBtn" type="submit" form="assetForm" class="ml-3 py-2 px-5 rounded-md bg-accent text-black font-bold shadow-md">Simpan Aset</button>
     </div>
   </div>
 </div>
@@ -391,19 +387,27 @@
       <div class="grid grid-cols-2 md:grid-cols-3 gap-6">
         <div class="info-group">
           <span class="text-sm font-medium text-dark-muted">Nama Aset</span>
-          <p id="view-assetName" class="text-lg font-semibold text-white"></p>
+          <p id="view-name" class="text-lg font-semibold text-white"></p>
+        </div>
+        <div class="info-group">
+          <span class="text-sm font-medium text-dark-muted">Tipe Aset</span>
+          <p id="view-type" class="text-lg font-semibold text-white"></p>
+        </div>
+        <div class="info-group">
+          <span class="text-sm font-medium text-dark-muted">Quantity</span>
+          <p id="view-qty" class="text-lg font-semibold text-white"></p>
         </div>
         <div class="info-group">
           <span class="text-sm font-medium text-dark-muted">Serial Number</span>
-          <p id="view-serialNumber" class="text-lg font-semibold text-white"></p>
+          <p id="view-serial" class="text-lg font-semibold text-white"></p>
         </div>
         <div class="info-group">
-          <span class="text-sm font-medium text-dark-muted">Kategori</span>
-          <p id="view-category" class="text-lg font-semibold text-white"></p>
+          <span class="text-sm font-medium text-dark-muted">Status QC</span>
+          <p id="view-qcStatus" class="text-lg font-semibold text-white"></p>
         </div>
         <div class="info-group">
-          <span class="text-sm font-medium text-dark-muted">Status</span>
-          <p id="view-status" class="text-lg font-semibold text-white"></p>
+          <span class="text-sm font-medium text-dark-muted">Lokasi</span>
+          <p id="view-location" class="text-lg font-semibold text-white"></p>
         </div>
         <div class="info-group">
           <span class="text-sm font-medium text-dark-muted">PIC</span>
@@ -414,15 +418,16 @@
           <p id="view-purchaseDate" class="text-lg font-semibold text-white"></p>
         </div>
         <div class="info-group">
-          <span class="text-sm font-medium text-dark-muted">Harga Beli</span>
-          <p id="view-cost" class="text-lg font-semibold text-white"></p>
-        </div>
-        <div class="info-group">
-          <span class="text-sm font-medium text-dark-muted">Vendor</span>
-          <p id="view-vendor" class="text-lg font-semibold text-white"></p>
+          <span class="text-sm font-medium text-dark-muted">Garansi Sampai</span>
+          <p id="view-warrantyUntil" class="text-lg font-semibold text-white"></p>
         </div>
       </div>
       
+      <div class="info-group">
+        <span class="text-sm font-medium text-dark-muted">Software</span>
+        <p id="view-software" class="text-lg font-semibold text-white"></p>
+      </div>
+
       <div>
         <span class="text-sm font-medium text-dark-muted">Catatan</span>
         <p id="view-notes" class="text-base text-white bg-dark-bg/50 p-4 rounded-md mt-1 whitespace-pre-wrap"></p>
@@ -448,7 +453,7 @@
 <script src="https://www.gstatic.com/firebasejs/8.10.1/firebase-firestore.js"></script>
 
 <script>
-  // Konfigurasi Firebase Anda dari index.html
+  // Konfigurasi Firebase Anda
   const firebaseConfig = {
       apiKey: "AIzaSyA9wgSalrlTcveIZi2i-WND86z1i9JYHKw",
       authDomain: "it-support-53eeb.firebaseapp.com",
@@ -460,15 +465,14 @@
       measurementId: "G-33K6DDE1VR"
   };
   
-  // ID Admin dari index.html
+  // ID Admin
   const ADMIN_UID = "Ogy9lUbGHbSu8wYIYx2gQsTtFDF2";
 
   // --- Toast Helper (Global) ---
   function showToast(txt, isError = false){ 
     let t = document.getElementById('toastMsg'); 
     if(!t){ 
-      t=document.createElement('div'); 
-      t.id='toastMsg'; 
+      t=document.createElement('div'); t.id='toastMsg'; 
       Object.assign(t.style, {
         position: 'fixed', right: '20px', bottom: '20px', zIndex: '10000',
         padding: '12px 20px', borderRadius: '8px', color: 'white',
@@ -478,8 +482,7 @@
       });
       document.body.appendChild(t); 
     } 
-    t.textContent=txt; 
-    t.style.opacity='1'; 
+    t.textContent=txt; t.style.opacity='1'; 
     setTimeout(()=> { t.style.opacity='0'; setTimeout(() => t.remove(), 300); }, isError ? 4000 : 2500); 
   }
   window.showToast = showToast;
@@ -489,87 +492,46 @@
   function $(sel){ return document.querySelector(sel); }
   function $all(sel){ return Array.from(document.querySelectorAll(sel)); }
   
-  // ======================================================
-  // PERBAIKAN 2: Fungsi Animasi Count-Up
-  // ======================================================
+  // Fungsi Animasi Count-Up
   function animateCountUp(el, to) {
-    let from = 0;
-    const duration = 1200; // Durasi animasi
-    const start = performance.now();
-    
-    const step = (timestamp) => {
-      const progress = Math.min((timestamp - start) / duration, 1);
-      const val = Math.floor(progress * to);
-      if (el) el.textContent = val.toLocaleString('id-ID'); // Gunakan format lokal
-      if (progress < 1) {
-        window.requestAnimationFrame(step);
-      }
-    };
-    window.requestAnimationFrame(step);
-  }
-  
-  function animateCurrencyUp(el, to) {
-    let from = 0;
     const duration = 1200;
     const start = performance.now();
-    
     const step = (timestamp) => {
       const progress = Math.min((timestamp - start) / duration, 1);
       const val = Math.floor(progress * to);
-      if (el) el.textContent = formatRupiah(val); // Gunakan fungsi formatRupiah
-      if (progress < 1) {
-        window.requestAnimationFrame(step);
-      }
+      if (el) el.textContent = val.toLocaleString('id-ID');
+      if (progress < 1) window.requestAnimationFrame(step);
     };
     window.requestAnimationFrame(step);
   }
-  // ======================================================
   
-  function formatRupiah(angka) {
-    if (isNaN(angka)) return "Rp 0";
-    return new Intl.NumberFormat('id-ID', {
-      style: 'currency',
-      currency: 'IDR',
-      minimumFractionDigits: 0,
-      maximumFractionDigits: 0
-    }).format(angka);
-  }
   function formatDate(isoString) {
     if (!isoString) return '-';
     try {
       return new Date(isoString).toLocaleDateString('id-ID', {
         day: '2-digit', month: 'short', year: 'numeric'
       });
-    } catch (e) {
-      return isoString; // fallback
-    }
+    } catch (e) { return isoString; }
   }
 
   // --- Variabel Global Aplikasi ---
   let fb_app, fb_db, fb_auth, fb_userId, fb_assetsCollectionRef;
   let allAssetsCache = [];
   let assetListener = null;
-  let categoryChartInstance = null;
-  let statusChartInstance = null;
-  let currentEditingId = null;
+  let typeChartInstance = null;
+  let qcStatusChartInstance = null;
   
   // ==================================================================
   // TITIK MASUK UTAMA APLIKASI
   // ==================================================================
   window.addEventListener('load', () => {
-    // 1. Inisialisasi Firebase
     try {
       fb_app = firebase.initializeApp(firebaseConfig);
       fb_db = firebase.firestore();
       fb_auth = firebase.auth();
       console.log("Firebase App Initialized (v8). Waiting for Auth...");
-      
-      // 2. Pasang Listener Otentikasi
       fb_auth.onAuthStateChanged(authVerificationHandler);
-      
-      // 3. Pasang Semua Event Listener UI
       attachUIListeners();
-
     } catch (e) {
       console.error("Firebase initialization failed:", e);
       showAuthError("Error Firebase", "Gagal inisialisasi Firebase: " + e.message);
@@ -580,43 +542,29 @@
   // FUNGSI INTI
   // ==================================================================
 
-  /**
-   * Menangani status login user. Ini adalah gerbang utama aplikasi.
-   */
   async function authVerificationHandler(user) {
     const els = {
       authScreen: $("#authVerificationScreen"),
-      authMsg: $("#authMessage"),
-      authSubMsg: $("#authSubMessage"),
-      authBackBtn: $("#authBackButton"),
-      authSpinner: $("#authSpinner"),
       appContainer: $("#appContainer"),
       userEmailDisplay: $("#userEmailDisplay")
     };
 
     if (user && user.uid === ADMIN_UID) {
-        // --- USER ADALAH ADMIN ---
         console.log("Admin user authenticated:", user.uid);
-        els.authMsg.textContent = "Verifikasi Berhasil!";
-        els.authSubMsg.textContent = "Selamat datang, Admin. Memuat data aset...";
+        $("#authMessage").textContent = "Verifikasi Berhasil!";
+        $("#authSubMessage").textContent = "Selamat datang, Admin. Memuat data aset...";
         
         fb_userId = user.uid;
-        
-        // Tentukan path ke koleksi data
-        fb_assetsCollectionRef = fb_db.collection('users').doc(fb_userId).collection('assets');
-        console.log("Firestore collection path:", `users/${fb_userId}/assets`);
+        fb_assetsCollectionRef = fb_db.collection('users').doc(fb_userId).collection('assets_v2'); // Koleksi baru
+        console.log("Firestore collection path:", `users/${fb_userId}/assets_v2`);
 
         els.userEmailDisplay.textContent = user.email;
         
-        // Muat data aset
         await loadAssetData();
         
-        // Tampilkan aplikasi
         els.authScreen.style.display = 'none';
         els.appContainer.style.display = 'flex';
-
     } else {
-        // --- BUKAN ADMIN / TIDAK LOGIN ---
         if(user) {
             console.log("Access Denied. User is not admin:", user.uid);
             await fb_auth.signOut(); 
@@ -630,13 +578,10 @@
         els.authScreen.style.display = 'flex'; 
         els.appContainer.style.display = 'none'; 
         $('#loader').style.display = 'none';
-        if (assetListener) assetListener(); // Hentikan listener data
+        if (assetListener) assetListener();
     }
   }
 
-  /**
-   * Menampilkan pesan error di layar verifikasi.
-   */
   function showAuthError(title, message) {
     $("#authSpinner").style.display = 'none';
     $("#authMessage").textContent = title;
@@ -644,83 +589,59 @@
     $("#authBackButton").style.display = 'inline-block';
   }
 
-  /**
-   * Memasang semua event listener untuk UI (Tombol, Form, Navigasi).
-   */
   function attachUIListeners() {
     // Navigasi Sidebar
     $all('.nav-item').forEach(item => {
       item.addEventListener('click', (e) => {
         e.preventDefault();
-        const targetId = item.getAttribute('href').substring(1); // e.g., 'dashboard'
+        const targetId = item.getAttribute('href').substring(1);
         
-        // Hapus 'active' dari semua
-        $all('.nav-item').forEach(nav => {
-          // PERBAIKAN 4: Menghapus 'border-l-4' dan 'border-accent'
-          nav.classList.remove('active', 'bg-dark-bg');
-          nav.classList.add('text-dark-muted');
-        });
+        $all('.nav-item').forEach(nav => nav.classList.remove('active', 'bg-dark-bg'));
         $all('.page').forEach(page => page.classList.remove('active'));
 
-        // Tambah 'active' ke target
-        // PERBAIKAN 4: Menghapus 'border-l-4' dan 'border-accent'
         item.classList.add('active', 'bg-dark-bg');
-        item.classList.remove('text-dark-muted');
         $('#page-' + targetId).classList.add('active');
       });
     });
 
-    // Tombol Logout
     $('#logoutBtn').addEventListener('click', async () => {
-      if (confirm("Apakah Anda yakin ingin logout?")) {
-        await fb_auth.signOut();
-      }
+      if (confirm("Apakah Anda yakin ingin logout?")) await fb_auth.signOut();
     });
 
-    // Tombol Tambah Aset (Buka Modal)
     $('#addAssetBtn').addEventListener('click', () => openAssetModal());
-
-    // Tombol Modal Aset
     $('#closeAssetModal').addEventListener('click', () => $('#assetModal').classList.remove('active'));
     $('#cancelAssetModal').addEventListener('click', () => $('#assetModal').classList.remove('active'));
     $('#assetForm').addEventListener('submit', saveAsset);
-
-    // Tombol Modal Lihat Detail
     $('#closeViewModal').addEventListener('click', () => $('#viewAssetModal').classList.remove('active'));
 
     // Filter & Search
     $('#searchInput').addEventListener('input', debounce(() => renderAssetTable(allAssetsCache), 300));
-    $('#filterStatus').addEventListener('change', () => renderAssetTable(allAssetsCache));
-    $('#filterCategory').addEventListener('change', () => renderAssetTable(allAssetsCache));
+    $('#filterQcStatus').addEventListener('change', () => renderAssetTable(allAssetsCache));
+    $('#filterType').addEventListener('change', () => renderAssetTable(allAssetsCache));
 
-    // Tombol Aksi di Tabel (View, Edit, Delete)
     $('#asset-table-body').addEventListener('click', handleTableActions);
-    
-    // Tombol Export
     $('#exportExcelBtn').addEventListener('click', exportToExcel);
   }
 
   // ==================================================================
-  // FUNGSI DATA (CRUD & RENDER)
+  // FUNGSI DATA (CRUD & RENDER) - (v2)
   // ==================================================================
 
-  /**
-   * (CREATE / UPDATE) Menyimpan data aset ke Firestore.
-   */
   async function saveAsset(e) {
     e.preventDefault();
-    const loader = $('#loader');
-    loader.style.display = 'flex';
+    $('#loader').style.display = 'flex';
 
     const assetData = {
       name: $('#assetName').value,
+      qty: parseInt($('#qty').value) || 0,
+      type: $('#type').value,
       serial: $('#serialNumber').value,
-      category: $('#category').value,
-      status: $('#status').value,
+      qcStatus: $('#qcStatus').value,
+      location: $('#location').value,
       pic: $('#pic').value,
       purchaseDate: $('#purchaseDate').value,
-      cost: parseFloat($('#cost').value) || 0,
-      vendor: $('#vendor').value,
+      warrantyUntil: $('#warrantyUntil').value,
+      software: $('#software').value,
       notes: $('#notes').value,
       lastUpdate: firebase.firestore.FieldValue.serverTimestamp()
     };
@@ -733,8 +654,11 @@
         // --- UPDATE ---
         const docRef = fb_assetsCollectionRef.doc(assetId);
         const oldDoc = allAssetsCache.find(a => a.id === assetId);
-        if (oldDoc && oldDoc.status !== assetData.status) {
-          logMessage = `Status diubah dari '${oldDoc.status}' menjadi '${assetData.status}'.`;
+        
+        if (oldDoc && oldDoc.qcStatus !== assetData.qcStatus) {
+          logMessage = `Status QC diubah dari '${oldDoc.qcStatus}' menjadi '${assetData.qcStatus}'.`;
+        } else if (oldDoc && oldDoc.location !== assetData.location) {
+          logMessage = `Lokasi diubah dari '${oldDoc.location}' menjadi '${assetData.location}'. (PIC: ${assetData.pic})`;
         } else {
           logMessage = "Detail aset diperbarui.";
         }
@@ -747,7 +671,7 @@
         // --- CREATE ---
         assetData.createdAt = firebase.firestore.FieldValue.serverTimestamp();
         const docRef = await fb_assetsCollectionRef.add(assetData);
-        logMessage = `Aset dibuat dengan status '${assetData.status}'.`;
+        logMessage = `Aset dibuat dengan status QC '${assetData.qcStatus}'.`;
         await addAssetLog(docRef.id, logMessage, "Create");
         showToast('Aset baru berhasil ditambahkan');
       }
@@ -758,52 +682,41 @@
       console.error("Error saving asset: ", e);
       showToast('Gagal menyimpan aset: ' + e.message, true);
     } finally {
-      loader.style.display = 'none';
+      $('#loader').style.display = 'none';
     }
   }
 
-  /**
-   * (READ) Memuat data aset dari Firestore.
-   */
   function loadAssetData() {
-    if (assetListener) assetListener(); // Hentikan listener lama
-    
-    const loader = $('#loader');
-    loader.style.display = 'flex';
+    return new Promise((resolve, reject) => {
+      if (assetListener) assetListener();
+      $('#loader').style.display = 'flex';
 
-    assetListener = fb_assetsCollectionRef.orderBy('name', 'asc').onSnapshot((snapshot) => {
-        console.log(`(DATA AKTUAL) Menerima ${snapshot.docs.length} dokumen aset.`);
-        allAssetsCache = snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() }));
-        
-        renderAssetTable(allAssetsCache);
-        updateDashboard(allAssetsCache);
-        
-        loader.style.display = 'none';
-    }, (error) => {
-        console.error("Error listening to Firestore:", error);
-        showToast('Gagal memuat data aset: ' + error.message, true);
-        loader.style.display = 'none';
+      assetListener = fb_assetsCollectionRef.orderBy('name', 'asc').onSnapshot((snapshot) => {
+          console.log(`(DATA AKTUAL) Menerima ${snapshot.docs.length} dokumen aset.`);
+          allAssetsCache = snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() }));
+          
+          populateTypeFilter(allAssetsCache);
+          renderAssetTable(allAssetsCache);
+          updateDashboard(allAssetsCache);
+          
+          $('#loader').style.display = 'none';
+          resolve();
+      }, (error) => {
+          console.error("Error listening to assets:", error);
+          showToast('Gagal memuat data aset: ' + error.message, true);
+          $('#loader').style.display = 'none';
+          reject(error);
+      });
     });
   }
 
-  /**
-   * (DELETE) Menghapus aset dari Firestore.
-   */
   async function deleteAsset(id) {
-    if (!id) return;
     const asset = allAssetsCache.find(a => a.id === id);
-    if (!asset) {
-      showToast('Error: Aset tidak ditemukan.', true);
-      return;
-    }
+    if (!asset) return showToast('Error: Aset tidak ditemukan.', true);
 
-    if (!confirm(`Yakin ingin menghapus aset ini?\n\nNama: ${asset.name}\nSerial: ${asset.serial}`)) {
-      return;
-    }
+    if (!confirm(`Yakin ingin menghapus aset ini?\n\nNama: ${asset.name}\nSerial: ${asset.serial}`)) return;
     
-    const loader = $('#loader');
-    loader.style.display = 'flex';
-    
+    $('#loader').style.display = 'flex';
     try {
       await fb_assetsCollectionRef.doc(id).delete();
       showToast('Aset berhasil dihapus');
@@ -811,13 +724,10 @@
       console.error("Error deleting asset: ", e);
       showToast('Gagal menghapus aset: ' + e.message, true);
     } finally {
-      loader.style.display = 'none';
+      $('#loader').style.display = 'none';
     }
   }
   
-  /**
-   * (Helper) Menambah log ke sub-koleksi aset.
-   */
   async function addAssetLog(assetId, message, type) {
     if (!assetId) return;
     try {
@@ -828,51 +738,65 @@
         adminEmail: fb_auth.currentUser.email
       };
       await fb_assetsCollectionRef.doc(assetId).collection('history').add(logData);
-    } catch (e) {
-      console.error("Error writing asset log: ", e);
-    }
+    } catch (e) { console.error("Error writing asset log: ", e); }
   }
 
 
   // ==================================================================
-  // FUNGSI RENDER & UI
+  // FUNGSI RENDER & UI (v2)
   // ==================================================================
 
   /**
-   * Merender ulang isi tabel aset berdasarkan data dan filter.
+   * (BARU) Mengisi filter Tipe Aset secara dinamis
+   */
+  function populateTypeFilter(assets) {
+    const filterEl = $('#filterType');
+    const currentVal = filterEl.value;
+    
+    const types = [...new Set(assets.map(a => a.type || 'Lainnya'))].sort();
+    
+    filterEl.innerHTML = '<option value="">Semua Tipe Aset</option>'; // Reset
+    types.forEach(type => {
+      const selected = (type === currentVal) ? 'selected' : '';
+      filterEl.innerHTML += `<option value="${type}" ${selected}>${type}</option>`;
+    });
+  }
+
+  /**
+   * Merender tabel aset (v2)
    */
   function renderAssetTable(assets) {
     const tableBody = $('#asset-table-body');
     if (!tableBody) return;
     
     const searchTerm = $('#searchInput').value.toLowerCase();
-    const statusFilter = $('#filterStatus').value;
-    const categoryFilter = $('#filterCategory').value;
+    const qcStatusFilter = $('#filterQcStatus').value;
+    const typeFilter = $('#filterType').value;
 
     const filteredAssets = assets.filter(asset => {
       const searchMatch = !searchTerm ||
         (asset.name && asset.name.toLowerCase().includes(searchTerm)) ||
         (asset.serial && asset.serial.toLowerCase().includes(searchTerm)) ||
-        (asset.pic && asset.pic.toLowerCase().includes(searchTerm));
+        (asset.pic && asset.pic.toLowerCase().includes(searchTerm)) ||
+        (asset.location && asset.location.toLowerCase().includes(searchTerm));
       
-      const statusMatch = !statusFilter || asset.status === statusFilter;
-      const categoryMatch = !categoryFilter || asset.category === categoryFilter;
+      const qcStatusMatch = !qcStatusFilter || asset.qcStatus === qcStatusFilter;
+      const typeMatch = !typeFilter || asset.type === typeFilter;
 
-      return searchMatch && statusMatch && categoryMatch;
+      return searchMatch && qcStatusMatch && typeMatch;
     });
 
     if (filteredAssets.length === 0) {
-      tableBody.innerHTML = `<tr><td colspan="7" class="p-6 text-center text-dark-muted">Tidak ada aset yang ditemukan.</td></tr>`;
+      tableBody.innerHTML = `<tr><td colspan="8" class="p-6 text-center text-dark-muted">Tidak ada aset yang ditemukan.</td></tr>`;
       return;
     }
 
     tableBody.innerHTML = filteredAssets.map(asset => {
       let statusClass = '';
-      switch (asset.status) {
-        case 'Deployed': statusClass = 'bg-blue-600/20 text-blue-400'; break;
-        case 'In Stock': statusClass = 'bg-yellow-600/20 text-yellow-400'; break;
-        case 'In Repair': statusClass = 'bg-orange-600/20 text-orange-400'; break;
-        case 'Disposed': statusClass = 'bg-gray-600/20 text-gray-400'; break;
+      switch (asset.qcStatus) {
+        case 'Lulus QC': statusClass = 'bg-success/20 text-success'; break;
+        case 'Gagal QC': statusClass = 'bg-error/20 text-error'; break;
+        case 'Belum QC': statusClass = 'bg-warning/20 text-warning'; break;
         default: statusClass = 'bg-dark-border text-dark-muted';
       }
 
@@ -882,15 +806,16 @@
             <div class="font-bold text-white">${asset.name || '-'}</div>
             <div class="text-xs text-dark-muted">${asset.id}</div>
           </td>
-          <td class="p-4 align-top text-sm">${asset.category || '-'}</td>
+          <td class="p-4 align-top text-sm">${asset.type || '-'}</td>
           <td class="p-4 align-top">
             <span class="px-3 py-1 text-xs font-bold rounded-full ${statusClass}">
-              ${asset.status || '-'}
+              ${asset.qcStatus || '-'}
             </span>
           </td>
-          <td class="p-4 align-top text-sm font-mono">${asset.serial || '-'}</td>
+          <td class="p-4 align-top text-sm font-bold text-center">${asset.qty || 0}</td>
+          <td class="p-4 align-top text-sm">${asset.location || '-'}</td>
           <td class="p-4 align-top text-sm">${asset.pic || '-'}</td>
-          <td class="p-4 align-top text-sm">${formatDate(asset.purchaseDate)}</td>
+          <td class="p-4 align-top text-sm font-mono">${asset.serial || '-'}</td>
           <td class="p-4 align-top text-right">
             <div class="flex items-center justify-end gap-2">
               <button data-action="view" data-id="${asset.id}" class="action-btn bg-dark-card text-dark-muted border border-dark-border hover:border-blue-500 hover:text-blue-500">Lihat</button>
@@ -904,52 +829,48 @@
   }
 
   /**
-   * Memperbarui kartu KPI dan Chart di Dashboard.
+   * Memperbarui Dashboard (v2)
    */
   function updateDashboard(assets) {
-    let totalValue = 0;
-    let deployedCount = 0;
-    let inStockCount = 0;
-    const categoryCounts = {};
-    const statusCounts = {};
+    let totalItems = 0;
+    let lulusQcCount = 0;
+    let failQcCount = 0;
+    let belumQcCount = 0;
+    const typeCounts = {};
+    const qcStatusCounts = {};
 
     assets.forEach(asset => {
-      totalValue += (asset.cost || 0);
+      totalItems += (asset.qty || 0);
       
-      if (asset.status === 'Deployed') deployedCount++;
-      if (asset.status === 'In Stock') inStockCount++;
+      if (asset.qcStatus === 'Lulus QC') lulusQcCount++;
+      else if (asset.qcStatus === 'Gagal QC') failQcCount++;
+      else if (asset.qcStatus === 'Belum QC') belumQcCount++;
 
-      const category = asset.category || 'Lainnya';
-      categoryCounts[category] = (categoryCounts[category] || 0) + 1;
+      const type = asset.type || 'Lainnya';
+      typeCounts[type] = (typeCounts[type] || 0) + 1;
       
-      const status = asset.status || 'Unknown';
-      statusCounts[status] = (statusCounts[status] || 0) + 1;
+      const status = asset.qcStatus || 'Unknown';
+      qcStatusCounts[status] = (qcStatusCounts[status] || 0) + 1;
     });
 
     // Update KPI
-    // PERBAIKAN 2: Menggunakan fungsi animasi
-    animateCountUp($('#kpi-total-assets'), assets.length);
-    animateCurrencyUp($('#kpi-total-value'), totalValue);
-    animateCountUp($('#kpi-deployed'), deployedCount);
-    animateCountUp($('#kpi-in-stock'), inStockCount);
+    animateCountUp($('#kpi-total-items'), totalItems);
+    animateCountUp($('#kpi-unique-assets'), assets.length);
+    animateCountUp($('#kpi-lulus-qc'), lulusQcCount);
+    animateCountUp($('#kpi-fail-qc'), (failQcCount + belumQcCount)); // Gagal + Belum
 
-    // Update Chart Kategori (Bar)
-    const catCtx = $('#categoryChart').getContext('2d');
-    const catLabels = Object.keys(categoryCounts);
-    const catData = Object.values(categoryCounts);
+    // Update Chart Tipe (Bar)
+    const typeCtx = $('#typeChart').getContext('2d');
+    const typeLabels = Object.keys(typeCounts);
+    const typeData = Object.values(typeCounts);
     
-    if (categoryChartInstance) categoryChartInstance.destroy();
-    categoryChartInstance = new Chart(catCtx, {
+    if (typeChartInstance) typeChartInstance.destroy();
+    typeChartInstance = new Chart(typeCtx, {
       type: 'bar',
-      data: {
-        labels: catLabels,
-        datasets: [{
-          label: 'Jumlah Aset',
-          data: catData,
-          backgroundColor: '#ff7a18',
-          borderRadius: 4,
-        }]
-      },
+      data: { labels: typeLabels, datasets: [{
+          label: 'Jumlah Aset', data: typeData,
+          backgroundColor: '#ff7a18', borderRadius: 4,
+      }]},
       options: {
         responsive: true,
         plugins: { legend: { display: false } },
@@ -960,21 +881,20 @@
       }
     });
 
-    // Update Chart Status (Doughnut)
-    const statusCtx = $('#statusChart').getContext('2d');
-    const statusLabels = Object.keys(statusCounts);
-    const statusData = Object.values(statusCounts);
+    // Update Chart Status QC (Doughnut)
+    const qcCtx = $('#qcStatusChart').getContext('2d');
+    const qcLabels = Object.keys(qcStatusCounts);
+    const qcData = Object.values(qcStatusCounts);
     
-    if (statusChartInstance) statusChartInstance.destroy();
-    statusChartInstance = new Chart(statusCtx, {
+    if (qcStatusChartInstance) qcStatusChartInstance.destroy();
+    qcStatusChartInstance = new Chart(qcCtx, {
       type: 'doughnut',
       data: {
-        labels: statusLabels,
+        labels: qcLabels,
         datasets: [{
-          data: statusData,
-          backgroundColor: ['#3b82f6', '#f59e0b', '#f97316', '#6b7280'],
-          borderColor: '#1e293b',
-          borderWidth: 3,
+          data: qcData,
+          backgroundColor: ['#1db954', '#dc3545', '#f59e0b', '#6b7280'], // Lulus, Gagal, Belum, Unknown
+          borderColor: '#1e293b', borderWidth: 3,
         }]
       },
       options: {
@@ -986,81 +906,71 @@
     });
   }
 
-  /**
-   * Menangani klik pada tombol di dalam tabel aset.
-   */
   function handleTableActions(e) {
     const target = e.target.closest('button[data-action]');
     if (!target) return;
-
     const action = target.dataset.action;
     const id = target.dataset.id;
     const asset = allAssetsCache.find(a => a.id === id);
+    if (!asset) return showToast('Error: Aset tidak ditemukan lagi.', true);
 
-    if (!asset) {
-      showToast('Error: Aset tidak ditemukan lagi.', true);
-      return;
-    }
-
-    if (action === 'view') {
-      openViewModal(asset);
-    } else if (action === 'edit') {
-      openAssetModal(asset);
-    } else if (action === 'delete') {
-      deleteAsset(id);
-    }
+    if (action === 'view') openViewModal(asset);
+    else if (action === 'edit') openAssetModal(asset);
+    else if (action === 'delete') deleteAsset(id);
   }
 
   /**
-   * Membuka dan mengisi modal untuk Tambah/Edit Aset.
+   * Membuka modal Tambah/Edit Aset (v2)
    */
   function openAssetModal(asset = null) {
     const modal = $('#assetModal');
-    const form = $('#assetForm');
-    form.reset();
+    $('#assetForm').reset();
     
     if (asset) {
       // --- MODE EDIT ---
-      currentEditingId = asset.id;
       $('#assetModalTitle').textContent = 'Edit Aset';
       $('#assetId').value = asset.id;
       $('#assetName').value = asset.name || '';
+      $('#qty').value = asset.qty || 1;
+      $('#type').value = asset.type || '';
       $('#serialNumber').value = asset.serial || '';
-      $('#category').value = asset.category || 'Lainnya';
-      $('#status').value = asset.status || 'In Stock';
+      $('#qcStatus').value = asset.qcStatus || 'Belum QC';
+      $('#location').value = asset.location || '';
       $('#pic').value = asset.pic || '';
       $('#purchaseDate').value = asset.purchaseDate || '';
-      $('#cost').value = asset.cost || 0;
-      $('#vendor').value = asset.vendor || '';
+      $('#warrantyUntil').value = asset.warrantyUntil || '';
+      $('#software').value = asset.software || '';
       $('#notes').value = asset.notes || '';
     } else {
       // --- MODE TAMBAH ---
-      currentEditingId = null;
       $('#assetModalTitle').textContent = 'Tambah Aset Baru';
       $('#assetId').value = '';
+      $('#qty').value = 1;
+      $('#qcStatus').value = 'Belum QC';
     }
     modal.classList.add('active');
   }
   
   /**
-   * Membuka dan mengisi modal untuk Lihat Detail Aset.
+   * Membuka modal Lihat Detail Aset (v2)
    */
   async function openViewModal(asset) {
     const modal = $('#viewAssetModal');
     
     // Isi info dasar
     $('#viewModalTitle').textContent = `Detail: ${asset.name}`;
-    $('#view-assetName').textContent = asset.name || '-';
-    $('#view-serialNumber').textContent = asset.serial || '-';
-    $('#view-category').textContent = asset.category || '-';
-    $('#view-status').textContent = asset.status || '-';
+    $('#view-name').textContent = asset.name || '-';
+    $('#view-type').textContent = asset.type || '-';
+    $('#view-qty').textContent = asset.qty || '0';
+    $('#view-serial').textContent = asset.serial || '-';
+    $('#view-qcStatus').textContent = asset.qcStatus || '-';
+    $('#view-location').textContent = asset.location || '-';
     $('#view-pic').textContent = asset.pic || '-';
     $('#view-purchaseDate').textContent = formatDate(asset.purchaseDate);
-    $('#view-cost').textContent = formatRupiah(asset.cost || 0);
-    $('#view-vendor').textContent = asset.vendor || '-';
+    $('#view-warrantyUntil').textContent = formatDate(asset.warrantyUntil);
+    $('#view-software').textContent = asset.software || '-';
     $('#view-notes').textContent = asset.notes || '(Tidak ada catatan)';
     
-    // Tampilkan modal
     modal.classList.add('active');
     
     // Ambil dan tampilkan riwayat
@@ -1095,38 +1005,38 @@
   }
   
   /**
-   * Meng-export data yang difilter ke Excel.
+   * Meng-export data ke Excel (v2)
    */
   function exportToExcel() {
     const searchTerm = $('#searchInput').value.toLowerCase();
-    const statusFilter = $('#filterStatus').value;
-    const categoryFilter = $('#filterCategory').value;
+    const qcStatusFilter = $('#filterQcStatus').value;
+    const typeFilter = $('#filterType').value;
 
     const filteredAssets = allAssetsCache.filter(asset => {
       const searchMatch = !searchTerm ||
         (asset.name && asset.name.toLowerCase().includes(searchTerm)) ||
         (asset.serial && asset.serial.toLowerCase().includes(searchTerm)) ||
-        (asset.pic && asset.pic.toLowerCase().includes(searchTerm));
-      const statusMatch = !statusFilter || asset.status === statusFilter;
-      const categoryMatch = !categoryFilter || asset.category === categoryFilter;
-      return searchMatch && statusMatch && categoryMatch;
+        (asset.pic && asset.pic.toLowerCase().includes(searchTerm)) ||
+        (asset.location && asset.location.toLowerCase().includes(searchTerm));
+      const qcStatusMatch = !qcStatusFilter || asset.qcStatus === qcStatusFilter;
+      const typeMatch = !typeFilter || asset.type === typeFilter;
+      return searchMatch && qcStatusMatch && typeMatch;
     });
 
-    if (filteredAssets.length === 0) {
-      showToast('Tidak ada data untuk diexport', true);
-      return;
-    }
+    if (filteredAssets.length === 0) return showToast('Tidak ada data untuk diexport', true);
 
     const dataToExport = filteredAssets.map(a => ({
       'ID Aset': a.id,
       'Nama Aset': a.name,
-      'Kategori': a.category,
-      'Status': a.status,
+      'Tipe': a.type,
+      'Qty': a.qty,
+      'Status QC': a.qcStatus,
       'Serial Number': a.serial,
+      'Lokasi': a.location,
       'PIC': a.pic,
+      'Software': a.software,
       'Tgl Beli': a.purchaseDate,
-      'Harga Beli': a.cost,
-      'Vendor': a.vendor,
+      'Garansi Sampai': a.warrantyUntil,
       'Catatan': a.notes,
       'Update Terakhir': a.lastUpdate ? a.lastUpdate.toDate().toLocaleString('id-ID') : '',
     }));
