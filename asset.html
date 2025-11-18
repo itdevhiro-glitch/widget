@@ -304,12 +304,11 @@
                 <th class="p-4 text-left text-xs font-medium text-dark-muted uppercase tracking-wider">Lokasi</th>
                 <th class="p-4 text-left text-xs font-medium text-dark-muted uppercase tracking-wider">PIC</th>
                 <th class="p-4 text-left text-xs font-medium text-dark-muted uppercase tracking-wider">Serial</th>
-                <th class="p-4 text-left text-xs font-medium text-dark-muted uppercase tracking-wider">Harga Beli</th>
                 <th class="p-4 text-right text-xs font-medium text-dark-muted uppercase tracking-wider">Aksi</th>
               </tr>
             </thead>
             <tbody id="asset-table-body" class="divide-y divide-dark-border">
-              <tr><td colspan="9" class="p-6 text-center text-dark-muted">Memuat data aset...</td></tr>
+              <tr><td colspan="8" class="p-6 text-center text-dark-muted">Memuat data aset...</td></tr>
             </tbody>
           </table>
         </div>
@@ -719,7 +718,6 @@
     } catch (e) { return isoString; }
   }
   
-  // [BARU] Helper format harga untuk tabel
   function formatPriceTable(price) {
       if (!price) return '-';
       price = Number(price);
@@ -1160,9 +1158,6 @@
   // FUNGSI RENDER & UI (LAINNYA)
   // ==================================================================
 
-  /**
-   * [BARU] Mengisi dropdown <select id="vendorId"> di modal aset
-   */
   function populateVendorDropdown(vendors) {
     const selectEl = $('#vendorId');
     if (!selectEl) return; 
@@ -1201,7 +1196,8 @@
     });
 
     if (filteredAssets.length === 0) {
-      tableBody.innerHTML = `<tr><td colspan="9" class="p-6 text-center text-dark-muted">Tidak ada aset yang ditemukan.</td></tr>`;
+      // [DIUBAH] Colspan kembali ke 8
+      tableBody.innerHTML = `<tr><td colspan="8" class="p-6 text-center text-dark-muted">Tidak ada aset yang ditemukan.</td></tr>`;
       return;
     }
 
@@ -1230,7 +1226,6 @@
           <td class="p-4 align-top text-sm">${asset.location || '-'}</td>
           <td class="p-4 align-top text-sm">${asset.pic || '-'}</td>
           <td class="p-4 align-top text-sm font-mono">${asset.serial || '-'}</td>
-          <td class="p-4 align-top text-sm">${formatPriceTable(asset.purchasePrice)}</td>
           <td class="p-4 align-top text-right">
             <div class="flex items-center justify-end gap-2">
               <button data-action="view" data-id="${asset.id}" class="action-btn bg-dark-card text-dark-muted border border-dark-border hover:border-blue-500 hover:text-blue-500">Lihat</button>
