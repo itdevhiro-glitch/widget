@@ -304,11 +304,12 @@
                 <th class="p-4 text-left text-xs font-medium text-dark-muted uppercase tracking-wider">Lokasi</th>
                 <th class="p-4 text-left text-xs font-medium text-dark-muted uppercase tracking-wider">PIC</th>
                 <th class="p-4 text-left text-xs font-medium text-dark-muted uppercase tracking-wider">Serial</th>
+                <th class="p-4 text-left text-xs font-medium text-dark-muted uppercase tracking-wider">Harga Beli</th>
                 <th class="p-4 text-right text-xs font-medium text-dark-muted uppercase tracking-wider">Aksi</th>
               </tr>
             </thead>
             <tbody id="asset-table-body" class="divide-y divide-dark-border">
-              <tr><td colspan="8" class="p-6 text-center text-dark-muted">Memuat data aset...</td></tr>
+              <tr><td colspan="9" class="p-6 text-center text-dark-muted">Memuat data aset...</td></tr>
             </tbody>
           </table>
         </div>
@@ -423,13 +424,26 @@
         </div>
       </div>
       
+      <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
+        <div>
+          <label for="purchasePrice" class="block text-sm font-medium text-dark-muted mb-1">Harga Beli (Rp)</label>
+          <input type="number" id="purchasePrice" placeholder="Contoh: 15000000" class="input w-full bg-dark-bg rounded-md focus:ring-accent focus:ring-1">
+        </div>
+        <div>
+          <label for="vendorId" class="block text-sm font-medium text-dark-muted mb-1">Vendor Pembelian</label>
+          <select id="vendorId" class="input w-full bg-dark-bg rounded-md focus:ring-accent focus:ring-1">
+            <option value="">-- Tidak Ditentukan --</option>
+            </select>
+        </div>
+      </div>
+      
       <div class="grid grid-cols-1 md:grid-cols-3 gap-6">
         <div>
           <label for="qcStatus" class="block text-sm font-medium text-dark-muted mb-1">Status QC*</label>
           <select id="qcStatus" required class="input w-full bg-dark-bg rounded-md focus:ring-accent focus:ring-1">
             <option value="Lulus QC">Lulus QC</option>
             <option value="Gagal QC">Gagal QC</option>
-            <option value="Belum QC">Belum QC</option>
+            <option value="Belum QC" selected>Belum QC</option>
           </select>
         </div>
         <div>
@@ -516,6 +530,16 @@
           <span class="text-sm font-medium text-dark-muted">Garansi Sampai</span>
           <p id="view-warrantyUntil" class="text-lg font-semibold text-white"></p>
         </div>
+        
+        <div class="info-group">
+          <span class="text-sm font-medium text-dark-muted">Harga Beli</span>
+          <p id="view-purchasePrice" class="text-lg font-semibold text-white"></p>
+        </div>
+        <div class="info-group">
+          <span class="text-sm font-medium text-dark-muted">Vendor</span>
+          <p id="view-vendor" class="text-lg font-semibold text-white"></p>
+        </div>
+        
       </div>
       
       <div class="info-group">
@@ -694,6 +718,15 @@
       });
     } catch (e) { return isoString; }
   }
+  
+  // [BARU] Helper format harga untuk tabel
+  function formatPriceTable(price) {
+      if (!price) return '-';
+      price = Number(price);
+      if (price >= 1000000) return `Rp ${(price / 1000000).toFixed(1)}jt`;
+      if (price >= 1000) return `Rp ${(price / 1000).toFixed(0)}rb`;
+      return `Rp ${price}`;
+  }
 
   // --- Variabel Global Aplikasi ---
   let fb_app, fb_db, fb_auth, fb_userId, fb_assetsCollectionRef, fb_vendorsCollectionRef;
@@ -835,8 +868,12 @@
     const assetData = {
       name: $('#assetName').value,
       qty: parseInt($('#qty').value) || 0,
-      type: $('#type').value, // <-- SEKARANG MENGAMBIL DARI <select>
+      type: $('#type').value, 
       serial: $('#serialNumber').value,
+      
+      purchasePrice: parseInt($('#purchasePrice').value) || 0,
+      vendorId: $('#vendorId').value,
+      
       qcStatus: $('#qcStatus').value,
       location: $('#location').value,
       pic: $('#pic').value,
@@ -847,7 +884,6 @@
       lastUpdate: firebase.firestore.FieldValue.serverTimestamp()
     };
     
-    // Validasi Tipe Aset
     if (!assetData.type) {
       showToast('Error: Tipe Aset harus dipilih', true);
       $('#loader').style.display = 'none';
@@ -902,9 +938,7 @@
       assetListener = fb_assetsCollectionRef.orderBy('name', 'asc').onSnapshot((snapshot) => {
           console.log(`(DATA ASET) Menerima ${snapshot.docs.length} dokumen.`);
           allAssetsCache = snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() }));
-          
-          // DIUBAH: Panggilan ke populateTypeFilter() dihapus dari sini
-          
+                    
           renderAssetTable(allAssetsCache);
           updateDashboard(allAssetsCache);
           
@@ -951,7 +985,7 @@
   }
 
   // ==================================================================
-  // --- (BARU) FUNGSI VENDOR (CRUD & RENDER) ---
+  // --- FUNGSI VENDOR (CRUD & RENDER) ---
   // ==================================================================
 
   async function saveVendor(e) {
@@ -1003,6 +1037,7 @@
           allVendorsCache = snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() }));
           
           renderVendorTable(allVendorsCache);
+          populateVendorDropdown(allVendorsCache); 
           resolve();
           
       }, (error) => {
@@ -1125,12 +1160,21 @@
   // FUNGSI RENDER & UI (LAINNYA)
   // ==================================================================
 
-  // DIUBAH: Fungsi ini sekarang DIHAPUS karena daftarnya sudah tetap di HTML
-  /*
-  function populateTypeFilter(assets) {
-    // ... KODE LAMA DIHAPUS ...
+  /**
+   * [BARU] Mengisi dropdown <select id="vendorId"> di modal aset
+   */
+  function populateVendorDropdown(vendors) {
+    const selectEl = $('#vendorId');
+    if (!selectEl) return; 
+    
+    const currentVal = selectEl.value; 
+    
+    selectEl.innerHTML = '<option value="">-- Tidak Ditentukan --</option>'; 
+    vendors.forEach(vendor => {
+      const selected = (vendor.id === currentVal) ? 'selected' : '';
+      selectEl.innerHTML += `<option value="${vendor.id}" ${selected}>${vendor.name}</option>`;
+    });
   }
-  */
 
   /**
    * Merender tabel aset (v2)
@@ -1141,7 +1185,7 @@
     
     const searchTerm = $('#searchInput').value.toLowerCase();
     const qcStatusFilter = $('#filterQcStatus').value;
-    const typeFilter = $('#filterType').value; // <-- Ini sekarang mengambil dari <select> tetap
+    const typeFilter = $('#filterType').value; 
 
     const filteredAssets = assets.filter(asset => {
       const searchMatch = !searchTerm ||
@@ -1157,7 +1201,7 @@
     });
 
     if (filteredAssets.length === 0) {
-      tableBody.innerHTML = `<tr><td colspan="8" class="p-6 text-center text-dark-muted">Tidak ada aset yang ditemukan.</td></tr>`;
+      tableBody.innerHTML = `<tr><td colspan="9" class="p-6 text-center text-dark-muted">Tidak ada aset yang ditemukan.</td></tr>`;
       return;
     }
 
@@ -1186,6 +1230,7 @@
           <td class="p-4 align-top text-sm">${asset.location || '-'}</td>
           <td class="p-4 align-top text-sm">${asset.pic || '-'}</td>
           <td class="p-4 align-top text-sm font-mono">${asset.serial || '-'}</td>
+          <td class="p-4 align-top text-sm">${formatPriceTable(asset.purchasePrice)}</td>
           <td class="p-4 align-top text-right">
             <div class="flex items-center justify-end gap-2">
               <button data-action="view" data-id="${asset.id}" class="action-btn bg-dark-card text-dark-muted border border-dark-border hover:border-blue-500 hover:text-blue-500">Lihat</button>
@@ -1232,13 +1277,14 @@
     // Update Chart Tipe (Bar)
     const typeCtx = $('#typeChart').getContext('2d');
     const typeLabels = Object.keys(typeCounts);
-    const typeData = Object.values(typeCounts);
+    const typeData = Object.values(typeCounts); // <--- Data yang benar ada di sini
     
     if (typeChartInstance) typeChartInstance.destroy();
     typeChartInstance = new Chart(typeCtx, {
       type: 'bar',
       data: { labels: typeLabels, datasets: [{
-          label: 'Jumlah Aset', data: typeData,
+          label: 'Jumlah Aset', 
+          data: typeData, // <--- [PERBAIKAN TYPO]
           backgroundColor: '#ff7a18', borderRadius: 4,
       }]},
       options: {
@@ -1294,7 +1340,7 @@
    */
   function openAssetModal(asset = null) {
     const modal = $('#assetModal');
-    $('#assetForm').reset(); // Ini sekarang aman karena <datalist> tidak ada lagi
+    $('#assetForm').reset(); 
     
     if (asset) {
       // --- MODE EDIT ---
@@ -1302,8 +1348,12 @@
       $('#assetId').value = asset.id;
       $('#assetName').value = asset.name || '';
       $('#qty').value = asset.qty || 1;
-      $('#type').value = asset.type || ''; // <-- Mengatur nilai <select>
+      $('#type').value = asset.type || ''; 
       $('#serialNumber').value = asset.serial || '';
+      
+      $('#purchasePrice').value = asset.purchasePrice || '';
+      $('#vendorId').value = asset.vendorId || '';
+      
       $('#qcStatus').value = asset.qcStatus || 'Belum QC';
       $('#location').value = asset.location || '';
       $('#pic').value = asset.pic || '';
@@ -1316,8 +1366,11 @@
       $('#assetModalTitle').textContent = 'Tambah Aset Baru';
       $('#assetId').value = '';
       $('#qty').value = 1;
-      $('#type').value = ''; // <-- Mengatur <select> ke default
+      $('#type').value = ''; 
       $('#qcStatus').value = 'Belum QC';
+      
+      $('#purchasePrice').value = '';
+      $('#vendorId').value = '';
     }
     modal.classList.add('active');
   }
@@ -1341,6 +1394,16 @@
     $('#view-warrantyUntil').textContent = formatDate(asset.warrantyUntil);
     $('#view-software').textContent = asset.software || '-';
     $('#view-notes').textContent = asset.notes || '(Tidak ada catatan)';
+    
+    const formattedPrice = (asset.purchasePrice || 0).toLocaleString('id-ID', {
+      style: 'currency',
+      currency: 'IDR',
+      maximumFractionDigits: 0
+    });
+    $('#view-purchasePrice').textContent = asset.purchasePrice ? formattedPrice : '-';
+
+    const vendor = allVendorsCache.find(v => v.id === asset.vendorId);
+    $('#view-vendor').textContent = vendor ? vendor.name : '-';
     
     modal.classList.add('active');
     
@@ -1379,7 +1442,6 @@
    * Meng-export data ke Excel (v2)
    */
   function exportToExcel() {
-    // ... (Fungsi exportToExcel tidak diubah, tetap berfungsi untuk Aset) ...
     const searchTerm = $('#searchInput').value.toLowerCase();
     const qcStatusFilter = $('#filterQcStatus').value;
     const typeFilter = $('#filterType').value;
@@ -1397,21 +1459,27 @@
 
     if (filteredAssets.length === 0) return showToast('Tidak ada data aset untuk diexport', true);
 
-    const dataToExport = filteredAssets.map(a => ({
-      'ID Aset': a.id,
-      'Nama Aset': a.name,
-      'Tipe': a.type,
-      'Qty': a.qty,
-      'Status QC': a.qcStatus,
-      'Serial Number': a.serial,
-      'Lokasi': a.location,
-      'PIC': a.pic,
-      'Software': a.software,
-      'Tgl Beli': a.purchaseDate,
-      'Garansi Sampai': a.warrantyUntil,
-      'Catatan': a.notes,
-      'Update Terakhir': a.lastUpdate ? a.lastUpdate.toDate().toLocaleString('id-ID') : '',
-    }));
+    const dataToExport = filteredAssets.map(a => {
+      const vendor = allVendorsCache.find(v => v.id === a.vendorId);
+      
+      return {
+        'ID Aset': a.id,
+        'Nama Aset': a.name,
+        'Tipe': a.type,
+        'Qty': a.qty,
+        'Status QC': a.qcStatus,
+        'Harga Beli': a.purchasePrice || 0, 
+        'Vendor': vendor ? vendor.name : '', 
+        'Serial Number': a.serial,
+        'Lokasi': a.location,
+        'PIC': a.pic,
+        'Software': a.software,
+        'Tgl Beli': a.purchaseDate,
+        'Garansi Sampai': a.warrantyUntil,
+        'Catatan': a.notes,
+        'Update Terakhir': a.lastUpdate ? a.lastUpdate.toDate().toLocaleString('id-ID') : '',
+      };
+    });
     
     try {
       const ws = XLSX.utils.json_to_sheet(dataToExport);
