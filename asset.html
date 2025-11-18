@@ -6,13 +6,16 @@
 <title>Zeppelin — Asset Manager (Admin)</title>
 <meta content="Bima Adhitya" name="author"/>
 <meta content="Asset Manager &amp; QC — Zeppelin. Terhubung ke Firebase Firestore." name="description"/>
+<!-- (BARU) Icon Pack untuk ikon-ikon -->
+<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css">
 <style>
 :root {
   --bg: #0e1117;
   --card: #161b22;
+  --card-light: #1b222e;
   --muted: #9ca3af;
   --accent: #ff7a18;
-  --border: rgba(255, 255, 255, 0.06);
+  --border: rgba(255, 255, 255, 0.1);
   --success: #1db954;
   --error: #ff4d4f;
   --shadow: 0 4px 12px rgba(0, 0, 0, 0.25);
@@ -32,35 +35,120 @@ html, body { margin:0; padding:0; height:100%; width:100%; background-color:var(
   display: none; /* Sembunyi by default, tampil setelah login */
 }
 .wrap { width:100%; max-width:1600px; margin:0 auto; padding:clamp(16px,2vw,32px); }
-header{display:flex;justify-content:space-between;align-items:center;flex-wrap:wrap;gap:16px;margin-bottom:24px}
+header{
+  display:flex;
+  justify-content:space-between;
+  align-items:center;
+  flex-wrap:wrap;
+  gap:16px;
+  margin-bottom:24px;
+  padding-bottom: 20px;
+  border-bottom: 1px solid var(--border);
+}
 .brand{display:flex;align-items:center;gap:14px}
 .logo-img,.logo-placeholder{width:52px;height:52px;border-radius:12px;object-fit:cover}
 .logo-placeholder{background:linear-gradient(135deg,var(--accent),#ffb24d);display:flex;align-items:center;justify-content:center;font-weight:800;color:#08101a}
 h1{font-size:clamp(18px,1.8vw,22px);margin:0}
 .sub{font-size:clamp(12px,1vw,14px);color:var(--muted)}
+
+/* (BARU) Breadcrumb */
+.breadcrumb {
+  font-size: 14px;
+  color: var(--muted);
+  font-weight: 500;
+}
+.breadcrumb a {
+  color: var(--accent);
+  text-decoration: none;
+  font-weight: 600;
+}
+.breadcrumb a:hover {
+  text-decoration: underline;
+}
+
 .controls{display:flex;align-items:center;gap:8px;flex-wrap:wrap}
 .btn{background:var(--accent);border:none;padding:8px 14px;border-radius:8px;color:#08101a;font-weight:600;cursor:pointer;transition:all .2s ease;box-shadow:var(--shadow)}
 .btn:hover{opacity:.9;transform:translateY(-1px)}
 .btn-ghost{background:transparent;border:1px solid var(--border);color:var(--muted);border-radius:8px;padding:8px 12px;cursor:pointer;transition:.2s}
 .btn-ghost:hover{border-color:var(--accent);color:#fff}
-.search{padding:8px 12px;border-radius:8px;border:1px solid var(--border);background:#1b222e;color:#fff;min-width:200px}
+.search{padding:8px 12px;border-radius:8px;border:1px solid var(--border);background:var(--card-light);color:#fff;min-width:200px}
 .grid{display:grid;grid-template-columns:380px 1fr;gap:24px}
 @media (max-width:1100px){ .grid{grid-template-columns:1fr} }
-.card{background:var(--card);border-radius:12px;padding:16px 20px;border:1px solid var(--border);box-shadow:var(--shadow)}
+.card{background:var(--card);border-radius:12px;padding:20px 24px;border:1px solid var(--border);box-shadow:var(--shadow)}
+
+/* (BARU) Form Section Styling */
+.form-section {
+  margin-top: 16px;
+  padding-top: 16px;
+  border-top: 1px solid var(--border);
+}
+.form-section:first-child {
+  margin-top: 0;
+  padding-top: 0;
+  border-top: none;
+}
+.form-section h4 {
+  font-size: 1rem;
+  font-weight: 600;
+  color: var(--accent);
+  margin-top: 0;
+  margin-bottom: 12px;
+}
+
 .kpi-row{display:flex;gap:16px;flex-wrap:wrap;margin-top:16px}
-.kpi{flex:1;min-width:180px;background:#1a2233;padding:12px;border-radius:10px;border:1px solid var(--border);text-align:center}
+.kpi{flex:1;min-width:180px;background:var(--card-light);padding:16px;border-radius:10px;border:1px solid var(--border);text-align:center}
+.kpi .kpi-title { font-size: 14px; font-weight: 600; color: var(--muted); margin-bottom: 8px; }
+.kpi .kpi-value { font-size: 24px; font-weight: 800; color: #fff; }
+
 table{width:100%;border-collapse:collapse;margin-top:12px;font-size:14px}
-th,td{padding:10px 12px;border-bottom:1px solid rgba(255,255,255,0.05)}
+th,td{padding:12px 14px;border-bottom:1px solid var(--border)}
 th{color:var(--muted);font-weight:600;text-transform:uppercase;font-size:12px}
 .table-wrap{overflow-y:auto;overflow-x:hidden;max-height:450px}
-label{display:block;font-size:13px;color:var(--muted);margin-top:10px}
-input,select,textarea{width:100%;background:#1b222e;border:1px solid var(--border);color:#fff;border-radius:8px;padding:8px 10px;font-size:14px}
+tr:hover { background-color: rgba(255, 255, 255, 0.03); }
+label{display:block;font-size:13px;color:var(--muted);margin-top:10px; margin-bottom: 4px;}
+input,select,textarea{width:100%;background:var(--card-light);border:1px solid var(--border);color:#fff;border-radius:8px;padding:9px 12px;font-size:14px}
+input:focus, select:focus, textarea:focus {
+  outline: none;
+  border-color: var(--accent);
+  box-shadow: 0 0 0 3px rgba(255, 122, 24, 0.2);
+}
 textarea{min-height:70px}
+
+/* (BARU) Tombol Aksi Ikon */
+.action-buttons {
+  display: flex;
+  gap: 6px;
+}
+.btn-icon {
+  background: var(--card-light);
+  border: 1px solid var(--border);
+  color: var(--muted);
+  border-radius: 6px;
+  padding: 6px;
+  cursor: pointer;
+  transition: all 0.2s ease;
+  width: 32px;
+  height: 32px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+}
+.btn-icon svg { width: 16px; height: 16px; }
+.btn-icon:hover {
+  background: var(--accent);
+  color: #fff;
+  border-color: var(--accent);
+}
+.btn-icon.delete:hover {
+  background: var(--error);
+  border-color: var(--error);
+}
+
 footer{margin-top:32px;text-align:center;color:var(--muted);font-size:13px;padding:16px 0}
 mark{background:rgba(255,235,59,0.25);padding:0 2px;border-radius:2px}
 
-/* (BARU) Layar Akses Ditolak */
-#accessDeniedScreen {
+/* (BARU) Layar Verifikasi */
+#authVerificationScreen {
   position: fixed; inset: 0; 
   background: var(--login-bg); 
   z-index: 10000;
@@ -72,7 +160,7 @@ mark{background:rgba(255,235,59,0.25);padding:0 2px;border-radius:2px}
   font-family: 'Roboto', sans-serif;
   text-align: center;
 }
-#accessDeniedBox {
+#authBox {
   width: 400px; max-width: 100%;
   background: var(--login-card); 
   padding: 30px 40px;
@@ -80,19 +168,21 @@ mark{background:rgba(255,235,59,0.25);padding:0 2px;border-radius:2px}
   border: 1px solid var(--login-border);
   box-shadow: var(--login-shadow);
 }
-#accessDeniedBox h3 {
-  color: var(--login-primary);
-  font-size: 1.5rem;
+#authBox h3 {
+  color: var(--login-text);
+  font-size: 1.3rem;
+  font-weight: 600;
   margin-top: 0;
+  margin-bottom: 10px;
 }
-#accessDeniedBox p {
+#authBox p {
   font-size: 1rem;
   color: #555;
   margin-top: 15px;
   line-height: 1.6;
 }
-#accessDeniedBox a {
-  display: inline-block;
+#authBox a {
+  display: none; /* Sembunyi by default */
   margin-top: 20px;
   padding: 12px 20px;
   border-radius: 8px;
@@ -102,11 +192,25 @@ mark{background:rgba(255,235,59,0.25);padding:0 2px;border-radius:2px}
   text-decoration: none;
   transition: background-color 0.3s;
 }
-#accessDeniedBox a:hover {
+#authBox a:hover {
   background-color: #B01B22;
 }
 
-/* Loading Spinner */
+/* (BARU) Spinner Animasi */
+.spinner {
+  width: 40px;
+  height: 40px;
+  border: 4px solid #f3f3f3;
+  border-top-color: var(--login-primary);
+  border-radius: 50%;
+  animation: spin 1s linear infinite;
+  margin: 0 auto 20px auto;
+}
+@keyframes spin {
+  100% { transform: rotate(360deg); }
+}
+
+/* Loading Spinner (untuk data) */
 #loader {
   position: fixed;
   inset: 0;
@@ -129,24 +233,18 @@ mark{background:rgba(255,235,59,0.25);padding:0 2px;border-radius:2px}
   border-radius: 50%;
   animation: spin 1s linear infinite;
 }
-@keyframes spin {
-  to { transform: rotate(360deg); }
-}
 </style>
-
-<!-- (BARU) Icon Pack (digunakan oleh login box) -->
-<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css">
 </head>
 <body>
 
-<!-- (BARU) Layar Akses Ditolak -->
-<div id="accessDeniedScreen">
-  <div id="accessDeniedBox">
-    <i class="fa-solid fa-lock" style="font-size: 2.5rem; color: var(--login-primary);"></i>
-    <h3>Akses Ditolak</h3>
-    <p>Anda harus login sebagai Admin melalui Dashboard utama untuk mengakses halaman ini.</p>
+<!-- (BARU) Layar Verifikasi Otentikasi -->
+<div id="authVerificationScreen">
+  <div id="authBox">
+    <div class="spinner" id="authSpinner"></div>
+    <h3 id="authMessage">Memverifikasi Sesi Admin...</h3>
+    <p id="authSubMessage">Mengecek otentikasi Anda dengan Firebase...</p>
     <!-- Ganti URL ini jika lokasi index.html Anda berbeda -->
-    <a href="index.html">Kembali ke Admin Dashboard</a>
+    <a href="index.html" id="authBackButton">Kembali ke Admin Dashboard</a>
   </div>
 </div>
 
@@ -163,7 +261,10 @@ mark{background:rgba(255,235,59,0.25);padding:0 2px;border-radius:2px}
   </div>
   <div>
   <h1>Zeppelin — Asset Manager</h1>
-  <div class="sub" id="subhead">QC &amp; Inventory • Terhubung ke Firebase</div>
+  <div class="sub" id="subhead">
+    <!-- (BARU) Breadcrumb -->
+    <span class="breadcrumb"><a href="index.html">Admin Dashboard</a> / Asset Manager</span>
+  </div>
   </div>
   </div>
   <div class="controls no-print">
@@ -173,37 +274,40 @@ mark{background:rgba(255,235,59,0.25);padding:0 2px;border-radius:2px}
     Logged in as:<br>
     <strong id="userEmailDisplay" style="color: var(--accent);"></strong>
   </div>
-  <button id="logoutBtn" class="btn-ghost" title="Logout" style="color: var(--error); border-color: var(--error);">Logout</button>
+  <button id="logoutBtn" class="btn-ghost" title="Logout" style="color: var(--error); border-color: var(--error);">
+    <i class="fa-solid fa-right-from-bracket"></i>
+  </button>
   
-  <input aria-label="Cari asset" class="search" id="globalSearch" placeholder="Cari: jenis, brand, serial, PIC..."/>
+  <input aria-label="Cari asset" class="search" id="globalSearch" placeholder="Cari: jenis, brand, serial..."/>
   <button class="btn" id="downloadExcelBtn">Download Excel</button>
   <button class="btn-ghost" id="backupBtn">Backup JSON</button>
   <button class="btn-ghost" id="restoreBtn">Restore JSON</button>
-  <button class="btn-ghost" id="printBtn">Print / PDF</button>
   <input accept="application/json, .json, .csv" id="fileInput" style="display:none" type="file"/>
   <div id="filterControls" style="display:flex;gap:8px;align-items:center;">
   <select class="search" id="filterType" title="Filter by jenis"><option value="">All Jenis</option></select>
   <select class="search" id="filterQc" title="Filter by QC"><option value="">All QC</option><option value="Belum QC">Belum QC</option><option value="Lulus QC">Lulus QC</option><option value="Gagal QC">Gagal QC</option></select>
   <select class="search" id="filterLoc" title="Filter by Lokasi"><option value="">All Lokasi</option></select>
   <select class="search" id="filterPic" title="Filter by PIC"><option value="">All PIC</option></select>
-  <button class="btn-ghost" id="themeToggle" style="min-width:40px">Theme</button>
-  <button class="btn" id="printReportBtn" title="Cetak laporan PDF">Cetak Laporan (PDF)</button>
   </div>
   </div>
   </header>
   <section class="card">
-  <div style="display:flex;justify-content:space-between;align-items:center;gap:12px;flex-wrap:wrap">
-  <div>
-  <h2 style="margin:0;color:var(--accent)">Dashboard Statistik Asset IT</h2>
-  <div class="muted">Ringkasan cepat &amp; grafik interaktif.</div>
-  </div>
-  </div>
+  <h2 style="margin:0;color:var(--accent)">Dashboard Statistik</h2>
   <div class="kpi-row" style="margin-top:12px">
-  <div class="kpi"><div id="kpiTotal" style="font-size:18px;font-weight:800">0</div><div class="muted">Total Asset</div></div>
-  <div class="kpi"><div id="kpiPC" style="font-size:18px;font-weight:800">0</div><div class="muted">Total Laptop &amp; Desktop</div></div>
-  <div class="kpi"><div id="kpiQC" style="font-size:14px;font-weight:700">L:0 • G:0 • B:0</div><div class="muted">Status QC</div></div>
+  <div class="kpi">
+    <div class="kpi-title">Total Asset</div>
+    <div class="kpi-value" id="kpiTotal">0</div>
   </div>
-  <div style="display:flex;gap:12px;flex-wrap:wrap">
+  <div class="kpi">
+    <div class="kpi-title">PC & Laptop</div>
+    <div class="kpi-value" id="kpiPC">0</div>
+  </div>
+  <div class="kpi">
+    <div class="kpi-title">Status QC</div>
+    <div class="kpi-value" id="kpiQC" style="font-size: 18px;">L:0 G:0 B:0</div>
+  </div>
+  </div>
+  <div style="display:flex;gap:12px;flex-wrap:wrap; margin-top: 20px;">
   <div style="flex:1;min-width:420px">
   <canvas aria-label="Chart kategori" height="140" id="barCategories"></canvas>
   </div>
@@ -212,69 +316,81 @@ mark{background:rgba(255,235,59,0.25);padding:0 2px;border-radius:2px}
   </div>
   </div>
   </section>
-  <div class="grid" style="margin-top:12px">
+  <div class="grid" style="margin-top:24px">
   <aside class="card">
-  <h3>Tambah / Edit Asset</h3>
-  <div class="muted">Isi detail asset — warranty &amp; tgl pembelian opsional.</div>
-  <label>Nama Barang</label>
-  <input id="name" placeholder="Contoh: Laptop Dell Latitude"/>
-  <label>Jenis</label>
-  <select id="itemType">
-  <option>Laptop</option>
-  <option>Desktop</option>
-  <option>Monitor</option>
-  <option>Keyboard</option>
-  <option>Mouse</option>
-  <option>SATA Cable</option>
-  <option>LAN Cable</option>
-  <option>Power Cable</option>
-  <option>UPS</option>
-  <option>SSD</option>
-  <option>HDD</option>
-  <option>Other</option>
-  </select>
-  <label>Serial / Tag ID</label>
-  <input id="serial" placeholder="SN atau Tag ID (opsional)"/>
-  <label>Qty</label>
-  <input id="qty" min="1" type="number" value="1"/>
-  <label>Status QC</label>
-  <select id="qcStatus"><option>Belum QC</option><option>Lulus QC</option><option>Gagal QC</option></select>
-  <label>Software Terinstal (pisahkan koma)</label>
-  <input id="software" placeholder="Contoh: Radmin, VNC, Accurate"/>
-  <label>Lokasi</label>
-  <input id="location" placeholder="Ruang / Rack / Gudang"/>
-  <label>PIC</label>
-  <input id="pic" placeholder="Penanggung jawab / Nama"/>
-  <label>Tanggal Pembelian (opsional)</label>
-  <input id="purchaseDate" type="date"/>
-  <label>Warranty Until (opsional)</label>
-  <input id="warrantyUntil" type="date"/>
-  <label>Keterangan</label>
-  <textarea id="notes" placeholder="Catatan tambahan, kondisi fisik, license keys..."></textarea>
-  <div style="display:flex;gap:8px;margin-top:10px">
-  <button class="btn" id="addBtn">Tambah Item</button>
-  <button class="btn-ghost" id="updateBtn" style="width:auto">Clear / Reset</button>
+  <!-- (BARU) Form yang Dikelompokkan -->
+  <div class="form-section">
+    <h4><i class="fa-solid fa-box" style="margin-right: 8px;"></i> Detail Barang</h4>
+    <label>Nama Barang</label>
+    <input id="name" placeholder="Contoh: Laptop Dell Latitude"/>
+    <label>Jenis</label>
+    <select id="itemType">
+    <option>Laptop</option>
+    <option>Desktop</option>
+    <option>Monitor</option>
+    <option>Keyboard</option>
+    <option>Mouse</option>
+    <option>SATA Cable</option>
+    <option>LAN Cable</option>
+    <option>Power Cable</option>
+    <option>UPS</option>
+    <option>SSD</option>
+    <option>HDD</option>
+    <option>Other</option>
+    </select>
+    <label>Serial / Tag ID</label>
+    <input id="serial" placeholder="SN atau Tag ID (opsional)"/>
+    <label>Qty</label>
+    <input id="qty" min="1" type="number" value="1"/>
+  </div>
+  
+  <div class="form-section">
+    <h4><i class="fa-solid fa-check-circle" style="margin-right: 8px;"></i> Status & Lokasi</h4>
+    <label>Status QC</label>
+    <select id="qcStatus"><option>Belum QC</option><option>Lulus QC</option><option>Gagal QC</option></select>
+    <label>Software Terinstal (pisahkan koma)</label>
+    <input id="software" placeholder="Contoh: Radmin, VNC, Accurate"/>
+    <label>Lokasi</label>
+    <input id="location" placeholder="Ruang / Rack / Gudang"/>
+    <label>PIC</label>
+    <input id="pic" placeholder="Penanggung jawab / Nama"/>
+  </div>
+
+  <div class="form-section">
+    <h4><i class="fa-solid fa-info-circle" style="margin-right: 8px;"></i> Opsional</h4>
+    <label>Tanggal Pembelian (opsional)</label>
+    <input id="purchaseDate" type="date"/>
+    <label>Warranty Until (opsional)</label>
+    <input id="warrantyUntil" type="date"/>
+    <label>Keterangan</label>
+    <textarea id="notes" placeholder="Catatan tambahan, kondisi fisik, license keys..."></textarea>
+  </div>
+  
+  <div style="display:flex;gap:8px;margin-top:20px">
+    <button class="btn" id="addBtn">Tambah Item</button>
+    <button class="btn-ghost" id="updateBtn" style="width:auto">Clear / Reset</button>
   </div>
   </aside>
+  
   <main>
   <div class="card">
   <div style="display:flex;justify-content:space-between;align-items:center">
   <div>
   <h3>Daftar Asset</h3>
-  <div class="muted">Klik Edit untuk update. Export CSV/JSON tersedia.</div>
+  <div class="muted">Klik ikon untuk update.</div>
   </div>
   <div class="muted">Total: <span id="totalCount">0</span></div>
   </div>
   <div class="table-wrap">
   <table id="assetTable">
   <thead>
-  <tr><th>ID</th><th>Nama</th><th>Jenis</th><th>Serial</th><th>Qty</th><th>Software</th><th>PIC</th><th>Lokasi</th><th>Purchase</th><th>Warranty</th><th>QC</th><th>Actions</th></tr>
+  <tr><th>ID</th><th>Nama</th><th>Jenis</th><th>Serial</th><th>Qty</th><th>Software</th><th>PIC</th><th>Lokasi</th><th>QC</th><th>Actions</th></tr>
   </thead>
   <tbody></tbody>
   </table>
   </div>
   </div>
-  <div style="height:14px"></div>
+  <div style="height:24px"></div>
   <div class="card">
   <h3>QC Checklist (Laptop &amp; Desktop)</h3>
   <div class="muted">Centang item yang OK. Simpan QC ke asset tertentu.</div>
@@ -283,19 +399,6 @@ mark{background:rgba(255,235,59,0.25);padding:0 2px;border-radius:2px}
   <input id="qcTargetId" placeholder="Masukkan Asset ID untuk simpan QC"/>
   <button class="btn" id="saveQcBtn">Simpan QC</button>
   <button class="btn-ghost" id="clearQcBtn">Reset</button>
-  </div>
-  </div>
-  <div style="height:14px"></div>
-  <div class="card no-print">
-  <h3>Export &amp; Import</h3>
-  <div class="muted">Export CSV untuk Excel; JSON untuk backup &amp; restore.</div>
-  <div style="display:flex;gap:8px;margin-top:10px">
-  <button class="btn" id="exportCsvBtn">Export CSV</button>
-  <button class="btn-ghost" id="exportJsonBtn">Export JSON</button>
-  <button class="btn-ghost" id="importCsvBtn">Import CSV</button>
-  <button class="btn-ghost" id="importJsonBtn">Import JSON</button>
-  <input accept="text/csv" id="csvFile" style="display:none" type="file"/>
-  <input accept="application/json" id="jsonFile" style="display:none" type="file"/>
   </div>
   </div>
   </main>
@@ -313,10 +416,27 @@ mark{background:rgba(255,235,59,0.25);padding:0 2px;border-radius:2px}
 <script src="https://www.gstatic.com/firebasejs/8.10.1/firebase-auth.js"></script>
 <script src="https://www.gstatic.com/firebasejs/8.10.1/firebase-firestore.js"></script>
 
+<!-- (BARU) Inline SVG untuk Ikon Aksi -->
+<svg width="0" height="0" style="position:absolute">
+  <defs>
+    <svg id="icon-edit" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 20 20" fill="currentColor">
+      <path d="M17.414 2.586a2 2 0 00-2.828 0L7 10.172V13h2.828l7.586-7.586a2 2 0 000-2.828z" />
+      <path fill-rule="evenodd" d="M2 6a2 2 0 012-2h4a1 1 0 010 2H4v10h10v-4a1 1 0 112 0v4a2 2 0 01-2 2H4a2 2 0 01-2-2V6z" clip-rule="evenodd" />
+    </svg>
+    <svg id="icon-delete" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 20 20" fill="currentColor">
+      <path fill-rule="evenodd" d="M9 2a1 1 0 00-.894.553L7.382 4H4a1 1 0 000 2v10a2 2 0 002 2h8a2 2 0 002-2V6a1 1 0 100-2h-3.382l-.724-1.447A1 1 0 0011 2H9zM7 8a1 1 0 012 0v6a1 1 0 11-2 0V8zm5-1a1 1 0 00-1 1v6a1 1 0 102 0V8a1 1 0 00-1-1z" clip-rule="evenodd" />
+    </svg>
+    <svg id="icon-detail" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 20 20" fill="currentColor">
+      <path d="M10 12a2 2 0 100-4 2 2 0 000 4z" />
+      <path fill-rule="evenodd" d="M.458 10C1.732 5.943 5.522 3 10 3s8.268 2.943 9.542 7c-1.274 4.057-5.022 7-9.542 7S1.732 14.057.458 10zM14 10a4 4 0 11-8 0 4 4 0 018 0z" clip-rule="evenodd" />
+    </svg>
+  </defs>
+</svg>
+
 
 <!-- Firebase Integration & Core App Logic -->
 <script>
-  // (BARU) Konfigurasi Firebase Anda dari index.html
+  // Konfigurasi Firebase Anda dari index.html
   const firebaseConfig = {
       apiKey: "AIzaSyA9wgSalrlTcveIZi2i-WND86z1i9JYHKw",
       authDomain: "it-support-53eeb.firebaseapp.com",
@@ -324,19 +444,16 @@ mark{background:rgba(255,235,59,0.25);padding:0 2px;border-radius:2px}
       projectId: "it-support-53eeb",
       storageBucket: "it-support-53eeb.firebasestorage.app",
       messagingSenderId: "573924501146",
-      appId: "1:573924501146:web:12f34306ed675472322123", // Menggunakan appID dari login.html
+      appId: "1:573924501146:web:12f34306ed675472322123",
       measurementId: "G-33K6DDE1VR"
   };
   
-  // (BARU) ID Admin dari index.html
+  // ID Admin dari index.html
   const ADMIN_UID = "Ogy9lUbGHbSu8wYIYx2gQsTtFDF2";
 
   /* Central constants and small helpers */
   (function(){
-    // small utility to debounce frequent input events
     function debounce(fn, ms){ let t; return function(){ clearTimeout(t); t=setTimeout(()=>fn.apply(this,arguments), ms||200); }; }
-
-    // expose a safe escape helper
     window.escapeHtml = function(s){ if(s==null) return ''; return String(s).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;'); };
 
     // Firebase globals
@@ -344,15 +461,20 @@ mark{background:rgba(255,235,59,0.25);padding:0 2px;border-radius:2px}
     
     // Elemen UI
     const loader = document.getElementById('loader');
-    const accessDeniedScreen = document.getElementById('accessDeniedScreen');
+    const authScreen = document.getElementById('authVerificationScreen');
+    const authMsg = document.getElementById('authMessage');
+    const authSubMsg = document.getElementById('authSubMessage');
+    const authBackBtn = document.getElementById('authBackButton');
+    const authSpinner = document.getElementById('authSpinner');
+    
     const appContent = document.querySelector('.app-content');
     const logoutBtn = document.getElementById('logoutBtn');
     const userEmailDisplay = document.getElementById('userEmailDisplay');
 
     // The main app is exposed as window.ZeppelinApp for debugging if needed
     const ZeppelinApp = (function(){
-      let db = { assets: [] }; // This is now a local cache, populated by Firestore
-      let firestoreListener = null; // Untuk menyimpan unsubscribe function
+      let db = { assets: [] }; 
+      let firestoreListener = null; 
       const qcTemplate = [
         {k:'power', l:'Power on / Battery'}, {k:'screen', l:'Screen / Dead pixel'}, {k:'keyboard', l:'Keyboard / Touchpad'},
         {k:'ram', l:'RAM capacity / detecting'}, {k:'storage', l:'Storage health / SMART'}, {k:'network', l:'Network adapter / Wi-Fi'},
@@ -397,10 +519,9 @@ mark{background:rgba(255,235,59,0.25);padding:0 2px;border-radius:2px}
 
       let editId = null; let barChart=null, pieChart=null;
 
-      // Fungsi untuk menghentikan listener Firestore
       function detachFirestoreListener() {
         if (firestoreListener) {
-          firestoreListener(); // Panggil fungsi unsubscribe
+          firestoreListener(); 
           firestoreListener = null;
           console.log("Firestore listener detached.");
         }
@@ -414,37 +535,40 @@ mark{background:rgba(255,235,59,0.25);padding:0 2px;border-radius:2px}
             return;
         }
 
-        // Hentikan listener lama jika ada
         detachFirestoreListener();
-
         loader.style.display = 'flex';
         console.log("Attaching new Firestore listener...");
 
-        // Simpan fungsi unsubscribe (v8 syntax)
         firestoreListener = fb_assetsCollectionRef.onSnapshot((snapshot) => {
             console.log(`Received snapshot with ${snapshot.docs.length} docs.`);
-            db.assets = []; // Clear local cache
+            db.assets = []; 
             snapshot.docs.forEach((doc) => {
                 db.assets.push({ id: doc.id, ...doc.data() });
             });
-            
-            // Sort data locally
             db.assets.sort((a, b) => (a.name || '').localeCompare(b.name || ''));
 
-            render(); // Re-render table
-            updateDashboard(); // Re-calculate dashboard
-            window.refreshFilterOptions && window.refreshFilterOptions(); // Update filter dropdowns
-            loader.style.display = 'none'; // Hide loader
+            render(); 
+            updateDashboard(); 
+            window.refreshFilterOptions && window.refreshFilterOptions(); 
+            loader.style.display = 'none'; 
         }, (error) => {
             console.error("Error listening to Firestore:", error);
             loader.textContent = "Error: Gagal memuat data. " + error.message;
         });
       }
 
-      function genId(){ return 'id-'+Date.now().toString(36)+'-'+Math.floor(Math.random()*9999); }
-      function clearForm(){ editId=null; nameEl.value=''; typeEl.selectedIndex=0; serialEl.value=''; qtyEl.value=1; qcStatusEl.selectedIndex=0; softwareEl.value=''; locEl.value=''; picEl.value=''; purchaseEl.value=''; warrantyEl.value=''; notesEl.value=''; addBtn.disabled=false; updateBtn.textContent='Clear / Reset'; }
+      function clearForm(){ 
+        editId=null; 
+        nameEl.value=''; typeEl.selectedIndex=0; serialEl.value=''; 
+        qtyEl.value=1; qcStatusEl.selectedIndex=0; softwareEl.value=''; 
+        locEl.value=''; picEl.value=''; purchaseEl.value=''; 
+        warrantyEl.value=''; notesEl.value=''; 
+        addBtn.disabled=false; 
+        addBtn.textContent = "Tambah Item";
+        updateBtn.textContent='Clear / Reset'; 
+      }
 
-      // Render (sama)
+      // Render (BARU: Tombol Ikon)
       function render(filter){ 
         tbody.innerHTML='';
         const list = db.assets.filter(a=>{ 
@@ -455,18 +579,48 @@ mark{background:rgba(255,235,59,0.25);padding:0 2px;border-radius:2px}
 
         list.forEach(a=>{
           const tr = document.createElement('tr');
-          const fields = [a.id, a.name, a.type, a.serial||'', a.qty, a.software||'', a.pic||'', a.location||'', a.purchaseDate||'', a.warrantyUntil||'', a.qcStatus||''];
+          // (BARU) Mengurangi kolom, memindahkan 'purchase' & 'warranty' ke detail
+          const fields = [
+            a.id, a.name, a.type, a.serial||'', a.qty, 
+            a.software||'', a.pic||'', a.location||'', a.qcStatus||''
+          ];
           fields.forEach((f, i)=>{
             const td = document.createElement('td');
+            // Sembunyikan ID di mobile jika perlu, tapi untuk admin biarkan
+            // if (i === 0) td.style.cssText = "max-width: 100px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap;";
             td.textContent = f;
             td.setAttribute('data-full', String(f));
             tr.appendChild(td);
           });
-          const tdActions = document.createElement('td'); tdActions.className='actions';
-          const btnDetail = document.createElement('button'); btnDetail.className='btn-ghost'; btnDetail.innerHTML = '<span style="font-size:14px">🔍</span>'; btnDetail.setAttribute('data-action','detail'); btnDetail.setAttribute('data-id',a.id);
-          const btnEdit = document.createElement('button'); btnEdit.className='btn-ghost'; btnEdit.textContent='Edit'; btnEdit.setAttribute('data-action','edit'); btnEdit.setAttribute('data-id',a.id);
-          const btnDel = document.createElement('button'); btnDel.className='btn-ghost'; btnDel.textContent='Delete'; btnDel.setAttribute('data-action','del'); btnDel.setAttribute('data-id',a.id);
-          tdActions.appendChild(btnDetail); tdActions.appendChild(btnEdit); tdActions.appendChild(btnDel);
+          
+          // (BARU) Tombol Aksi dengan Ikon
+          const tdActions = document.createElement('td'); 
+          tdActions.className = 'action-buttons';
+          
+          const btnDetail = document.createElement('button'); 
+          btnDetail.className='btn-icon'; 
+          btnDetail.title = 'Lihat Detail';
+          btnDetail.innerHTML = '<svg><use href="#icon-detail" /></svg>'; 
+          btnDetail.setAttribute('data-action','detail'); 
+          btnDetail.setAttribute('data-id',a.id);
+          
+          const btnEdit = document.createElement('button'); 
+          btnEdit.className='btn-icon'; 
+          btnEdit.title = 'Edit';
+          btnEdit.innerHTML = '<svg><use href="#icon-edit" /></svg>'; 
+          btnEdit.setAttribute('data-action','edit'); 
+          btnEdit.setAttribute('data-id',a.id);
+          
+          const btnDel = document.createElement('button'); 
+          btnDel.className='btn-icon delete'; 
+          btnDel.title = 'Hapus';
+          btnDel.innerHTML = '<svg><use href="#icon-delete" /></svg>'; 
+          btnDel.setAttribute('data-action','del'); 
+          btnDel.setAttribute('data-id',a.id);
+          
+          tdActions.appendChild(btnDetail); 
+          tdActions.appendChild(btnEdit); 
+          tdActions.appendChild(btnDel);
           tr.appendChild(tdActions);
           tbody.appendChild(tr);
         });
@@ -508,23 +662,31 @@ mark{background:rgba(255,235,59,0.25);padding:0 2px;border-radius:2px}
         const action = btn.getAttribute('data-action');
         
         const idx = db.assets.findIndex(a=>a.id===id);
-        if (idx < 0 && (action === 'edit' || action === 'del')) {
-            return showToast("Error: Item tidak ditemukan di cache lokal.", true);
+        if (idx < 0) {
+            return showToast("Error: Item tidak ditemukan.", true);
         }
-        
-        const docRef = fb_assetsCollectionRef.doc(id); // v8 doc ref
 
-        if(action==='edit' && idx>=0){ 
-          const a=db.assets[idx]; 
+        const docRef = fb_assetsCollectionRef.doc(id); // v8 doc ref
+        const a = db.assets[idx]; 
+
+        if (action === 'detail') {
+            // Panggil fungsi modal detail
+            window.showAssetDetail(a);
+            return;
+        }
+
+        if(action==='edit'){ 
           editId=a.id; 
           nameEl.value=a.name||''; typeEl.value=a.type||'Laptop'; serialEl.value=a.serial||''; 
           qtyEl.value=a.qty||1; qcStatusEl.value=a.qcStatus||'Belum QC'; softwareEl.value=a.software||''; 
           locEl.value=a.location||''; picEl.value=a.pic||''; purchaseEl.value=a.purchaseDate||''; 
           warrantyEl.value=a.warrantyUntil||''; notesEl.value=a.notes||''; 
           addBtn.disabled=true; 
-          updateBtn.textContent='Save Changes'; 
+          addBtn.textContent = "Simpan Perubahan";
+          updateBtn.textContent='Batal Edit'; 
           
-          updateBtn.onclick = async function(){ 
+          updateBtn.onclick = resetAction; // Sekarang tombol "Clear" menjadi "Batal"
+          addBtn.onclick = async function() { // Tombol "Tambah" menjadi "Simpan"
             const updatedItem = { 
               name:nameEl.value.trim(), type:typeEl.value, serial:serialEl.value.trim(), 
               qty:Number(qtyEl.value||1), qcStatus:qcStatusEl.value, software:softwareEl.value.trim(), 
@@ -532,27 +694,28 @@ mark{background:rgba(255,235,59,0.25);padding:0 2px;border-radius:2px}
               purchaseDate:purchaseEl.value||'', warrantyUntil:warrantyEl.value||'', 
               notes:notesEl.value.trim() 
             };
-
             try {
-                updateBtn.disabled = true;
-                updateBtn.textContent = "Updating...";
+                addBtn.disabled = true;
+                addBtn.textContent = "Updating...";
                 await docRef.update(updatedItem); // v8 update
                 clearForm(); 
-                updateBtn.onclick = resetAction; 
+                addBtn.onclick = addBtn.addEventListener('click', addBtn.onclick); // Kembalikan event
                 showToast('Item diperbarui di Firebase');
             } catch (e) {
                 console.error("Error updating document: ", e);
                 showToast('Gagal update: ' + e.message, true);
             } finally {
-                updateBtn.disabled = false;
-                updateBtn.textContent = "Save Changes";
+                addBtn.disabled = false;
+                addBtn.textContent = "Tambah Item";
             }
-          }; 
-          window.scrollTo({top:0,behavior:'smooth'}); 
+          };
+          
+          nameEl.focus();
+          window.scrollTo({top: nameEl.closest('aside').offsetTop - 20, behavior:'smooth'}); 
         }
-        else if(action==='del' && idx>=0){ 
-          if(confirm('Hapus item ini dari Firebase? (ID: '+id+')')){ 
-            docRef.delete() // v8 delete
+        else if(action==='del'){ 
+          if(confirm(`Hapus item ini dari Firebase?\nID: ${id}\nNama: ${a.name}`)){ 
+            docRef.delete() 
                 .then(() => {
                     showToast('Item dihapus dari Firebase');
                 })
@@ -564,7 +727,12 @@ mark{background:rgba(255,235,59,0.25);padding:0 2px;border-radius:2px}
         }
       });
 
-      function resetAction(){ clearForm(); updateBtn.onclick = resetAction; addBtn.disabled=false; }
+      // Ganti fungsi addBtn.onclick ke addBtn asli
+      const originalAddBtnClick = addBtn.onclick;
+      function resetAction(){ 
+        clearForm(); 
+        addBtn.onclick = originalAddBtnClick; // Kembalikan listener asli
+      }
       updateBtn.onclick = resetAction;
 
       // CSV / JSON helpers (sama)
@@ -593,7 +761,6 @@ mark{background:rgba(255,235,59,0.25);padding:0 2px;border-radius:2px}
             for (const item of items) {
                 let newItem = { ...item };
                 if (newItem.id) delete newItem.id; 
-                
                 const docRef = fb_assetsCollectionRef.doc(); // v8 doc
                 batch.set(docRef, newItem); // v8 set
                 
@@ -633,7 +800,6 @@ mark{background:rgba(255,235,59,0.25);padding:0 2px;border-radius:2px}
 
       function splitCsvLine(line){ const res=[]; let cur=''; let inq=false; for(let i=0;i<line.length;i++){ const ch=line[i]; if(ch==='"'){ if(inq && line[i+1]==='"'){ cur+='"'; i++; continue; } inq=!inq; continue; } if(ch===',' && !inq){ res.push(cur); cur=''; } else cur+=ch; } res.push(cur); return res.map(s=>s.replace(/^"|"$/g,'')); }
       
-      // search (debounced)
       globalSearch.addEventListener('input', debounce(e=>{ render(e.target.value); window.highlightSearch && window.highlightSearch(e.target.value); }, 180));
 
       // QC UI (v8 Syntax)
@@ -660,29 +826,27 @@ mark{background:rgba(255,235,59,0.25);padding:0 2px;border-radius:2px}
       document.getElementById('clearQcBtn').addEventListener('click', ()=> qcListEl.querySelectorAll('input[type=checkbox]').forEach(cb=>cb.checked=false));
 
       // Print
-      document.getElementById('printBtn').addEventListener('click', ()=> window.print());
-
-      // Excel with SheetJS (sama)
+      // document.getElementById('printBtn').addEventListener('click', ()=> window.print());
+ 
+      // Excel with SheetJS (try/catch)
       document.getElementById('downloadExcelBtn').addEventListener('click', ()=>{ try{ if(typeof XLSX === 'undefined') throw new Error('SheetJS tidak tersedia'); const data = db.assets.map(a=>({ ID:a.id, Nama:a.name, Jenis:a.type, Serial:a.serial, Qty:a.qty, Software:a.software, PIC:a.pic, Lokasi:a.location, Purchase:a.purchaseDate, Warranty:a.warrantyUntil, QC:a.qcStatus })); const ws = XLSX.utils.json_to_sheet(data); const wb = XLSX.utils.book_new(); XLSX.utils.book_append_sheet(wb, ws, 'Assets'); XLSX.writeFile(wb, 'Zeppelin_Asset_'+Date.now()+'.xlsx'); showToast('Excel diunduh'); }catch(e){ showToast('Gagal generate Excel: '+e.message, true); } });
 
       // Dashboard (sama)
-      function updateDashboard(){ const total = db.assets.reduce((s,a)=>s + (Number(a.qty)||0),0); const pcCount = db.assets.reduce((s,a)=> s + ((a.type==='Laptop' || a.type==='Desktop') ? Number(a.qty)||0 : 0), 0); let lulus=0,gagal=0,belum=0; db.assets.forEach(a=>{ if(!a.qcStatus || a.qcStatus==='Belum QC') belum += Number(a.qty)||0; else if(a.qcStatus==='Lulus QC') lulus += Number(a.qty)||0; else if(a.qcStatus==='Gagal QC') gagal += Number(a.qty)||0; }); kpiTotal.textContent = total; kpiPC.textContent = pcCount; kpiQC.textContent = `L:${lulus} • G:${gagal} • B:${belum}`;
+      function updateDashboard(){ const total = db.assets.reduce((s,a)=>s + (Number(a.qty)||0),0); const pcCount = db.assets.reduce((s,a)=> s + ((a.type==='Laptop' || a.type==='Desktop') ? Number(a.qty)||0 : 0), 0); let lulus=0,gagal=0,belum=0; db.assets.forEach(a=>{ if(!a.qcStatus || a.qcStatus==='Belum QC') belum += Number(a.qty)||0; else if(a.qcStatus==='Lulus QC') lulus += Number(a.qty)||0; else if(a.qcStatus==='Gagal QC') gagal += Number(a.qty)||0; }); kpiTotal.textContent = total; kpiPC.textContent = pcCount; kpiQC.textContent = `L:${lulus} G:${gagal} B:${belum}`;
         const categories = {}; db.assets.forEach(a=> categories[a.type] = (categories[a.type]||0) + (Number(a.qty)||0)); const labels = Object.keys(categories); const values = labels.map(l=>categories[l]); try{ if(window.Chart){ if(barChart){ barChart.data.labels = labels; barChart.data.datasets[0].data = values; barChart.update(); } else { barChart = new Chart(barCanvas, { type:'bar', data:{ labels: labels.length?labels:['-'], datasets:[{ label:'Jumlah', data: values.length?values:[0], backgroundColor:'#ff7a18' }]}, options:{responsive:true,plugins:{legend:{display:false}}, scales:{y:{beginAtZero:true}}} }); } const pieData = [lulus,gagal,belum]; if(pieChart){ pieChart.data.datasets[0].data = pieData; pieChart.update(); } else { pieChart = new Chart(pieCanvas, { type:'pie', data:{ labels:['Lulus','Gagal','Belum'], datasets:[{ data: pieData, backgroundColor:['#1db954','#ff4d4f','#ffd166'] }]}, options:{responsive:true,plugins:{legend:{position:'bottom'}}} }); } } }catch(e){ /* ignore chart errors */ }
       }
 
-      // expose minimal API for external scripts
-      return { 
-        loadFirestoreData,
-        detachFirestoreListener,
-        render, 
-        getDB: ()=>db, 
-        updateDashboard, 
-        clearForm, 
-        genId 
-      };
+      // ...
+      
+      document.addEventListener('DOMContentLoaded', ()=>{ 
+        attachFilterHandlers(); 
+        enableSorting(); 
+        // initTheme(); // (BARU) Hapus panggilan ini, karena tombolnya tidak ada
+        attachPrintReport(); 
+      });
+ 
     })();
 
-    // attach to window for other scripts and debugging
     window.ZeppelinApp = ZeppelinApp;
 
     // Inisialisasi Firebase dan Auth
@@ -698,26 +862,24 @@ mark{background:rgba(255,235,59,0.25);padding:0 2px;border-radius:2px}
                 if (user && user.uid === ADMIN_UID) {
                     // --- USER ADALAH ADMIN ---
                     console.log("Admin user authenticated:", user.uid);
-                    loader.style.display = 'flex';
-                    loader.textContent = "Memuat data aset...";
+                    authMsg.textContent = "Verifikasi Berhasil!";
+                    authSubMsg.textContent = "Selamat datang, Admin. Memuat data aset...";
                     
                     fb_userId = user.uid;
                     
-                    // Tentukan path Firestore
-                    // Path: /users/{userId}/assets
                     fb_assetsCollectionRef = fb_db_firestore.collection('users').doc(fb_userId).collection('assets');
                     console.log("Firestore collection path:", `users/${fb_userId}/assets`);
 
                     // Tampilkan UI
                     userEmailDisplay.textContent = user.email;
-                    accessDeniedScreen.style.display = 'none';
+                    
+                    // Muat data aset, lalu sembunyikan auth screen
+                    await ZeppelinApp.loadFirestoreData();
+                    authScreen.style.display = 'none';
                     appContent.style.display = 'block';
 
-                    // Muat data aset
-                    await ZeppelinApp.loadFirestoreData();
-
                 } else {
-                    // --- USER BUKAN ADMIN / TIDAK LOGIN ---
+                    // --- BUKAN ADMIN / TIDAK LOGIN ---
                     if(user) {
                         console.log("Access Denied. User is not admin:", user.uid);
                         await fb_auth.signOut(); // Logout paksa jika bukan admin
@@ -725,11 +887,17 @@ mark{background:rgba(255,235,59,0.25);padding:0 2px;border-radius:2px}
                         console.log("Access Denied. User not logged in.");
                     }
                     
+                    // (BARU) Tampilkan pesan "Akses Ditolak"
+                    authSpinner.style.display = 'none';
+                    authMsg.textContent = "Akses Ditolak";
+                    authSubMsg.textContent = "Anda harus login sebagai Admin untuk mengakses halaman ini.";
+                    authBackBtn.style.display = 'inline-block';
+                    
                     fb_userId = null;
-                    accessDeniedScreen.style.display = 'flex'; // Tampilkan layar akses ditolak
-                    appContent.style.display = 'none'; // Sembunyikan aplikasi
+                    authScreen.style.display = 'flex'; 
+                    appContent.style.display = 'none'; 
                     loader.style.display = 'none';
-                    ZeppelinApp.detachFirestoreListener(); // Hentikan listener data
+                    ZeppelinApp.detachFirestoreListener(); 
                 }
             });
 
@@ -743,8 +911,10 @@ mark{background:rgba(255,235,59,0.25);padding:0 2px;border-radius:2px}
 
         } catch (e) {
             console.error("Firebase initialization failed:", e);
-            accessDeniedScreen.style.display = 'flex';
-            document.querySelector('#accessDeniedBox p').textContent = "Error: Gagal inisialisasi Firebase. " + e.message;
+            authSpinner.style.display = 'none';
+            authMsg.textContent = "Error Firebase";
+            authSubMsg.textContent = "Gagal inisialisasi Firebase: " + e.message;
+            authBackBtn.style.display = 'inline-block';
         }
     }
 
@@ -814,15 +984,15 @@ mark{background:rgba(255,235,59,0.25);padding:0 2px;border-radius:2px}
     const fPic = ($('#filterPic') && $('#filterPic').value) || ''; 
     
     if(typeof window.ZeppelinApp.render === 'function'){ 
-      // render() menangani filter teks global
       window.ZeppelinApp.render(search);
       const rows = $all('#assetTable tbody tr'); 
       rows.forEach(r=>{ 
         const t = r; 
         let show = true; 
         try {
+            // (BARU) Update indeks kolom
             if(fType && t.children[2] && !t.children[2].textContent.includes(fType)) show=false; 
-            if(fQc && t.children[10] && !t.children[10].textContent.includes(fQc)) show=false; 
+            if(fQc && t.children[8] && !t.children[8].textContent.includes(fQc)) show=false; 
             if(fLoc && t.children[7] && !t.children[7].textContent.includes(fLoc)) show=false; 
             if(fPic && t.children[6] && !t.children[6].textContent.includes(fPic)) show=false; 
         } catch (e) {
@@ -857,7 +1027,7 @@ mark{background:rgba(255,235,59,0.25);padding:0 2px;border-radius:2px}
   function enableSorting(){ const headers = $all('#assetTable thead th'); headers.forEach((th, idx)=>{ if(idx === headers.length-1) return; th.style.cursor='pointer'; th.addEventListener('click', ()=>{ const tbody = document.querySelector('#assetTable tbody'); if(!tbody) return; const rows = Array.from(tbody.querySelectorAll('tr')).filter(r=>r.style.display !== 'none'); const asc = th.dataset.asc === 'true' ? false : true; th.dataset.asc = asc; rows.sort((a,b)=>{ const aText = a.children[idx].textContent.trim().toLowerCase(); const bText = b.children[idx].textContent.trim().toLowerCase(); if(!isNaN(parseFloat(aText)) && !isNaN(parseFloat(bText))){ return asc ? (parseFloat(aText) - parseFloat(bText)) : (parseFloat(bText) - parseFloat(aText)); } return asc ? aText.localeCompare(bText) : bText.localeCompare(aText); }); rows.forEach(r=>tbody.appendChild(r)); }); }); }
 
   function initTheme(){ const btn = $('#themeToggle'); if(!btn) return; const current = localStorage.getItem('zepp_theme') || 'dark'; document.documentElement.setAttribute('data-theme', current); applyTheme(current); btn.addEventListener('click', ()=>{ const t = (localStorage.getItem('zepp_theme')||'dark') === 'dark' ? 'light' : 'dark'; localStorage.setItem('zepp_theme', t); applyTheme(t); }); }
-  function applyTheme(t){ if(t==='light'){ document.documentElement.style.setProperty('--bg','#f7fafc'); document.documentElement.style.setProperty('--card','#ffffff'); document.documentElement.style.setProperty('--muted','#6b7280'); document.documentElement.style.setProperty('--accent','#0ea5a4'); document.documentElement.style.setProperty('--border','rgba(2,6,23,0.06)'); document.body.style.color = '#1a202c'; } else { document.documentElement.style.removeProperty('--bg'); document.documentElement.style.removeProperty('--card'); document.documentElement.style.removeProperty('--muted'); document.documentElement.style.removeProperty('--accent'); document.documentElement.style.removeProperty('--border'); document.body.style.color = '#e6eef6'; } }
+  function applyTheme(t){ if(t==='light'){ document.documentElement.style.setProperty('--bg','#f7fafc'); document.documentElement.style.setProperty('--card','#ffffff'); document.documentElement.style.setProperty('--card-light','#f1f5f9'); document.documentElement.style.setProperty('--muted','#6b7280'); document.documentElement.style.setProperty('--accent','#0ea5a4'); document.documentElement.style.setProperty('--border','#e2e8f0'); document.body.style.color = '#1a202c'; } else { document.documentElement.style.removeProperty('--bg'); document.documentElement.style.removeProperty('--card'); document.documentElement.style.removeProperty('--card-light'); document.documentElement.style.removeProperty('--muted'); document.documentElement.style.removeProperty('--accent'); document.documentElement.style.removeProperty('--border'); document.body.style.color = '#e6eef6'; } }
 
   function attachPrintReport(){ 
     const btn = $('#printReportBtn'); 
@@ -894,21 +1064,21 @@ mark{background:rgba(255,235,59,0.25);padding:0 2px;border-radius:2px}
 
 <!-- Detail Modal (table-style) -->
 <div id="detailModalOverlay" style="display:none; position:fixed; inset:0; background:rgba(2,6,23,0.6); align-items:center; justify-content:center; z-index:9999;">
-<div aria-modal="true" id="detailModal" role="dialog" style="width:min(680px,95%); background:var(--card); border-radius:14px; padding:18px; border:1px solid rgba(255,255,255,0.04); box-shadow:0 12px 40px rgba(2,6,23,0.7);">
-<div style="display:flex;justify-content:space-between;align-items:center;gap:12px;margin-bottom:8px">
-<h4 style="margin:0;color:var(--accent)">Detail Perangkat</h4>
+<div aria-modal="true" id="detailModal" role="dialog" style="width:min(680px,95%); background:var(--card); border-radius:14px; padding:20px; border:1px solid rgba(255,255,255,0.1); box-shadow:0 12px 40px rgba(2,6,23,0.7);">
+<div style="display:flex;justify-content:space-between;align-items:center;gap:12px;margin-bottom:12px">
+<h3 style="margin:0;color:var(--accent)" id="detailModalTitle">Detail Perangkat</h3>
 <div style="display:flex;gap:8px">
 <button class="btn-ghost" id="copyIdBtn" title="Salin ID">Salin ID</button>
 <button class="btn" id="closeDetailBtn">Tutup</button>
 </div>
 </div>
-<div style="overflow:auto; max-height:60vh;">
+<div style="overflow:auto; max-height:60vh; background: var(--card-light); border-radius: 8px; padding: 4px;">
 <table style="width:100%; border-collapse:collapse; font-size:14px;">
 <tbody id="detailTableBody"></tbody>
 </table>
 </div>
-<div style="display:flex;justify-content:flex-end;margin-top:12px;gap:8px">
-<button class="btn-ghost" id="editFromDetailBtn">Edit Item</button>
+<div style="display:flex;justify-content:flex-end;margin-top:16px;gap:8px">
+<button class="btn-ghost" id="editFromDetailBtn">Edit Item Ini</button>
 <button class="btn" id="closeDetailBtn2">Tutup</button>
 </div>
 </div>
@@ -918,22 +1088,18 @@ mark{background:rgba(255,235,59,0.25);padding:0 2px;border-radius:2px}
 (function(){
   function $(sel){ return document.querySelector(sel); }
   const overlay = $('#detailModalOverlay');
+  const modalTitle = $('#detailModalTitle');
   const tbody = document.getElementById('detailTableBody');
   const copyBtn = document.getElementById('copyIdBtn');
   const closeBtn = document.getElementById('closeDetailBtn');
   const closeBtn2 = document.getElementById('closeDetailBtn2');
   const editBtn = document.getElementById('editFromDetailBtn');
   
-  document.addEventListener('click', function(e){
-    const btn = e.target.closest('button[data-action="detail"]');
-    if(!btn) return;
-    const id = btn.getAttribute('data-id');
+  // (BARU) Global function untuk memicu modal
+  window.showAssetDetail = function(a) {
+    if(!a) return window.showToast('Data tidak ditemukan', true);
     
-    if (!window.ZeppelinApp) return;
-    const db = window.ZeppelinApp.getDB();
-    const a = (db.assets || []).find(x=>x.id===id);
-    
-    if(!a) return window.showToast('Data tidak ditemukan di cache', true);
+    modalTitle.textContent = "Detail: " + (a.name || 'N/A');
     
     const rows = [
       ['ID', a.id],
@@ -949,19 +1115,23 @@ mark{background:rgba(255,235,59,0.25);padding:0 2px;border-radius:2px}
       ['Status QC', a.qcStatus || '-'],
       ['Keterangan', a.notes || '-']
     ];
+    // Tampilkan data QC jika ada
     if (a.qc) {
         rows.push(['--- QC CHECKLIST ---', '---']);
         for (const [key, value] of Object.entries(a.qc)) {
-            rows.push([key, value ? '✅ Lulus' : '❌ Gagal']);
+            // Coba cari label dari template
+            const qcItem = ZeppelinApp.qcTemplate.find(item => item.k === key);
+            const label = qcItem ? qcItem.l : key;
+            rows.push([label, value ? '✅ Lulus' : '❌ Gagal']);
         }
     }
 
-    tbody.innerHTML = rows.map(r=>`<tr><td style="padding:8px 10px; color:var(--muted); width:40%; border-bottom:1px solid rgba(255,255,255,0.04)"><strong>${r[0]}</strong></td><td style="padding:8px 10px; border-bottom:1px solid rgba(255,255,255,0.04)">${r[1]}</td></tr>`).join('');
+    tbody.innerHTML = rows.map(r=>`<tr><td style="padding:10px 12px; color:var(--muted); width:40%; border-bottom:1px solid var(--border)"><strong>${r[0]}</strong></td><td style="padding:10px 12px; border-bottom:1px solid var(--border); white-space: pre-wrap; word-break: break-word;">${r[1]}</td></tr>`).join('');
     overlay.style.display = 'flex';
     
     editBtn.onclick = function(){ 
       overlay.style.display='none'; 
-      const editBtnEl = document.querySelector('#assetTable button[data-action="edit"][data-id="'+id+'"]'); 
+      const editBtnEl = document.querySelector(`#assetTable button[data-action="edit"][data-id="${a.id}"]`); 
       if(editBtnEl) {
         editBtnEl.click(); 
         if (a.qc) {
@@ -973,6 +1143,7 @@ mark{background:rgba(255,235,59,0.25);padding:0 2px;border-radius:2px}
         }
       }
     };
+    
     copyBtn.onclick = function(){ 
       try{ 
         const el = document.createElement('textarea');
@@ -984,7 +1155,7 @@ mark{background:rgba(255,235,59,0.25);padding:0 2px;border-radius:2px}
         window.showToast && window.showToast('ID disalin'); 
       }catch(e){ window.showToast('Gagal salin', true); } 
     };
-  });
+  }
   
   closeBtn && closeBtn.addEventListener('click', ()=> overlay.style.display='none');
   closeBtn2 && closeBtn2.addEventListener('click', ()=> overlay.style.display='none');
