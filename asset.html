@@ -250,9 +250,42 @@
             <option value="Gagal QC">Gagal QC</option>
             <option value="Belum QC">Belum QC</option>
           </select>
+          
           <select id="filterType" class="search bg-dark-bg rounded-md focus:ring-accent focus:ring-1">
             <option value="">Semua Tipe Aset</option>
-            </select>
+            <optgroup label="Komputer">
+              <option value="Laptop">Laptop</option>
+              <option value="Desktop">Desktop</option>
+              <option value="All-in-One (AIO)">All-in-One (AIO)</option>
+              <option value="Server">Server</option>
+            </optgroup>
+            <optgroup label="Periferal">
+              <option value="Monitor">Monitor</option>
+              <option value="Keyboard">Keyboard</option>
+              <option value="Mouse">Mouse</option>
+              <option value="Printer">Printer</option>
+              <option value="Scanner">Scanner</option>
+              <option value="Projector">Projector</option>
+              <option value="Headset/Speaker">Headset/Speaker</option>
+              <option value="Webcam">Webcam</option>
+            </optgroup>
+            <optgroup label="Networking">
+              <option value="Router">Router</option>
+              <option value="Switch">Switch</option>
+              <option value="Access Point">Access Point</option>
+            </optgroup>
+            <optgroup label="Komponen">
+              <option value="Hard Drive">Hard Drive</option>
+              <option value="SSD">SSD</option>
+              <option value="RAM">RAM</option>
+            </optgroup>
+            <optgroup label="Lain-lain">
+              <option value="UPS">UPS</option>
+              <option value="Software">Software</option>
+              <option value="Lainnya">Lainnya</option>
+            </optgroup>
+          </select>
+          
           <button id="exportExcelBtn" class="py-2 px-4 rounded-md bg-dark-bg text-dark-muted font-semibold border border-dark-border transition hover:bg-green-600/20 hover:text-green-400 hover:border-green-500">
             <i class="fa-solid fa-file-excel mr-2"></i>Export
           </button>
@@ -347,9 +380,42 @@
       <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
         <div>
           <label for="type" class="block text-sm font-medium text-dark-muted mb-1">Tipe Aset*</label>
-          <input type="text" id="type" list="assetTypesList" placeholder="e.g., Laptop, Keyboard, HDD" required class="input w-full bg-dark-bg rounded-md focus:ring-accent focus:ring-1">
-          <datalist id="assetTypesList">
-            </datalist>
+          
+          <select id="type" required class="input w-full bg-dark-bg rounded-md focus:ring-accent focus:ring-1">
+            <option value="">-- Pilih Tipe Aset --</option>
+            <optgroup label="Komputer">
+              <option value="Laptop">Laptop</option>
+              <option value="Desktop">Desktop</option>
+              <option value="All-in-One (AIO)">All-in-One (AIO)</option>
+              <option value="Server">Server</option>
+            </optgroup>
+            <optgroup label="Periferal">
+              <option value="Monitor">Monitor</option>
+              <option value="Keyboard">Keyboard</option>
+              <option value="Mouse">Mouse</option>
+              <option value="Printer">Printer</option>
+              <option value="Scanner">Scanner</option>
+              <option value="Projector">Projector</option>
+              <option value="Headset/Speaker">Headset/Speaker</option>
+              <option value="Webcam">Webcam</option>
+            </optgroup>
+            <optgroup label="Networking">
+              <option value="Router">Router</option>
+              <option value="Switch">Switch</option>
+              <option value="Access Point">Access Point</option>
+            </optgroup>
+            <optgroup label="Komponen">
+              <option value="Hard Drive">Hard Drive</option>
+              <option value="SSD">SSD</option>
+              <option value="RAM">RAM</option>
+            </optgroup>
+            <optgroup label="Lain-lain">
+              <option value="UPS">UPS</option>
+              <option value="Software">Software</option>
+              <option value="Lainnya">Lainnya</option>
+            </optgroup>
+          </select>
+          
         </div>
         <div>
           <label for="serialNumber" class="block text-sm font-medium text-dark-muted mb-1">Serial Number</label>
@@ -397,6 +463,7 @@
       </div>
 
     </form>
+    
     <div class="flex items-center justify-end p-5 border-t border-dark-border bg-dark-bg/50 rounded-b-lg">
       <button id="cancelAssetModal" type="button" class="py-2 px-5 rounded-md bg-dark-bg text-dark-muted font-bold border border-dark-border transition hover:bg-dark-border">Batal</button>
       <button id="saveAssetBtn" type="submit" form="assetForm" class="ml-3 py-2 px-5 rounded-md bg-accent text-black font-bold shadow-md">Simpan Aset</button>
@@ -631,9 +698,9 @@
   // --- Variabel Global Aplikasi ---
   let fb_app, fb_db, fb_auth, fb_userId, fb_assetsCollectionRef, fb_vendorsCollectionRef;
   let allAssetsCache = [];
-  let allVendorsCache = []; // <-- BARU
+  let allVendorsCache = []; 
   let assetListener = null;
-  let vendorListener = null; // <-- BARU
+  let vendorListener = null; 
   let typeChartInstance = null;
   let qcStatusChartInstance = null;
   
@@ -675,23 +742,16 @@
         fb_assetsCollectionRef = fb_db.collection('users').doc(fb_userId).collection('assets_v2');
         console.log("Firestore collection path (Assets):", `users/${fb_userId}/assets_v2`);
         
-        // // INI ADALAH PERBAIKAN PENTING UNTUK ERROR 'orderBy'
+        // Inisialisasi koleksi Vendor
         fb_vendorsCollectionRef = fb_db.collection('users').doc(fb_userId).collection('vendors');
         console.log("Firestore collection path (Vendors):", `users/${fb_userId}/vendors`);
-        
-        // (BARU) TAMBAHAN LOG UNTUK DEBUG
-        if (typeof fb_vendorsCollectionRef === 'undefined') {
-          console.error("DEBUG: fb_vendorsCollectionRef MASIH UNDEFINED!");
-        } else {
-          console.log("DEBUG: fb_vendorsCollectionRef BERHASIL di-inisialisasi.");
-        }
 
         els.userEmailDisplay.textContent = user.email;
         
         // Muat kedua set data
         await Promise.all([
           loadAssetData(),
-          loadVendorData() // <-- BARU
+          loadVendorData() 
         ]);
         
         els.authScreen.style.display = 'none';
@@ -712,7 +772,7 @@
         els.appContainer.style.display = 'none'; 
         $('#loader').style.display = 'none';
         if (assetListener) assetListener();
-        if (vendorListener) vendorListener(); // <-- BARU
+        if (vendorListener) vendorListener(); 
     }
   }
 
@@ -775,7 +835,7 @@
     const assetData = {
       name: $('#assetName').value,
       qty: parseInt($('#qty').value) || 0,
-      type: $('#type').value, // Tipe aset dari input (yang terhubung ke datalist)
+      type: $('#type').value, // <-- SEKARANG MENGAMBIL DARI <select>
       serial: $('#serialNumber').value,
       qcStatus: $('#qcStatus').value,
       location: $('#location').value,
@@ -786,6 +846,13 @@
       notes: $('#notes').value,
       lastUpdate: firebase.firestore.FieldValue.serverTimestamp()
     };
+    
+    // Validasi Tipe Aset
+    if (!assetData.type) {
+      showToast('Error: Tipe Aset harus dipilih', true);
+      $('#loader').style.display = 'none';
+      return;
+    }
 
     const assetId = $('#assetId').value;
     let logMessage = "";
@@ -836,7 +903,8 @@
           console.log(`(DATA ASET) Menerima ${snapshot.docs.length} dokumen.`);
           allAssetsCache = snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() }));
           
-          populateTypeFilter(allAssetsCache);
+          // DIUBAH: Panggilan ke populateTypeFilter() dihapus dari sini
+          
           renderAssetTable(allAssetsCache);
           updateDashboard(allAssetsCache);
           
@@ -930,7 +998,6 @@
     return new Promise((resolve, reject) => {
       if (vendorListener) vendorListener();
       
-      // fb_vendorsCollectionRef adalah penyebab error jika tidak diinisialisasi
       vendorListener = fb_vendorsCollectionRef.orderBy('name', 'asc').onSnapshot((snapshot) => {
           console.log(`(DATA VENDOR) Menerima ${snapshot.docs.length} dokumen.`);
           allVendorsCache = snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() }));
@@ -1058,30 +1125,12 @@
   // FUNGSI RENDER & UI (LAINNYA)
   // ==================================================================
 
-  /**
-   * (DIUBAH) Mengisi filter Tipe Aset DAN datalist di form
-   */
+  // DIUBAH: Fungsi ini sekarang DIHAPUS karena daftarnya sudah tetap di HTML
+  /*
   function populateTypeFilter(assets) {
-    const filterEl = $('#filterType');
-    const dataListEl = $('#assetTypesList'); // <-- Referensi ke datalist
-    const currentVal = filterEl.value;
-    
-    // Dapatkan tipe unik, filter 'null'/'undefined', lalu urutkan
-    const types = [...new Set(assets.map(a => a.type).filter(Boolean))].sort();
-    
-    // 1. Populate Filter Dropdown
-    filterEl.innerHTML = '<option value="">Semua Tipe Aset</option>'; // Reset
-    types.forEach(type => {
-      const selected = (type === currentVal) ? 'selected' : '';
-      filterEl.innerHTML += `<option value="${type}" ${selected}>${type}</option>`;
-    });
-    
-    // 2. Populate Datalist di Modal Form
-    dataListEl.innerHTML = ''; // Reset datalist
-    types.forEach(type => {
-      dataListEl.innerHTML += `<option value="${type}"></option>`;
-    });
+    // ... KODE LAMA DIHAPUS ...
   }
+  */
 
   /**
    * Merender tabel aset (v2)
@@ -1092,7 +1141,7 @@
     
     const searchTerm = $('#searchInput').value.toLowerCase();
     const qcStatusFilter = $('#filterQcStatus').value;
-    const typeFilter = $('#filterType').value;
+    const typeFilter = $('#filterType').value; // <-- Ini sekarang mengambil dari <select> tetap
 
     const filteredAssets = assets.filter(asset => {
       const searchMatch = !searchTerm ||
@@ -1245,7 +1294,7 @@
    */
   function openAssetModal(asset = null) {
     const modal = $('#assetModal');
-    $('#assetForm').reset();
+    $('#assetForm').reset(); // Ini sekarang aman karena <datalist> tidak ada lagi
     
     if (asset) {
       // --- MODE EDIT ---
@@ -1253,7 +1302,7 @@
       $('#assetId').value = asset.id;
       $('#assetName').value = asset.name || '';
       $('#qty').value = asset.qty || 1;
-      $('#type').value = asset.type || '';
+      $('#type').value = asset.type || ''; // <-- Mengatur nilai <select>
       $('#serialNumber').value = asset.serial || '';
       $('#qcStatus').value = asset.qcStatus || 'Belum QC';
       $('#location').value = asset.location || '';
@@ -1267,6 +1316,7 @@
       $('#assetModalTitle').textContent = 'Tambah Aset Baru';
       $('#assetId').value = '';
       $('#qty').value = 1;
+      $('#type').value = ''; // <-- Mengatur <select> ke default
       $('#qcStatus').value = 'Belum QC';
     }
     modal.classList.add('active');
