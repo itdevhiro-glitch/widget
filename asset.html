@@ -1,12 +1,11 @@
 <!DOCTYPE html>
-
 <html lang="id">
 <head>
 <meta charset="utf-8"/>
 <meta content="width=device-width,initial-scale=1" name="viewport"/>
-<title>Zeppelin — Asset Manager (Fixed)</title>
+<title>Zeppelin — Asset Manager (Admin)</title>
 <meta content="Bima Adhitya" name="author"/>
-<meta content="Asset Manager &amp; QC — Zeppelin. Local-only. Export XLSX/JSON. Dashboard statistik." name="description"/>
+<meta content="Asset Manager &amp; QC — Zeppelin. Terhubung ke Firebase Firestore." name="description"/>
 <style>
 :root {
   --bg: #0e1117;
@@ -17,9 +16,21 @@
   --success: #1db954;
   --error: #ff4d4f;
   --shadow: 0 4px 12px rgba(0, 0, 0, 0.25);
+  
+  --login-bg: #f4f7fa;
+  --login-card: #ffffff;
+  --login-text: #212529;
+  --login-border: #e9ecef;
+  --login-primary: #D9232D;
+  --login-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.07), 0 2px 4px -2px rgba(0, 0, 0, 0.07);
 }
 * { box-sizing: border-box; font-family: Inter, system-ui, -apple-system, 'Segoe UI', Roboto, Arial; }
 html, body { margin:0; padding:0; height:100%; width:100%; background-color:var(--bg); color:#e6eef6; overflow-x:hidden; }
+
+/* Konten Aplikasi */
+.app-content { 
+  display: none; /* Sembunyi by default, tampil setelah login */
+}
 .wrap { width:100%; max-width:1600px; margin:0 auto; padding:clamp(16px,2vw,32px); }
 header{display:flex;justify-content:space-between;align-items:center;flex-wrap:wrap;gap:16px;margin-bottom:24px}
 .brand{display:flex;align-items:center;gap:14px}
@@ -47,360 +58,836 @@ input,select,textarea{width:100%;background:#1b222e;border:1px solid var(--borde
 textarea{min-height:70px}
 footer{margin-top:32px;text-align:center;color:var(--muted);font-size:13px;padding:16px 0}
 mark{background:rgba(255,235,59,0.25);padding:0 2px;border-radius:2px}
+
+/* (BARU) Layar Akses Ditolak */
+#accessDeniedScreen {
+  position: fixed; inset: 0; 
+  background: var(--login-bg); 
+  z-index: 10000;
+  display: flex; /* Tampil by default */
+  align-items: center; 
+  justify-content: center; 
+  padding: 16px;
+  color: var(--login-text);
+  font-family: 'Roboto', sans-serif;
+  text-align: center;
+}
+#accessDeniedBox {
+  width: 400px; max-width: 100%;
+  background: var(--login-card); 
+  padding: 30px 40px;
+  border-radius: 12px; 
+  border: 1px solid var(--login-border);
+  box-shadow: var(--login-shadow);
+}
+#accessDeniedBox h3 {
+  color: var(--login-primary);
+  font-size: 1.5rem;
+  margin-top: 0;
+}
+#accessDeniedBox p {
+  font-size: 1rem;
+  color: #555;
+  margin-top: 15px;
+  line-height: 1.6;
+}
+#accessDeniedBox a {
+  display: inline-block;
+  margin-top: 20px;
+  padding: 12px 20px;
+  border-radius: 8px;
+  background-color: var(--login-primary);
+  color: white;
+  font-weight: 700;
+  text-decoration: none;
+  transition: background-color 0.3s;
+}
+#accessDeniedBox a:hover {
+  background-color: #B01B22;
+}
+
+/* Loading Spinner */
+#loader {
+  position: fixed;
+  inset: 0;
+  background: rgba(0, 0, 0, 0.5);
+  display: none; /* Sembunyi by default */
+  align-items: center;
+  justify-content: center;
+  z-index: 10000;
+  color: white;
+  font-size: 1.2rem;
+  flex-direction: column;
+  gap: 10px;
+}
+#loader::after {
+  content: '';
+  width: 40px;
+  height: 40px;
+  border: 4px solid #fff;
+  border-top-color: var(--accent);
+  border-radius: 50%;
+  animation: spin 1s linear infinite;
+}
+@keyframes spin {
+  to { transform: rotate(360deg); }
+}
 </style>
+
+<!-- (BARU) Icon Pack (digunakan oleh login box) -->
+<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css">
 </head>
 <body>
-<div class="wrap">
-<header>
-<div class="brand">
-<div id="logoWrap">
-<img alt="Zeppelin Logo" class="logo-img" onerror="this.style.display='none';document.getElementById('logoFallback').style.display='flex'" src="asset.png"/>
-<div class="logo-placeholder" id="logoFallback" style="display:none">Z</div>
+
+<!-- (BARU) Layar Akses Ditolak -->
+<div id="accessDeniedScreen">
+  <div id="accessDeniedBox">
+    <i class="fa-solid fa-lock" style="font-size: 2.5rem; color: var(--login-primary);"></i>
+    <h3>Akses Ditolak</h3>
+    <p>Anda harus login sebagai Admin melalui Dashboard utama untuk mengakses halaman ini.</p>
+    <!-- Ganti URL ini jika lokasi index.html Anda berbeda -->
+    <a href="index.html">Kembali ke Admin Dashboard</a>
+  </div>
 </div>
-<div>
-<h1>Zeppelin — Asset Manager</h1>
-<div class="sub">QC &amp; Inventory • Local backup • Export XLSX/JSON • Developed by Bima Adhitya</div>
-</div>
-</div>
-<div class="controls no-print">
-<input aria-label="Cari asset" class="search" id="globalSearch" placeholder="Cari: jenis, brand, serial, PIC..."/>
-<button class="btn" id="downloadExcelBtn">Download Excel</button>
-<button class="btn-ghost" id="backupBtn">Backup JSON</button>
-<button class="btn-ghost" id="restoreBtn">Restore JSON</button>
-<button class="btn-ghost" id="printBtn">Print / PDF</button>
-<input accept="application/json, .json, .csv" id="fileInput" style="display:none" type="file"/>
-<div id="filterControls" style="display:flex;gap:8px;align-items:center;">
-<select class="search" id="filterType" title="Filter by jenis"><option value="">All Jenis</option></select>
-<select class="search" id="filterQc" title="Filter by QC"><option value="">All QC</option><option value="Belum QC">Belum QC</option><option value="Lulus QC">Lulus QC</option><option value="Gagal QC">Gagal QC</option></select>
-<select class="search" id="filterLoc" title="Filter by Lokasi"><option value="">All Lokasi</option></select>
-<select class="search" id="filterPic" title="Filter by PIC"><option value="">All PIC</option></select>
-<button class="btn-ghost" id="themeToggle" style="min-width:40px">Theme</button>
-<button class="btn-ghost" id="restoreBackupBtn" title="Restore last backup">Restore</button>
-<button class="btn" id="printReportBtn" title="Cetak laporan PDF">Cetak Laporan (PDF)</button>
-</div>
-</div>
-</header>
-<section class="card">
-<div style="display:flex;justify-content:space-between;align-items:center;gap:12px;flex-wrap:wrap">
-<div>
-<h2 style="margin:0;color:var(--accent)">Dashboard Statistik Asset IT</h2>
-<div class="muted">Ringkasan cepat &amp; grafik interaktif.</div>
-</div>
-</div>
-<div class="kpi-row" style="margin-top:12px">
-<div class="kpi"><div id="kpiTotal" style="font-size:18px;font-weight:800">0</div><div class="muted">Total Asset</div></div>
-<div class="kpi"><div id="kpiPC" style="font-size:18px;font-weight:800">0</div><div class="muted">Total Laptop &amp; Desktop</div></div>
-<div class="kpi"><div id="kpiQC" style="font-size:14px;font-weight:700">L:0 • G:0 • B:0</div><div class="muted">Status QC</div></div>
-</div>
-<div style="display:flex;gap:12px;flex-wrap:wrap">
-<div style="flex:1;min-width:420px">
-<canvas aria-label="Chart kategori" height="140" id="barCategories"></canvas>
-</div>
-<div style="width:320px">
-<canvas aria-label="Chart QC" height="140" id="pieQc"></canvas>
-</div>
-</div>
-</section>
-<div class="grid" style="margin-top:12px">
-<aside class="card">
-<h3>Tambah / Edit Asset</h3>
-<div class="muted">Isi detail asset — warranty &amp; tgl pembelian opsional.</div>
-<label>Nama Barang</label>
-<input id="name" placeholder="Contoh: Laptop Dell Latitude"/>
-<label>Jenis</label>
-<select id="itemType">
-<option>Laptop</option>
-<option>Desktop</option>
-<option>Monitor</option>
-<option>Keyboard</option>
-<option>Mouse</option>
-<option>SATA Cable</option>
-<option>LAN Cable</option>
-<option>Power Cable</option>
-<option>UPS</option>
-<option>SSD</option>
-<option>HDD</option>
-<option>Other</option>
-</select>
-<label>Serial / Tag ID</label>
-<input id="serial" placeholder="SN atau Tag ID (opsional)"/>
-<label>Qty</label>
-<input id="qty" min="1" type="number" value="1"/>
-<label>Status QC</label>
-<select id="qcStatus"><option>Belum QC</option><option>Lulus QC</option><option>Gagal QC</option></select>
-<label>Software Terinstal (pisahkan koma)</label>
-<input id="software" placeholder="Contoh: Radmin, VNC, Accurate"/>
-<label>Lokasi</label>
-<input id="location" placeholder="Ruang / Rack / Gudang"/>
-<label>PIC</label>
-<input id="pic" placeholder="Penanggung jawab / Nama"/>
-<label>Tanggal Pembelian (opsional)</label>
-<input id="purchaseDate" type="date"/>
-<label>Warranty Until (opsional)</label>
-<input id="warrantyUntil" type="date"/>
-<label>Keterangan</label>
-<textarea id="notes" placeholder="Catatan tambahan, kondisi fisik, license keys..."></textarea>
-<div style="display:flex;gap:8px;margin-top:10px">
-<button class="btn" id="addBtn">Tambah Item</button>
-<button class="btn-ghost" id="updateBtn" style="width:auto">Clear / Reset</button>
-</div>
-</aside>
-<main>
-<div class="card">
-<div style="display:flex;justify-content:space-between;align-items:center">
-<div>
-<h3>Daftar Asset</h3>
-<div class="muted">Klik Edit untuk update. Export CSV/JSON tersedia.</div>
-</div>
-<div class="muted">Total: <span id="totalCount">0</span></div>
-</div>
-<div class="table-wrap">
-<table id="assetTable">
-<thead>
-<tr><th>ID</th><th>Nama</th><th>Jenis</th><th>Serial</th><th>Qty</th><th>Software</th><th>PIC</th><th>Lokasi</th><th>Purchase</th><th>Warranty</th><th>QC</th><th>Actions</th></tr>
-</thead>
-<tbody></tbody>
-</table>
-</div>
-</div>
-<div style="height:14px"></div>
-<div class="card">
-<h3>QC Checklist (Laptop &amp; Desktop)</h3>
-<div class="muted">Centang item yang OK. Simpan QC ke asset tertentu.</div>
-<div id="qcList" style="margin-top:10px;display:grid;grid-template-columns:1fr 1fr;gap:6px"></div>
-<div style="display:flex;gap:8px;margin-top:12px">
-<input id="qcTargetId" placeholder="Masukkan Asset ID untuk simpan QC"/>
-<button class="btn" id="saveQcBtn">Simpan QC</button>
-<button class="btn-ghost" id="clearQcBtn">Reset</button>
-</div>
-</div>
-<div style="height:14px"></div>
-<div class="card no-print">
-<h3>Export &amp; Import</h3>
-<div class="muted">Export CSV untuk Excel; JSON untuk backup &amp; restore.</div>
-<div style="display:flex;gap:8px;margin-top:10px">
-<button class="btn" id="exportCsvBtn">Export CSV</button>
-<button class="btn-ghost" id="exportJsonBtn">Export JSON</button>
-<button class="btn-ghost" id="importCsvBtn">Import CSV</button>
-<button class="btn-ghost" id="importJsonBtn">Import JSON</button>
-<input accept="text/csv" id="csvFile" style="display:none" type="file"/>
-<input accept="application/json" id="jsonFile" style="display:none" type="file"/>
-</div>
-</div>
-</main>
-</div>
-<footer>© 2025 Zeppelin | Developed by Bima Adhitya</footer>
-</div>
+
+<div id="loader">Memuat data dari Firebase...</div>
+
+<!-- (BARU) Konten Aplikasi dibungkus di sini -->
+<div class="app-content">
+  <div class="wrap">
+  <header>
+  <div class="brand">
+  <div id="logoWrap">
+  <img alt="Zeppelin Logo" class="logo-img" onerror="this.style.display='none';document.getElementById('logoFallback').style.display='flex'" src="asset.png"/>
+  <div class="logo-placeholder" id="logoFallback" style="display:none">Z</div>
+  </div>
+  <div>
+  <h1>Zeppelin — Asset Manager</h1>
+  <div class="sub" id="subhead">QC &amp; Inventory • Terhubung ke Firebase</div>
+  </div>
+  </div>
+  <div class="controls no-print">
+  
+  <!-- Info User & Tombol Logout -->
+  <div id="userInfo" class="small" style="text-align: right; color: white;">
+    Logged in as:<br>
+    <strong id="userEmailDisplay" style="color: var(--accent);"></strong>
+  </div>
+  <button id="logoutBtn" class="btn-ghost" title="Logout" style="color: var(--error); border-color: var(--error);">Logout</button>
+  
+  <input aria-label="Cari asset" class="search" id="globalSearch" placeholder="Cari: jenis, brand, serial, PIC..."/>
+  <button class="btn" id="downloadExcelBtn">Download Excel</button>
+  <button class="btn-ghost" id="backupBtn">Backup JSON</button>
+  <button class="btn-ghost" id="restoreBtn">Restore JSON</button>
+  <button class="btn-ghost" id="printBtn">Print / PDF</button>
+  <input accept="application/json, .json, .csv" id="fileInput" style="display:none" type="file"/>
+  <div id="filterControls" style="display:flex;gap:8px;align-items:center;">
+  <select class="search" id="filterType" title="Filter by jenis"><option value="">All Jenis</option></select>
+  <select class="search" id="filterQc" title="Filter by QC"><option value="">All QC</option><option value="Belum QC">Belum QC</option><option value="Lulus QC">Lulus QC</option><option value="Gagal QC">Gagal QC</option></select>
+  <select class="search" id="filterLoc" title="Filter by Lokasi"><option value="">All Lokasi</option></select>
+  <select class="search" id="filterPic" title="Filter by PIC"><option value="">All PIC</option></select>
+  <button class="btn-ghost" id="themeToggle" style="min-width:40px">Theme</button>
+  <button class="btn" id="printReportBtn" title="Cetak laporan PDF">Cetak Laporan (PDF)</button>
+  </div>
+  </div>
+  </header>
+  <section class="card">
+  <div style="display:flex;justify-content:space-between;align-items:center;gap:12px;flex-wrap:wrap">
+  <div>
+  <h2 style="margin:0;color:var(--accent)">Dashboard Statistik Asset IT</h2>
+  <div class="muted">Ringkasan cepat &amp; grafik interaktif.</div>
+  </div>
+  </div>
+  <div class="kpi-row" style="margin-top:12px">
+  <div class="kpi"><div id="kpiTotal" style="font-size:18px;font-weight:800">0</div><div class="muted">Total Asset</div></div>
+  <div class="kpi"><div id="kpiPC" style="font-size:18px;font-weight:800">0</div><div class="muted">Total Laptop &amp; Desktop</div></div>
+  <div class="kpi"><div id="kpiQC" style="font-size:14px;font-weight:700">L:0 • G:0 • B:0</div><div class="muted">Status QC</div></div>
+  </div>
+  <div style="display:flex;gap:12px;flex-wrap:wrap">
+  <div style="flex:1;min-width:420px">
+  <canvas aria-label="Chart kategori" height="140" id="barCategories"></canvas>
+  </div>
+  <div style="width:320px">
+  <canvas aria-label="Chart QC" height="140" id="pieQc"></canvas>
+  </div>
+  </div>
+  </section>
+  <div class="grid" style="margin-top:12px">
+  <aside class="card">
+  <h3>Tambah / Edit Asset</h3>
+  <div class="muted">Isi detail asset — warranty &amp; tgl pembelian opsional.</div>
+  <label>Nama Barang</label>
+  <input id="name" placeholder="Contoh: Laptop Dell Latitude"/>
+  <label>Jenis</label>
+  <select id="itemType">
+  <option>Laptop</option>
+  <option>Desktop</option>
+  <option>Monitor</option>
+  <option>Keyboard</option>
+  <option>Mouse</option>
+  <option>SATA Cable</option>
+  <option>LAN Cable</option>
+  <option>Power Cable</option>
+  <option>UPS</option>
+  <option>SSD</option>
+  <option>HDD</option>
+  <option>Other</option>
+  </select>
+  <label>Serial / Tag ID</label>
+  <input id="serial" placeholder="SN atau Tag ID (opsional)"/>
+  <label>Qty</label>
+  <input id="qty" min="1" type="number" value="1"/>
+  <label>Status QC</label>
+  <select id="qcStatus"><option>Belum QC</option><option>Lulus QC</option><option>Gagal QC</option></select>
+  <label>Software Terinstal (pisahkan koma)</label>
+  <input id="software" placeholder="Contoh: Radmin, VNC, Accurate"/>
+  <label>Lokasi</label>
+  <input id="location" placeholder="Ruang / Rack / Gudang"/>
+  <label>PIC</label>
+  <input id="pic" placeholder="Penanggung jawab / Nama"/>
+  <label>Tanggal Pembelian (opsional)</label>
+  <input id="purchaseDate" type="date"/>
+  <label>Warranty Until (opsional)</label>
+  <input id="warrantyUntil" type="date"/>
+  <label>Keterangan</label>
+  <textarea id="notes" placeholder="Catatan tambahan, kondisi fisik, license keys..."></textarea>
+  <div style="display:flex;gap:8px;margin-top:10px">
+  <button class="btn" id="addBtn">Tambah Item</button>
+  <button class="btn-ghost" id="updateBtn" style="width:auto">Clear / Reset</button>
+  </div>
+  </aside>
+  <main>
+  <div class="card">
+  <div style="display:flex;justify-content:space-between;align-items:center">
+  <div>
+  <h3>Daftar Asset</h3>
+  <div class="muted">Klik Edit untuk update. Export CSV/JSON tersedia.</div>
+  </div>
+  <div class="muted">Total: <span id="totalCount">0</span></div>
+  </div>
+  <div class="table-wrap">
+  <table id="assetTable">
+  <thead>
+  <tr><th>ID</th><th>Nama</th><th>Jenis</th><th>Serial</th><th>Qty</th><th>Software</th><th>PIC</th><th>Lokasi</th><th>Purchase</th><th>Warranty</th><th>QC</th><th>Actions</th></tr>
+  </thead>
+  <tbody></tbody>
+  </table>
+  </div>
+  </div>
+  <div style="height:14px"></div>
+  <div class="card">
+  <h3>QC Checklist (Laptop &amp; Desktop)</h3>
+  <div class="muted">Centang item yang OK. Simpan QC ke asset tertentu.</div>
+  <div id="qcList" style="margin-top:10px;display:grid;grid-template-columns:1fr 1fr;gap:6px"></div>
+  <div style="display:flex;gap:8px;margin-top:12px">
+  <input id="qcTargetId" placeholder="Masukkan Asset ID untuk simpan QC"/>
+  <button class="btn" id="saveQcBtn">Simpan QC</button>
+  <button class="btn-ghost" id="clearQcBtn">Reset</button>
+  </div>
+  </div>
+  <div style="height:14px"></div>
+  <div class="card no-print">
+  <h3>Export &amp; Import</h3>
+  <div class="muted">Export CSV untuk Excel; JSON untuk backup &amp; restore.</div>
+  <div style="display:flex;gap:8px;margin-top:10px">
+  <button class="btn" id="exportCsvBtn">Export CSV</button>
+  <button class="btn-ghost" id="exportJsonBtn">Export JSON</button>
+  <button class="btn-ghost" id="importCsvBtn">Import CSV</button>
+  <button class="btn-ghost" id="importJsonBtn">Import JSON</button>
+  <input accept="text/csv" id="csvFile" style="display:none" type="file"/>
+  <input accept="application/json" id="jsonFile" style="display:none" type="file"/>
+  </div>
+  </div>
+  </main>
+  </div>
+  <footer>© 2025 Zeppelin | Developed by Bima Adhitya</footer>
+  </div>
+</div> <!-- Penutup .app-content -->
+
 <!-- CDN (graceful fallback if blocked) -->
 <script crossorigin="anonymous" integrity="" src="https://cdn.jsdelivr.net/npm/chart.js"></script>
 <script crossorigin="anonymous" integrity="" src="https://cdn.jsdelivr.net/npm/xlsx/dist/xlsx.full.min.js"></script>
+
+<!-- (BARU) Firebase SDKs v8 (Sama seperti index.html) -->
+<script src="https://www.gstatic.com/firebasejs/8.10.1/firebase-app.js"></script>
+<script src="https://www.gstatic.com/firebasejs/8.10.1/firebase-auth.js"></script>
+<script src="https://www.gstatic.com/firebasejs/8.10.1/firebase-firestore.js"></script>
+
+
+<!-- Firebase Integration & Core App Logic -->
 <script>
-/* Central constants and small helpers */
-(function(){
-  const STORAGE_KEY = 'asset_manager_final';
-  window.ASSET_STORAGE_KEY = STORAGE_KEY; // expose for other scripts
+  // (BARU) Konfigurasi Firebase Anda dari index.html
+  const firebaseConfig = {
+      apiKey: "AIzaSyA9wgSalrlTcveIZi2i-WND86z1i9JYHKw",
+      authDomain: "it-support-53eeb.firebaseapp.com",
+      databaseURL: "https://it-support-53eeb-default-rtdb.firebaseio.com",
+      projectId: "it-support-53eeb",
+      storageBucket: "it-support-53eeb.firebasestorage.app",
+      messagingSenderId: "573924501146",
+      appId: "1:573924501146:web:12f34306ed675472322123", // Menggunakan appID dari login.html
+      measurementId: "G-33K6DDE1VR"
+  };
+  
+  // (BARU) ID Admin dari index.html
+  const ADMIN_UID = "Ogy9lUbGHbSu8wYIYx2gQsTtFDF2";
 
-  // small utility to debounce frequent input events
-  function debounce(fn, ms){ let t; return function(){ clearTimeout(t); t=setTimeout(()=>fn.apply(this,arguments), ms||200); }; }
+  /* Central constants and small helpers */
+  (function(){
+    // small utility to debounce frequent input events
+    function debounce(fn, ms){ let t; return function(){ clearTimeout(t); t=setTimeout(()=>fn.apply(this,arguments), ms||200); }; }
 
-  // expose a safe escape helper
-  window.escapeHtml = function(s){ if(s==null) return ''; return String(s).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;'); };
+    // expose a safe escape helper
+    window.escapeHtml = function(s){ if(s==null) return ''; return String(s).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;'); };
 
-  // The main app is exposed as window.ZeppelinApp for debugging if needed
-  const ZeppelinApp = (function(){
-    let db = { assets: [] };
-    const qcTemplate = [
-      {k:'power', l:'Power on / Battery'}, {k:'screen', l:'Screen / Dead pixel'}, {k:'keyboard', l:'Keyboard / Touchpad'},
-      {k:'ram', l:'RAM capacity / detecting'}, {k:'storage', l:'Storage health / SMART'}, {k:'network', l:'Network adapter / Wi-Fi'},
-      {k:'gpu', l:'GPU / Display adapter'}, {k:'bios', l:'BIOS / Boot'}, {k:'os', l:'OS installed / activation'},
-      {k:'drivers', l:'Drivers up-to-date'}, {k:'antivirus', l:'Antivirus status / Whitelisted'}, {k:'vpn', l:'VPN (Radmin/VNC) installed'},
-      {k:'accurate', l:'Accurate / License'}
-    ];
+    // Firebase globals
+    let fb_app, fb_db_firestore, fb_auth, fb_userId, fb_assetsCollectionRef;
+    
+    // Elemen UI
+    const loader = document.getElementById('loader');
+    const accessDeniedScreen = document.getElementById('accessDeniedScreen');
+    const appContent = document.querySelector('.app-content');
+    const logoutBtn = document.getElementById('logoutBtn');
+    const userEmailDisplay = document.getElementById('userEmailDisplay');
 
-    // elements cached
-    const tbody = document.querySelector('#assetTable tbody');
-    const totalCountEl = document.getElementById('totalCount');
-    const kpiTotal = document.getElementById('kpiTotal');
-    const kpiPC = document.getElementById('kpiPC');
-    const kpiQC = document.getElementById('kpiQC');
-    const barCanvas = document.getElementById('barCategories');
-    const pieCanvas = document.getElementById('pieQc');
+    // The main app is exposed as window.ZeppelinApp for debugging if needed
+    const ZeppelinApp = (function(){
+      let db = { assets: [] }; // This is now a local cache, populated by Firestore
+      let firestoreListener = null; // Untuk menyimpan unsubscribe function
+      const qcTemplate = [
+        {k:'power', l:'Power on / Battery'}, {k:'screen', l:'Screen / Dead pixel'}, {k:'keyboard', l:'Keyboard / Touchpad'},
+        {k:'ram', l:'RAM capacity / detecting'}, {k:'storage', l:'Storage health / SMART'}, {k:'network', l:'Network adapter / Wi-Fi'},
+        {k:'gpu', l:'GPU / Display adapter'}, {k:'bios', l:'BIOS / Boot'}, {k:'os', l:'OS installed / activation'},
+        {k:'drivers', l:'Drivers up-to-date'}, {k:'antivirus', l:'Antivirus status / Whitelisted'}, {k:'vpn', l:'VPN (Radmin/VNC) installed'},
+        {k:'accurate', l:'Accurate / License'}
+      ];
 
-    const nameEl = document.getElementById('name');
-    const typeEl = document.getElementById('itemType');
-    const serialEl = document.getElementById('serial');
-    const qtyEl = document.getElementById('qty');
-    const qcStatusEl = document.getElementById('qcStatus');
-    const softwareEl = document.getElementById('software');
-    const locEl = document.getElementById('location');
-    const picEl = document.getElementById('pic');
-    const purchaseEl = document.getElementById('purchaseDate');
-    const warrantyEl = document.getElementById('warrantyUntil');
-    const notesEl = document.getElementById('notes');
+      // elements cached
+      const tbody = document.querySelector('#assetTable tbody');
+      const totalCountEl = document.getElementById('totalCount');
+      const kpiTotal = document.getElementById('kpiTotal');
+      const kpiPC = document.getElementById('kpiPC');
+      const kpiQC = document.getElementById('kpiQC');
+      const barCanvas = document.getElementById('barCategories');
+      const pieCanvas = document.getElementById('pieQc');
 
-    const addBtn = document.getElementById('addBtn');
-    const updateBtn = document.getElementById('updateBtn');
-    const exportCsvBtn = document.getElementById('exportCsvBtn');
-    const exportJsonBtn = document.getElementById('exportJsonBtn');
-    const importCsvBtn = document.getElementById('importCsvBtn');
-    const importJsonBtn = document.getElementById('importJsonBtn');
-    const csvFile = document.getElementById('csvFile');
-    const jsonFile = document.getElementById('jsonFile');
-    const backupBtn = document.getElementById('backupBtn');
-    const restoreBtn = document.getElementById('restoreBtn');
-    const fileInput = document.getElementById('fileInput');
-    const globalSearch = document.getElementById('globalSearch');
+      const nameEl = document.getElementById('name');
+      const typeEl = document.getElementById('itemType');
+      const serialEl = document.getElementById('serial');
+      const qtyEl = document.getElementById('qty');
+      const qcStatusEl = document.getElementById('qcStatus');
+      const softwareEl = document.getElementById('software');
+      const locEl = document.getElementById('location');
+      const picEl = document.getElementById('pic');
+      const purchaseEl = document.getElementById('purchaseDate');
+      const warrantyEl = document.getElementById('warrantyUntil');
+      const notesEl = document.getElementById('notes');
 
-    let editId = null; let barChart=null, pieChart=null;
+      const addBtn = document.getElementById('addBtn');
+      const updateBtn = document.getElementById('updateBtn');
+      const exportCsvBtn = document.getElementById('exportCsvBtn');
+      const exportJsonBtn = document.getElementById('exportJsonBtn');
+      const importCsvBtn = document.getElementById('importCsvBtn');
+      const importJsonBtn = document.getElementById('importJsonBtn');
+      const csvFile = document.getElementById('csvFile');
+      const jsonFile = document.getElementById('jsonFile');
+      const backupBtn = document.getElementById('backupBtn');
+      const restoreBtn = document.getElementById('restoreBtn');
+      const fileInput = document.getElementById('fileInput');
+      const globalSearch = document.getElementById('globalSearch');
 
-    function load(){ try{ const raw = localStorage.getItem(STORAGE_KEY); if(!raw){ db = { assets: [] }; save(false); } else db = JSON.parse(raw); }catch(e){ db = { assets: [] }; save(false); } }
-    function save(shouldRender=true){ localStorage.setItem(STORAGE_KEY, JSON.stringify(db)); if(shouldRender) { render(); updateDashboard(); } }
+      let editId = null; let barChart=null, pieChart=null;
 
-    function genId(){ return 'id-'+Date.now().toString(36)+'-'+Math.floor(Math.random()*9999); }
-    function clearForm(){ editId=null; nameEl.value=''; typeEl.selectedIndex=0; serialEl.value=''; qtyEl.value=1; qcStatusEl.selectedIndex=0; softwareEl.value=''; locEl.value=''; picEl.value=''; purchaseEl.value=''; warrantyEl.value=''; notesEl.value=''; addBtn.disabled=false; updateBtn.textContent='Clear / Reset'; }
+      // Fungsi untuk menghentikan listener Firestore
+      function detachFirestoreListener() {
+        if (firestoreListener) {
+          firestoreListener(); // Panggil fungsi unsubscribe
+          firestoreListener = null;
+          console.log("Firestore listener detached.");
+        }
+      }
 
-    // Robust render: create elements and attach data-full attributes so highlight works
-    function render(filter){ tbody.innerHTML='';
-      const list = db.assets.filter(a=>{ if(!filter) return true; const s=(a.id+' '+a.name+' '+a.type+' '+a.serial+' '+a.pic+' '+a.location+' '+a.notes+' '+(a.software||'')).toLowerCase(); return s.includes(filter.toLowerCase()); });
-      list.forEach(a=>{
-        const tr = document.createElement('tr');
-        const fields = [a.id, a.name, a.type, a.serial||'', a.qty, a.software||'', a.pic||'', a.location||'', a.purchaseDate||'', a.warrantyUntil||'', a.qcStatus||''];
-        fields.forEach((f, i)=>{
-          const td = document.createElement('td');
-          td.textContent = f;
-          td.setAttribute('data-full', String(f));
-          tr.appendChild(td);
+      // Firestore load function (v8 Syntax)
+      async function loadFirestoreData() {
+        if (!fb_assetsCollectionRef) {
+            console.error("Firestore collection reference not set.");
+            loader.textContent = "Error: Koleksi Firestore tidak disetel.";
+            return;
+        }
+
+        // Hentikan listener lama jika ada
+        detachFirestoreListener();
+
+        loader.style.display = 'flex';
+        console.log("Attaching new Firestore listener...");
+
+        // Simpan fungsi unsubscribe (v8 syntax)
+        firestoreListener = fb_assetsCollectionRef.onSnapshot((snapshot) => {
+            console.log(`Received snapshot with ${snapshot.docs.length} docs.`);
+            db.assets = []; // Clear local cache
+            snapshot.docs.forEach((doc) => {
+                db.assets.push({ id: doc.id, ...doc.data() });
+            });
+            
+            // Sort data locally
+            db.assets.sort((a, b) => (a.name || '').localeCompare(b.name || ''));
+
+            render(); // Re-render table
+            updateDashboard(); // Re-calculate dashboard
+            window.refreshFilterOptions && window.refreshFilterOptions(); // Update filter dropdowns
+            loader.style.display = 'none'; // Hide loader
+        }, (error) => {
+            console.error("Error listening to Firestore:", error);
+            loader.textContent = "Error: Gagal memuat data. " + error.message;
         });
-        // actions
-        const tdActions = document.createElement('td'); tdActions.className='actions';
-        const btnDetail = document.createElement('button'); btnDetail.className='btn-ghost'; btnDetail.innerHTML = '<span style="font-size:14px">🔍</span>'; btnDetail.setAttribute('data-action','detail'); btnDetail.setAttribute('data-id',a.id);
-        const btnEdit = document.createElement('button'); btnEdit.className='btn-ghost'; btnEdit.textContent='Edit'; btnEdit.setAttribute('data-action','edit'); btnEdit.setAttribute('data-id',a.id);
-        const btnDel = document.createElement('button'); btnDel.className='btn-ghost'; btnDel.textContent='Delete'; btnDel.setAttribute('data-action','del'); btnDel.setAttribute('data-id',a.id);
-        tdActions.appendChild(btnDetail); tdActions.appendChild(btnEdit); tdActions.appendChild(btnDel);
-        tr.appendChild(tdActions);
-        tbody.appendChild(tr);
+      }
+
+      function genId(){ return 'id-'+Date.now().toString(36)+'-'+Math.floor(Math.random()*9999); }
+      function clearForm(){ editId=null; nameEl.value=''; typeEl.selectedIndex=0; serialEl.value=''; qtyEl.value=1; qcStatusEl.selectedIndex=0; softwareEl.value=''; locEl.value=''; picEl.value=''; purchaseEl.value=''; warrantyEl.value=''; notesEl.value=''; addBtn.disabled=false; updateBtn.textContent='Clear / Reset'; }
+
+      // Render (sama)
+      function render(filter){ 
+        tbody.innerHTML='';
+        const list = db.assets.filter(a=>{ 
+          if(!filter) return true; 
+          const s=(a.id+' '+a.name+' '+a.type+' '+a.serial+' '+a.pic+' '+a.location+' '+a.notes+' '+(a.software||'')).toLowerCase(); 
+          return s.includes(filter.toLowerCase()); 
+        });
+
+        list.forEach(a=>{
+          const tr = document.createElement('tr');
+          const fields = [a.id, a.name, a.type, a.serial||'', a.qty, a.software||'', a.pic||'', a.location||'', a.purchaseDate||'', a.warrantyUntil||'', a.qcStatus||''];
+          fields.forEach((f, i)=>{
+            const td = document.createElement('td');
+            td.textContent = f;
+            td.setAttribute('data-full', String(f));
+            tr.appendChild(td);
+          });
+          const tdActions = document.createElement('td'); tdActions.className='actions';
+          const btnDetail = document.createElement('button'); btnDetail.className='btn-ghost'; btnDetail.innerHTML = '<span style="font-size:14px">🔍</span>'; btnDetail.setAttribute('data-action','detail'); btnDetail.setAttribute('data-id',a.id);
+          const btnEdit = document.createElement('button'); btnEdit.className='btn-ghost'; btnEdit.textContent='Edit'; btnEdit.setAttribute('data-action','edit'); btnEdit.setAttribute('data-id',a.id);
+          const btnDel = document.createElement('button'); btnDel.className='btn-ghost'; btnDel.textContent='Delete'; btnDel.setAttribute('data-action','del'); btnDel.setAttribute('data-id',a.id);
+          tdActions.appendChild(btnDetail); tdActions.appendChild(btnEdit); tdActions.appendChild(btnDel);
+          tr.appendChild(tdActions);
+          tbody.appendChild(tr);
+        });
+        totalCountEl.textContent = db.assets.reduce((s,a)=> s + (Number(a.qty)||0), 0);
+      }
+
+      // Add (v8 Syntax)
+      addBtn.addEventListener('click', async () => {
+        const quantity = Number(qtyEl.value||1);
+        if(!nameEl.value.trim()) return showToast('Nama barang tidak boleh kosong', true);
+        
+        const item = { 
+          name: nameEl.value.trim(), type: typeEl.value, serial: serialEl.value.trim(), 
+          qty: quantity, qcStatus: qcStatusEl.value, software: softwareEl.value.trim(), 
+          location: locEl.value.trim(), pic: picEl.value.trim(), 
+          purchaseDate: purchaseEl.value||'', warrantyUntil: warrantyEl.value||'', 
+          notes: notesEl.value.trim() 
+        };
+        
+        try {
+          addBtn.disabled = true;
+          addBtn.textContent = "Menyimpan...";
+          await fb_assetsCollectionRef.add(item); // v8 add
+          clearForm(); 
+          showToast('Item ditambahkan ke Firebase');
+        } catch (e) {
+          console.error("Error adding document: ", e);
+          showToast('Gagal menyimpan: ' + e.message, true);
+        } finally {
+          addBtn.disabled = false;
+          addBtn.textContent = "Tambah Item";
+        }
       });
-      // total count by qty
-      totalCountEl.textContent = db.assets.reduce((s,a)=> s + (Number(a.qty)||0), 0);
+
+      // Table actions (v8 Syntax)
+      tbody.addEventListener('click', e=>{
+        const btn = e.target.closest('button'); if(!btn) return; 
+        const id = btn.getAttribute('data-id'); 
+        const action = btn.getAttribute('data-action');
+        
+        const idx = db.assets.findIndex(a=>a.id===id);
+        if (idx < 0 && (action === 'edit' || action === 'del')) {
+            return showToast("Error: Item tidak ditemukan di cache lokal.", true);
+        }
+        
+        const docRef = fb_assetsCollectionRef.doc(id); // v8 doc ref
+
+        if(action==='edit' && idx>=0){ 
+          const a=db.assets[idx]; 
+          editId=a.id; 
+          nameEl.value=a.name||''; typeEl.value=a.type||'Laptop'; serialEl.value=a.serial||''; 
+          qtyEl.value=a.qty||1; qcStatusEl.value=a.qcStatus||'Belum QC'; softwareEl.value=a.software||''; 
+          locEl.value=a.location||''; picEl.value=a.pic||''; purchaseEl.value=a.purchaseDate||''; 
+          warrantyEl.value=a.warrantyUntil||''; notesEl.value=a.notes||''; 
+          addBtn.disabled=true; 
+          updateBtn.textContent='Save Changes'; 
+          
+          updateBtn.onclick = async function(){ 
+            const updatedItem = { 
+              name:nameEl.value.trim(), type:typeEl.value, serial:serialEl.value.trim(), 
+              qty:Number(qtyEl.value||1), qcStatus:qcStatusEl.value, software:softwareEl.value.trim(), 
+              location:locEl.value.trim(), pic:picEl.value.trim(), 
+              purchaseDate:purchaseEl.value||'', warrantyUntil:warrantyEl.value||'', 
+              notes:notesEl.value.trim() 
+            };
+
+            try {
+                updateBtn.disabled = true;
+                updateBtn.textContent = "Updating...";
+                await docRef.update(updatedItem); // v8 update
+                clearForm(); 
+                updateBtn.onclick = resetAction; 
+                showToast('Item diperbarui di Firebase');
+            } catch (e) {
+                console.error("Error updating document: ", e);
+                showToast('Gagal update: ' + e.message, true);
+            } finally {
+                updateBtn.disabled = false;
+                updateBtn.textContent = "Save Changes";
+            }
+          }; 
+          window.scrollTo({top:0,behavior:'smooth'}); 
+        }
+        else if(action==='del' && idx>=0){ 
+          if(confirm('Hapus item ini dari Firebase? (ID: '+id+')')){ 
+            docRef.delete() // v8 delete
+                .then(() => {
+                    showToast('Item dihapus dari Firebase');
+                })
+                .catch(e => {
+                    console.error("Error deleting document: ", e);
+                    showToast('Gagal hapus: ' + e.message, true);
+                });
+          } 
+        }
+      });
+
+      function resetAction(){ clearForm(); updateBtn.onclick = resetAction; addBtn.disabled=false; }
+      updateBtn.onclick = resetAction;
+
+      // CSV / JSON helpers (sama)
+      function csvSafe(s){ if(s==null) return ''; return '"'+String(s).replace(/"/g,'""')+'"'; }
+      function toCsv(rows){ const heads=['id','name','type','serial','qty','software','pic','location','purchaseDate','warrantyUntil','qcStatus','notes']; const lines=[heads.join(',')]; rows.forEach(r=>{ const arr=[r.id, csvSafe(r.name), csvSafe(r.type), csvSafe(r.serial), r.qty, csvSafe(r.software), csvSafe(r.pic), csvSafe(r.location), r.purchaseDate||'', r.warrantyUntil||'', csvSafe(r.qcStatus), csvSafe(r.notes)]; lines.push(arr.join(',')); }); return lines.join('\n'); }
+
+      exportCsvBtn.addEventListener('click', ()=>{ const csv = toCsv(db.assets); const blob = new Blob([csv], {type:'text/text/csv;charset=utf-8;'}); const a = document.createElement('a'); a.href = URL.createObjectURL(blob); a.download = 'assets_export_'+Date.now()+'.csv'; a.click(); URL.revokeObjectURL(a.href); showToast('CSV diexport'); });
+      exportJsonBtn.addEventListener('click', ()=>{ const blob = new Blob([JSON.stringify(db,null,2)], {type:'application/json'}); const a = document.createElement('a'); a.href = URL.createObjectURL(blob); a.download = 'assets_export_'+Date.now()+'.json'; a.click(); URL.revokeObjectURL(a.href); showToast('JSON diexport'); });
+
+      importCsvBtn.addEventListener('click', ()=> csvFile.click()); importJsonBtn.addEventListener('click', ()=> jsonFile.click());
+      backupBtn.addEventListener('click', ()=> exportJsonBtn.click());
+      restoreBtn.addEventListener('click', ()=> jsonFile.click());
+
+      // --- IMPORT FUNCTIONS (BATCH WRITE) (v8 Syntax) ---
+      async function processBatchImport(items) {
+        if (!items || items.length === 0) {
+            return showToast("Tidak ada item untuk diimpor", true);
+        }
+        
+        loader.style.display = 'flex';
+        loader.textContent = `Mengimpor ${items.length} item...`;
+
+        try {
+            let batch = fb_db_firestore.batch(); // v8 batch
+            let count = 0;
+            for (const item of items) {
+                let newItem = { ...item };
+                if (newItem.id) delete newItem.id; 
+                
+                const docRef = fb_assetsCollectionRef.doc(); // v8 doc
+                batch.set(docRef, newItem); // v8 set
+                
+                count++;
+                if (count % 499 === 0) {
+                    await batch.commit();
+                    batch = fb_db_firestore.batch();
+                    loader.textContent = `Mengimpor ${count} / ${items.length}...`;
+                }
+            }
+            
+            if (count % 499 !== 0) {
+                await batch.commit();
+            }
+            
+            showToast(`Berhasil impor ${items.length} item ke Firebase`);
+        } catch (e) {
+            console.error("Batch import error: ", e);
+            showToast("Gagal impor: " + e.message, true);
+        } finally {
+            loader.style.display = 'none';
+        }
+      }
+
+      csvFile.addEventListener('change', async e=>{ const f = e.target.files[0]; if(!f) return; const txt = await f.text(); parseCsv(txt); csvFile.value=''; });
+      jsonFile.addEventListener('change', async e=>{ const f = e.target.files[0]; if(!f) return; try{ const txt = await f.text(); const data = JSON.parse(txt); const arr = Array.isArray(data.assets) ? data.assets : (Array.isArray(data) ? data : null); if(arr) { await processBatchImport(arr); } else showToast('JSON tidak berisi array "assets"', true); }catch(err){ showToast('Gagal import JSON: '+err.message, true); } jsonFile.value=''; });
+      
+      fileInput.addEventListener('change', async e=>{ const f = e.target.files[0]; if(!f) return; try{ const txt = await f.text(); const data = JSON.parse(txt); if(data && Array.isArray(data.assets)){ if(confirm(`Anda akan MENIMPA SEMUA data saat ini dengan ${data.assets.length} item dari file backup. Lanjutkan?`)) { 
+        showToast("Restore = Import JSON. Memproses...", false);
+        await processBatchImport(data.assets);
+      } } else showToast('File JSON tidak valid untuk restore', true); }catch(err){ showToast('Gagal: '+err.message, true); } fileInput.value=''; });
+
+
+      function parseCsv(txt){ const lines = txt.split(/\r?\n/).filter(l=>l.trim()); if(lines.length<2) return showToast('CSV kosong', true); const heads = splitCsvLine(lines[0]); const arr=[]; for(let i=1;i<lines.length;i++){ const cols = splitCsvLine(lines[i]); if(cols.length<2) continue; const obj = { name: cols[1]||'Unknown', type: cols[2]||'Other', serial: cols[3]||'', qty: Number(cols[4]||1), software: cols[5]||'', pic: cols[6]||'', location: cols[7]||'', purchaseDate: cols[8]||'', warrantyUntil: cols[9]||'', qcStatus: cols[10]||'Belum QC', notes: cols[11]||'' }; arr.push(obj); }
+        processBatchImport(arr);
+      }
+
+      function splitCsvLine(line){ const res=[]; let cur=''; let inq=false; for(let i=0;i<line.length;i++){ const ch=line[i]; if(ch==='"'){ if(inq && line[i+1]==='"'){ cur+='"'; i++; continue; } inq=!inq; continue; } if(ch===',' && !inq){ res.push(cur); cur=''; } else cur+=ch; } res.push(cur); return res.map(s=>s.replace(/^"|"$/g,'')); }
+      
+      // search (debounced)
+      globalSearch.addEventListener('input', debounce(e=>{ render(e.target.value); window.highlightSearch && window.highlightSearch(e.target.value); }, 180));
+
+      // QC UI (v8 Syntax)
+      const qcListEl = document.getElementById('qcList'); qcTemplate.forEach(it=>{ const el=document.createElement('label'); el.style.display='flex'; el.style.alignItems='center'; el.style.gap='8px'; const cb = document.createElement('input'); cb.type='checkbox'; cb.dataset.k=it.k; const span=document.createElement('span'); span.className='small'; span.textContent = it.l; el.appendChild(cb); el.appendChild(span); qcListEl.appendChild(el); });
+      
+      document.getElementById('saveQcBtn').addEventListener('click', async () => { 
+        const target = document.getElementById('qcTargetId').value.trim(); 
+        if(!target) return showToast('Masukkan Asset ID pada field QC target.', true); 
+        const idx = db.assets.findIndex(a=>a.id===target); 
+        if(idx<0) return showToast('Asset ID tidak ditemukan di data lokal.', true); 
+        
+        const checked = {}; 
+        qcListEl.querySelectorAll('input[type=checkbox]').forEach(cb=> checked[cb.dataset.k]=!!cb.checked); 
+        
+        const docRef = fb_assetsCollectionRef.doc(target); // v8 doc
+        try {
+            await docRef.update({ qc: checked, qcStatus: qcStatusEl.value }); // v8 update
+            showToast('QC tersimpan pada asset '+target);
+        } catch (e) {
+            console.error("Error saving QC:", e);
+            showToast("Gagal simpan QC: " + e.message, true);
+        }
+      });
+      document.getElementById('clearQcBtn').addEventListener('click', ()=> qcListEl.querySelectorAll('input[type=checkbox]').forEach(cb=>cb.checked=false));
+
+      // Print
+      document.getElementById('printBtn').addEventListener('click', ()=> window.print());
+
+      // Excel with SheetJS (sama)
+      document.getElementById('downloadExcelBtn').addEventListener('click', ()=>{ try{ if(typeof XLSX === 'undefined') throw new Error('SheetJS tidak tersedia'); const data = db.assets.map(a=>({ ID:a.id, Nama:a.name, Jenis:a.type, Serial:a.serial, Qty:a.qty, Software:a.software, PIC:a.pic, Lokasi:a.location, Purchase:a.purchaseDate, Warranty:a.warrantyUntil, QC:a.qcStatus })); const ws = XLSX.utils.json_to_sheet(data); const wb = XLSX.utils.book_new(); XLSX.utils.book_append_sheet(wb, ws, 'Assets'); XLSX.writeFile(wb, 'Zeppelin_Asset_'+Date.now()+'.xlsx'); showToast('Excel diunduh'); }catch(e){ showToast('Gagal generate Excel: '+e.message, true); } });
+
+      // Dashboard (sama)
+      function updateDashboard(){ const total = db.assets.reduce((s,a)=>s + (Number(a.qty)||0),0); const pcCount = db.assets.reduce((s,a)=> s + ((a.type==='Laptop' || a.type==='Desktop') ? Number(a.qty)||0 : 0), 0); let lulus=0,gagal=0,belum=0; db.assets.forEach(a=>{ if(!a.qcStatus || a.qcStatus==='Belum QC') belum += Number(a.qty)||0; else if(a.qcStatus==='Lulus QC') lulus += Number(a.qty)||0; else if(a.qcStatus==='Gagal QC') gagal += Number(a.qty)||0; }); kpiTotal.textContent = total; kpiPC.textContent = pcCount; kpiQC.textContent = `L:${lulus} • G:${gagal} • B:${belum}`;
+        const categories = {}; db.assets.forEach(a=> categories[a.type] = (categories[a.type]||0) + (Number(a.qty)||0)); const labels = Object.keys(categories); const values = labels.map(l=>categories[l]); try{ if(window.Chart){ if(barChart){ barChart.data.labels = labels; barChart.data.datasets[0].data = values; barChart.update(); } else { barChart = new Chart(barCanvas, { type:'bar', data:{ labels: labels.length?labels:['-'], datasets:[{ label:'Jumlah', data: values.length?values:[0], backgroundColor:'#ff7a18' }]}, options:{responsive:true,plugins:{legend:{display:false}}, scales:{y:{beginAtZero:true}}} }); } const pieData = [lulus,gagal,belum]; if(pieChart){ pieChart.data.datasets[0].data = pieData; pieChart.update(); } else { pieChart = new Chart(pieCanvas, { type:'pie', data:{ labels:['Lulus','Gagal','Belum'], datasets:[{ data: pieData, backgroundColor:['#1db954','#ff4d4f','#ffd166'] }]}, options:{responsive:true,plugins:{legend:{position:'bottom'}}} }); } } }catch(e){ /* ignore chart errors */ }
+      }
+
+      // expose minimal API for external scripts
+      return { 
+        loadFirestoreData,
+        detachFirestoreListener,
+        render, 
+        getDB: ()=>db, 
+        updateDashboard, 
+        clearForm, 
+        genId 
+      };
+    })();
+
+    // attach to window for other scripts and debugging
+    window.ZeppelinApp = ZeppelinApp;
+
+    // Inisialisasi Firebase dan Auth
+    async function initFirebase() {
+        try {
+            fb_app = firebase.initializeApp(firebaseConfig);
+            fb_db_firestore = firebase.firestore();
+            fb_auth = firebase.auth();
+            console.log("Firebase App Initialized (v8). Waiting for Auth...");
+
+            // Listener status otentikasi
+            fb_auth.onAuthStateChanged(async (user) => {
+                if (user && user.uid === ADMIN_UID) {
+                    // --- USER ADALAH ADMIN ---
+                    console.log("Admin user authenticated:", user.uid);
+                    loader.style.display = 'flex';
+                    loader.textContent = "Memuat data aset...";
+                    
+                    fb_userId = user.uid;
+                    
+                    // Tentukan path Firestore
+                    // Path: /users/{userId}/assets
+                    fb_assetsCollectionRef = fb_db_firestore.collection('users').doc(fb_userId).collection('assets');
+                    console.log("Firestore collection path:", `users/${fb_userId}/assets`);
+
+                    // Tampilkan UI
+                    userEmailDisplay.textContent = user.email;
+                    accessDeniedScreen.style.display = 'none';
+                    appContent.style.display = 'block';
+
+                    // Muat data aset
+                    await ZeppelinApp.loadFirestoreData();
+
+                } else {
+                    // --- USER BUKAN ADMIN / TIDAK LOGIN ---
+                    if(user) {
+                        console.log("Access Denied. User is not admin:", user.uid);
+                        await fb_auth.signOut(); // Logout paksa jika bukan admin
+                    } else {
+                        console.log("Access Denied. User not logged in.");
+                    }
+                    
+                    fb_userId = null;
+                    accessDeniedScreen.style.display = 'flex'; // Tampilkan layar akses ditolak
+                    appContent.style.display = 'none'; // Sembunyikan aplikasi
+                    loader.style.display = 'none';
+                    ZeppelinApp.detachFirestoreListener(); // Hentikan listener data
+                }
+            });
+
+            // Event listener untuk logout
+            logoutBtn.addEventListener('click', async () => {
+                if (confirm("Apakah Anda yakin ingin logout?")) {
+                    await fb_auth.signOut();
+                    // onAuthStateChanged akan menangani sisanya
+                }
+            });
+
+        } catch (e) {
+            console.error("Firebase initialization failed:", e);
+            accessDeniedScreen.style.display = 'flex';
+            document.querySelector('#accessDeniedBox p').textContent = "Error: Gagal inisialisasi Firebase. " + e.message;
+        }
     }
 
-    addBtn.addEventListener('click', ()=>{
-      const quantity = Number(qtyEl.value||1);
-      if(!nameEl.value.trim()) return alert('Nama barang tidak boleh kosong');
-      const item = { id: genId(), name: nameEl.value.trim(), type: typeEl.value, serial: serialEl.value.trim(), qty: quantity, qcStatus: qcStatusEl.value, software: softwareEl.value.trim(), location: locEl.value.trim(), pic: picEl.value.trim(), purchaseDate: purchaseEl.value||'', warrantyUntil: warrantyEl.value||'', notes: notesEl.value.trim() };
-      db.assets.push(item); save(); clearForm(); showToast('Item ditambahkan');
-    });
+    // Mulai aplikasi
+    initFirebase();
 
-    // table actions using event delegation
-    tbody.addEventListener('click', e=>{
-      const btn = e.target.closest('button'); if(!btn) return; const id = btn.getAttribute('data-id'); const action = btn.getAttribute('data-action');
-      const idx = db.assets.findIndex(a=>a.id===id);
-      if(action==='edit' && idx>=0){ const a=db.assets[idx]; editId=a.id; nameEl.value=a.name||''; typeEl.value=a.type||'Laptop'; serialEl.value=a.serial||''; qtyEl.value=a.qty||1; qcStatusEl.value=a.qcStatus||'Belum QC'; softwareEl.value=a.software||''; locEl.value=a.location||''; picEl.value=a.pic||''; purchaseEl.value=a.purchaseDate||''; warrantyEl.value=a.warrantyUntil||''; notesEl.value=a.notes||''; addBtn.disabled=true; updateBtn.textContent='Save Changes'; updateBtn.onclick = function(){ db.assets[idx] = { id:a.id, name:nameEl.value||a.name, type:typeEl.value, serial:serialEl.value, qty:Number(qtyEl.value||1), qcStatus:qcStatusEl.value, software:softwareEl.value, location:locEl.value, pic:picEl.value, purchaseDate:purchaseEl.value||'', warrantyUntil:warrantyEl.value||'', notes:notesEl.value||'' }; save(); clearForm(); updateBtn.onclick = resetAction; showToast('Item diperbarui'); }; window.scrollTo({top:0,behavior:'smooth'}); }
-      else if(action==='del' && idx>=0){ if(confirm('Hapus item ini?')){ db.assets.splice(idx,1); save(); showToast('Item dihapus'); } }
-    });
 
-    function resetAction(){ clearForm(); updateBtn.onclick = resetAction; addBtn.disabled=false; }
-    updateBtn.onclick = resetAction;
-
-    // CSV / JSON helpers
-    function csvSafe(s){ if(s==null) return ''; return '"'+String(s).replace(/"/g,'""')+'"'; }
-    function toCsv(rows){ const heads=['id','name','type','serial','qty','software','pic','location','purchaseDate','warrantyUntil','qcStatus','notes']; const lines=[heads.join(',')]; rows.forEach(r=>{ const arr=[r.id, csvSafe(r.name), csvSafe(r.type), csvSafe(r.serial), r.qty, csvSafe(r.software), csvSafe(r.pic), csvSafe(r.location), r.purchaseDate||'', r.warrantyUntil||'', csvSafe(r.qcStatus), csvSafe(r.notes)]; lines.push(arr.join(',')); }); return lines.join('\n'); }
-
-    exportCsvBtn.addEventListener('click', ()=>{ const csv = toCsv(db.assets); const blob = new Blob([csv], {type:'text/csv'}); const a = document.createElement('a'); a.href = URL.createObjectURL(blob); a.download = 'assets_export_'+Date.now()+'.csv'; a.click(); URL.revokeObjectURL(a.href); showToast('CSV diexport'); });
-    exportJsonBtn.addEventListener('click', ()=>{ const blob = new Blob([JSON.stringify(db,null,2)], {type:'application/json'}); const a = document.createElement('a'); a.href = URL.createObjectURL(blob); a.download = 'assets_export_'+Date.now()+'.json'; a.click(); URL.revokeObjectURL(a.href); showToast('JSON diexport'); });
-
-    importCsvBtn.addEventListener('click', ()=> csvFile.click()); importJsonBtn.addEventListener('click', ()=> jsonFile.click());
-
-    csvFile.addEventListener('change', async e=>{ const f = e.target.files[0]; if(!f) return; const txt = await f.text(); parseCsv(txt); csvFile.value=''; });
-    jsonFile.addEventListener('change', async e=>{ const f = e.target.files[0]; if(!f) return; try{ const txt = await f.text(); const data = JSON.parse(txt); const arr = Array.isArray(data.assets) ? data.assets : (Array.isArray(data) ? data : null); if(arr) { db.assets = db.assets.concat(arr); save(); showToast('Import JSON selesai'); } else alert('JSON tidak berisi array assets'); }catch(err){ alert('Gagal import JSON: '+err.message); } jsonFile.value=''; });
-
-    // simple but safer CSV parser (handles quoted fields)
-    function parseCsv(txt){ const lines = txt.split(/\r?\n/).filter(l=>l.trim()); if(lines.length<2) return alert('CSV kosong'); const heads = splitCsvLine(lines[0]); const arr=[]; for(let i=1;i<lines.length;i++){ const cols = splitCsvLine(lines[i]); if(cols.length<2) continue; const obj = { id: cols[0]||genId(), name: cols[1]||'Unknown', type: cols[2]||'Other', serial: cols[3]||'', qty: Number(cols[4]||1), software: cols[5]||'', pic: cols[6]||'', location: cols[7]||'', purchaseDate: cols[8]||'', warrantyUntil: cols[9]||'', qcStatus: cols[10]||'Belum QC', notes: cols[11]||'' }; arr.push(obj); }
-      db.assets = db.assets.concat(arr); save(); showToast('Import CSV selesai, '+arr.length+' item ditambahkan'); }
-
-    function splitCsvLine(line){ const res=[]; let cur=''; let inq=false; for(let i=0;i<line.length;i++){ const ch=line[i]; if(ch==='"'){ if(inq && line[i+1]==='"'){ cur+='"'; i++; continue; } inq=!inq; continue; } if(ch===',' && !inq){ res.push(cur); cur=''; } else cur+=ch; } res.push(cur); return res.map(s=>s.replace(/^"|"$/g,'')); }
-
-    // Backup/Restore
-    backupBtn.addEventListener('click', ()=>{ const blob = new Blob([JSON.stringify(db,null,2)], {type:'application/json'}); const a=document.createElement('a'); a.href=URL.createObjectURL(blob); a.download='asset_backup_'+Date.now()+'.json'; a.click(); URL.revokeObjectURL(a.href); showToast('Backup tersimpan'); });
-    restoreBtn.addEventListener('click', ()=> fileInput.click());
-    fileInput.addEventListener('change', async e=>{ const f = e.target.files[0]; if(!f) return; try{ const txt = await f.text(); const data = JSON.parse(txt); if(data && Array.isArray(data.assets)){ db = data; save(); alert('Restore berhasil'); } else if(data && data.assets && Array.isArray(data.assets)) { db = data; save(); alert('Restore berhasil'); } else alert('File JSON tidak valid untuk restore'); }catch(err){ alert('Gagal: '+err.message); } fileInput.value=''; });
-
-    // search (debounced)
-    globalSearch.addEventListener('input', debounce(e=>{ render(e.target.value); highlightSearch(e.target.value); }, 180));
-
-    // QC UI
-    const qcListEl = document.getElementById('qcList'); qcTemplate.forEach(it=>{ const el=document.createElement('label'); el.style.display='flex'; el.style.alignItems='center'; el.style.gap='8px'; const cb = document.createElement('input'); cb.type='checkbox'; cb.dataset.k=it.k; const span=document.createElement('span'); span.className='small'; span.textContent = it.l; el.appendChild(cb); el.appendChild(span); qcListEl.appendChild(el); });
-    document.getElementById('saveQcBtn').addEventListener('click', ()=>{ const target = document.getElementById('qcTargetId').value.trim(); if(!target) return alert('Masukkan Asset ID pada field QC target.'); const idx = db.assets.findIndex(a=>a.id===target); if(idx<0) return alert('Asset ID tidak ditemukan.'); const checked = {}; qcListEl.querySelectorAll('input[type=checkbox]').forEach(cb=> checked[cb.dataset.k]=!!cb.checked); db.assets[idx].qc = checked; save(); showToast('QC tersimpan pada asset '+target); });
-    document.getElementById('clearQcBtn').addEventListener('click', ()=> qcListEl.querySelectorAll('input[type=checkbox]').forEach(cb=>cb.checked=false));
-
-    // Print
-    document.getElementById('printBtn').addEventListener('click', ()=> window.print());
-
-    // Excel with SheetJS (try/catch)
-    document.getElementById('downloadExcelBtn').addEventListener('click', ()=>{ try{ if(typeof XLSX === 'undefined') throw new Error('SheetJS tidak tersedia'); const data = db.assets.map(a=>({ ID:a.id, Nama:a.name, Jenis:a.type, Serial:a.serial, Qty:a.qty, Software:a.software, PIC:a.pic, Lokasi:a.location, Purchase:a.purchaseDate, Warranty:a.warrantyUntil, QC:a.qcStatus })); const ws = XLSX.utils.json_to_sheet(data); const wb = XLSX.utils.book_new(); XLSX.utils.book_append_sheet(wb, ws, 'Assets'); XLSX.writeFile(wb, 'Zeppelin_Asset_'+Date.now()+'.xlsx'); showToast('Excel diunduh'); }catch(e){ alert('Gagal generate Excel: '+e.message); } });
-
-    // Dashboard
-    function updateDashboard(){ const total = db.assets.reduce((s,a)=>s + (Number(a.qty)||0),0); const pcCount = db.assets.reduce((s,a)=> s + ((a.type==='Laptop' || a.type==='Desktop') ? Number(a.qty)||0 : 0), 0); let lulus=0,gagal=0,belum=0; db.assets.forEach(a=>{ if(!a.qcStatus || a.qcStatus==='Belum QC') belum += Number(a.qty)||0; else if(a.qcStatus==='Lulus QC') lulus += Number(a.qty)||0; else if(a.qcStatus==='Gagal QC') gagal += Number(a.qty)||0; }); kpiTotal.textContent = total; kpiPC.textContent = pcCount; kpiQC.textContent = `L:${lulus} • G:${gagal} • B:${belum}`;
-      // charts
-      const categories = {}; db.assets.forEach(a=> categories[a.type] = (categories[a.type]||0) + (Number(a.qty)||0)); const labels = Object.keys(categories); const values = labels.map(l=>categories[l]); try{ if(window.Chart){ if(barChart){ barChart.data.labels = labels; barChart.data.datasets[0].data = values; barChart.update(); } else { barChart = new Chart(barCanvas, { type:'bar', data:{ labels: labels.length?labels:['-'], datasets:[{ label:'Jumlah', data: values.length?values:[0], backgroundColor:'#ff7a18' }]}, options:{responsive:true,plugins:{legend:{display:false}}, scales:{y:{beginAtZero:true}}} }); } const pieData = [lulus,gagal,belum]; if(pieChart){ pieChart.data.datasets[0].data = pieData; pieChart.update(); } else { pieChart = new Chart(pieCanvas, { type:'pie', data:{ labels:['Lulus','Gagal','Belum'], datasets:[{ data: pieData, backgroundColor:['#1db954','#ff4d4f','#ffd166'] }]}, options:{responsive:true,plugins:{legend:{position:'bottom'}}} }); } } }catch(e){ /* ignore chart errors */ }
-    }
-
-    // expose minimal API for external scripts
-    return { load, render, save, getDB: ()=>db, updateDashboard, clearForm, genId };
   })();
 
-  // attach to window for other scripts and debugging
-  window.ZeppelinApp = ZeppelinApp;
-  window.load = ZeppelinApp.load; window.render = ZeppelinApp.render; // expose legacy names
-
-  // init
-  ZeppelinApp.load(); ZeppelinApp.render(); ZeppelinApp.updateDashboard();
-
   // small toast helper
-  function showToast(txt){ let t = document.getElementById('toastMsg'); if(!t){ t=document.createElement('div'); t.id='toastMsg'; t.style.position='fixed'; t.style.right='18px'; t.style.bottom='18px'; t.style.background='rgba(0,0,0,0.6)'; t.style.color='#fff'; t.style.padding='8px 12px'; t.style.borderRadius='8px'; t.style.boxShadow='0 6px 18px rgba(0,0,0,0.4)'; document.body.appendChild(t); } t.textContent=txt; t.style.opacity='1'; setTimeout(()=> t.style.opacity='0',2200); }
+  function showToast(txt, isError = false){ 
+    let t = document.getElementById('toastMsg'); 
+    if(!t){ 
+      t=document.createElement('div'); 
+      t.id='toastMsg'; 
+      t.style.position='fixed'; 
+      t.style.right='18px'; 
+      t.style.bottom='18px'; 
+      t.style.color='#fff'; 
+      t.style.padding='10px 16px'; 
+      t.style.borderRadius='8px'; 
+      t.style.boxShadow='0 6px 18px rgba(0,0,0,0.4)'; 
+      t.style.zIndex='10001';
+      t.style.transition = 'opacity 0.3s ease';
+      document.body.appendChild(t); 
+    } 
+    t.textContent=txt; 
+    t.style.background = isError ? 'var(--error)' : 'var(--success)';
+    t.style.opacity='1'; 
+    setTimeout(()=> t.style.opacity='0', isError ? 4000 : 2200); 
+  }
 
   // expose showToast globally for reuse
   window.showToast = showToast;
 
-})();
 </script>
 <script>
 /* Additional features: filters, sort, live highlight, theme toggle, auto-backup, print report
-   This script now uses the exposed window.render / window.load and the global ASSET_STORAGE_KEY
+   This script now uses the exposed window.ZeppelinApp.getDB()
 */
 (function(){
-  const STORAGE_KEY = window.ASSET_STORAGE_KEY || 'asset_manager_final';
   function $(sel){ return document.querySelector(sel); }
   function $all(sel){ return Array.from(document.querySelectorAll(sel)); }
 
-  function refreshFilterOptions(){ const assets = (JSON.parse(localStorage.getItem(STORAGE_KEY) || '{"assets":[]}').assets)||[]; const typeSet=new Set(); const locSet=new Set(); const picSet=new Set(); assets.forEach(a=>{ if(a.type) typeSet.add(a.type); if(a.location) locSet.add(a.location); if(a.pic) picSet.add(a.pic); }); const selType=$('#filterType'); const selLoc=$('#filterLoc'); const selPic=$('#filterPic'); if(!selType||!selLoc||!selPic) return; [selType,selLoc,selPic].forEach(s=>{ while(s.options.length>1) s.remove(1); }); typeSet.forEach(v=> selType.add(new Option(v,v))); locSet.forEach(v=> selLoc.add(new Option(v,v))); picSet.forEach(v=> selPic.add(new Option(v,v))); }
+  window.refreshFilterOptions = function() { 
+    if (!window.ZeppelinApp) return;
+    const assets = window.ZeppelinApp.getDB().assets || [];
+    const typeSet=new Set(); const locSet=new Set(); const picSet=new Set(); 
+    assets.forEach(a=>{ if(a.type) typeSet.add(a.type); if(a.location) locSet.add(a.location); if(a.pic) picSet.add(a.pic); }); 
+    const selType=$('#filterType'); const selLoc=$('#filterLoc'); const selPic=$('#filterPic'); 
+    if(!selType||!selLoc||!selPic) return; 
+    [selType,selLoc,selPic].forEach(s=>{ while(s.options.length>1) s.remove(1); }); 
+    
+    // Sort options alphabetically
+    const sortSet = (s) => Array.from(s).sort((a,b) => a.localeCompare(b));
+    
+    sortSet(typeSet).forEach(v=> selType.add(new Option(v,v))); 
+    sortSet(locSet).forEach(v=> selLoc.add(new Option(v,v))); 
+    sortSet(picSet).forEach(v=> selPic.add(new Option(v,v))); 
+  }
 
-  function applyFiltersAndSearch(){ const search = ($('#globalSearch') && $('#globalSearch').value) || ''; const fType = ($('#filterType') && $('#filterType').value) || ''; const fQc = ($('#filterQc') && $('#filterQc').value) || ''; const fLoc = ($('#filterLoc') && $('#filterLoc').value) || ''; const fPic = ($('#filterPic') && $('#filterPic').value) || ''; if(typeof window.render === 'function'){ // use render for text search then do table row hiding for other filters
-      window.render(search);
-      const rows = $all('#assetTable tbody tr'); rows.forEach(r=>{ const t = r; let show = true; if(fType && !t.children[2].textContent.includes(fType)) show=false; if(fQc && !t.children[10].textContent.includes(fQc)) show=false; if(fLoc && !t.children[7].textContent.includes(fLoc)) show=false; if(fPic && !t.children[6].textContent.includes(fPic)) show=false; t.style.display = show ? '' : 'none'; });
-    } else { // fallback
-      const rows = $all('#assetTable tbody tr'); rows.forEach(r=>{ const txt = r.textContent.toLowerCase(); let show = true; if(search && !txt.includes(search.toLowerCase())) show = false; if(fType && !r.cells[2].textContent.includes(fType)) show = false; if(fQc && !r.cells[10].textContent.includes(fQc)) show = false; if(fLoc && !r.cells[7].textContent.includes(fLoc)) show = false; if(fPic && !r.cells[6].textContent.includes(fPic)) show = false; r.style.display = show ? '' : 'none'; }); }
-      highlightSearch(search);
+  function applyFiltersAndSearch(){ 
+    const search = ($('#globalSearch') && $('#globalSearch').value) || ''; 
+    const fType = ($('#filterType') && $('#filterType').value) || ''; 
+    const fQc = ($('#filterQc') && $('#filterQc').value) || ''; 
+    const fLoc = ($('#filterLoc') && $('#filterLoc').value) || ''; 
+    const fPic = ($('#filterPic') && $('#filterPic').value) || ''; 
+    
+    if(typeof window.ZeppelinApp.render === 'function'){ 
+      // render() menangani filter teks global
+      window.ZeppelinApp.render(search);
+      const rows = $all('#assetTable tbody tr'); 
+      rows.forEach(r=>{ 
+        const t = r; 
+        let show = true; 
+        try {
+            if(fType && t.children[2] && !t.children[2].textContent.includes(fType)) show=false; 
+            if(fQc && t.children[10] && !t.children[10].textContent.includes(fQc)) show=false; 
+            if(fLoc && t.children[7] && !t.children[7].textContent.includes(fLoc)) show=false; 
+            if(fPic && t.children[6] && !t.children[6].textContent.includes(fPic)) show=false; 
+        } catch (e) {
+            console.warn("Error applying filter to row: ", e, r);
+        }
+        t.style.display = show ? '' : 'none'; 
+      });
+    }
+    highlightSearch(search);
   }
 
   // highlightSearch: only operate on text cells (avoid actions)
-  function highlightSearch(q){ const tbody = document.querySelector('#assetTable tbody'); if(!tbody) return; const ql=(q||'').trim().toLowerCase(); tbody.querySelectorAll('tr').forEach(tr=>{ Array.from(tr.children).forEach((td, idx)=>{ if(idx === tr.children.length-1) return; const text = td.getAttribute('data-full') || td.textContent; if(ql && text.toLowerCase().includes(ql)){ const regex = new RegExp('('+escapeRegex(ql)+')','gi'); td.innerHTML = window.escapeHtml(text).replace(regex,'<mark>$1</mark>'); } else { td.textContent = text; } }); }); }
+  window.highlightSearch = function(q){ 
+    const tbody = document.querySelector('#assetTable tbody'); 
+    if(!tbody) return; 
+    const ql=(q||'').trim().toLowerCase(); 
+    tbody.querySelectorAll('tr').forEach(tr=>{ 
+      Array.from(tr.children).forEach((td, idx)=>{ 
+        if(idx === tr.children.length-1) return; // Skip actions column
+        const text = td.getAttribute('data-full') || td.textContent; 
+        if(ql && text.toLowerCase().includes(ql)){ 
+          const regex = new RegExp('('+escapeRegex(ql)+')','gi'); 
+          td.innerHTML = window.escapeHtml(text).replace(regex,'<mark>$1</mark>'); 
+        } else { 
+          td.textContent = text; // Reset
+        } 
+      }); 
+    }); 
+  }
   function escapeRegex(s){ return s.replace(/[-\/\\^$*+?.()|[\]{}]/g, '\\$&'); }
 
   function enableSorting(){ const headers = $all('#assetTable thead th'); headers.forEach((th, idx)=>{ if(idx === headers.length-1) return; th.style.cursor='pointer'; th.addEventListener('click', ()=>{ const tbody = document.querySelector('#assetTable tbody'); if(!tbody) return; const rows = Array.from(tbody.querySelectorAll('tr')).filter(r=>r.style.display !== 'none'); const asc = th.dataset.asc === 'true' ? false : true; th.dataset.asc = asc; rows.sort((a,b)=>{ const aText = a.children[idx].textContent.trim().toLowerCase(); const bText = b.children[idx].textContent.trim().toLowerCase(); if(!isNaN(parseFloat(aText)) && !isNaN(parseFloat(bText))){ return asc ? (parseFloat(aText) - parseFloat(bText)) : (parseFloat(bText) - parseFloat(aText)); } return asc ? aText.localeCompare(bText) : bText.localeCompare(aText); }); rows.forEach(r=>tbody.appendChild(r)); }); }); }
 
   function initTheme(){ const btn = $('#themeToggle'); if(!btn) return; const current = localStorage.getItem('zepp_theme') || 'dark'; document.documentElement.setAttribute('data-theme', current); applyTheme(current); btn.addEventListener('click', ()=>{ const t = (localStorage.getItem('zepp_theme')||'dark') === 'dark' ? 'light' : 'dark'; localStorage.setItem('zepp_theme', t); applyTheme(t); }); }
-  function applyTheme(t){ if(t==='light'){ document.documentElement.style.setProperty('--bg','#f7fafc'); document.documentElement.style.setProperty('--card','#ffffff'); document.documentElement.style.setProperty('--muted','#6b7280'); document.documentElement.style.setProperty('--accent','#0ea5a4'); document.documentElement.style.setProperty('--border','rgba(2,6,23,0.06)'); document.body.style.color = getComputedStyle(document.documentElement).getPropertyValue('color'); } else { document.documentElement.style.removeProperty('--bg'); document.documentElement.style.removeProperty('--card'); document.documentElement.style.removeProperty('--muted'); document.documentElement.style.removeProperty('--accent'); document.documentElement.style.removeProperty('--border'); document.body.style.color = ''; } }
+  function applyTheme(t){ if(t==='light'){ document.documentElement.style.setProperty('--bg','#f7fafc'); document.documentElement.style.setProperty('--card','#ffffff'); document.documentElement.style.setProperty('--muted','#6b7280'); document.documentElement.style.setProperty('--accent','#0ea5a4'); document.documentElement.style.setProperty('--border','rgba(2,6,23,0.06)'); document.body.style.color = '#1a202c'; } else { document.documentElement.style.removeProperty('--bg'); document.documentElement.style.removeProperty('--card'); document.documentElement.style.removeProperty('--muted'); document.documentElement.style.removeProperty('--accent'); document.documentElement.style.removeProperty('--border'); document.body.style.color = '#e6eef6'; } }
 
-  // auto backup polling
-  function hookSaveEvents(){ let last = localStorage.getItem(STORAGE_KEY); setInterval(()=>{ const cur = localStorage.getItem(STORAGE_KEY); if(cur && cur !== last){ // store backup
-        const payload = { ts: Date.now(), data: JSON.parse(cur) }; localStorage.setItem(STORAGE_KEY + '_backup', JSON.stringify(payload)); refreshFilterOptions(); last = cur; window.showToast && window.showToast('Backup auto tersimpan'); } }, 2000); }
-
-  function attachPrintReport(){ const btn = $('#printReportBtn'); if(!btn) return; btn.addEventListener('click', ()=>{ const db = (JSON.parse(localStorage.getItem(STORAGE_KEY) || '{"assets":[]}')); const assets = db.assets || []; const total = assets.reduce((s,a)=> s + (Number(a.qty)||0), 0); const pcCount = assets.reduce((s,a)=> s + ((a.type==='Laptop' || a.type==='Desktop') ? Number(a.qty)||0 : 0), 0); const date = new Date().toLocaleString(); let html = `<!doctype html><html><head><meta charset="utf-8"><title>Laporan Asset</title><style>body{font-family:Inter,Arial,Helvetica,sans-serif;color:#0b1220;margin:24px}.header{display:flex;align-items:center;gap:16px;margin-bottom:12px}.logo{width:56px;height:56px;border-radius:8px;background:#ff7a18;display:flex;align-items:center;justify-content:center;font-weight:800;color:#08101a}h1{margin:0;font-size:20px}.muted{color:#6b7280;font-size:13px}.kpi-row{display:flex;gap:12px;margin:12px 0}.kpi{padding:10px;border-radius:8px;border:1px solid #e6e9ef;min-width:160px;text-align:center}table{width:100%;border-collapse:collapse;margin-top:12px;font-size:12px}th,td{padding:8px;border:1px solid #eee;text-align:left}</style></head><body>`; html += `<div class="header"><div class="logo">Z</div><div><h1>Laporan Asset — Zeppelin</h1><div class="muted">Dicetak: ${date}</div></div></div>`; html += `<div class="kpi-row"><div class="kpi"><strong>Total Asset</strong><div>${total}</div></div><div class="kpi"><strong>PC (Laptop/Desktop)</strong><div>${pcCount}</div></div></div>`; html += `<table><thead><tr><th>ID</th><th>Nama</th><th>Jenis</th><th>Serial</th><th>Qty</th><th>PIC</th><th>Lokasi</th><th>QC</th></tr></thead><tbody>`; assets.forEach(a=>{ html += `<tr><td>${window.escapeHtml(a.id)}</td><td>${window.escapeHtml(a.name)}</td><td>${window.escapeHtml(a.type)}</td><td>${window.escapeHtml(a.serial||'')}</td><td>${a.qty}</td><td>${window.escapeHtml(a.pic||'')}</td><td>${window.escapeHtml(a.location||'')}</td><td>${window.escapeHtml(a.qcStatus||'')}</td></tr>`; }); html += `</tbody></table></body></html>`; const win = window.open('','_blank','width=900,height=700'); if(win){ win.document.write(html); win.document.close(); setTimeout(()=> win.print(), 500); } else alert('Pop-up blocked. Izinkan pop-up untuk mencetak laporan.'); }); }
+  function attachPrintReport(){ 
+    const btn = $('#printReportBtn'); 
+    if(!btn) return; 
+    btn.addEventListener('click', ()=>{ 
+      if (!window.ZeppelinApp) return;
+      const db = window.ZeppelinApp.getDB();
+      const assets = db.assets || []; 
+      const total = assets.reduce((s,a)=> s + (Number(a.qty)||0), 0); 
+      const pcCount = assets.reduce((s,a)=> s + ((a.type==='Laptop' || a.type==='Desktop') ? Number(a.qty)||0 : 0), 0); 
+      const date = new Date().toLocaleString('id-ID'); 
+      let html = `<!doctype html><html><head><meta charset="utf-8"><title>Laporan Asset</title><style>body{font-family:Inter,Arial,Helvetica,sans-serif;color:#0b1220;margin:24px}.header{display:flex;align-items:center;gap:16px;margin-bottom:12px}.logo{width:56px;height:56px;border-radius:8px;background:#ff7a18;display:flex;align-items:center;justify-content:center;font-weight:800;color:#08101a}h1{margin:0;font-size:20px}.muted{color:#6b7280;font-size:13px}.kpi-row{display:flex;gap:12px;margin:12px 0}.kpi{padding:10px;border-radius:8px;border:1px solid #e6e9ef;min-width:160px;text-align:center}table{width:100%;border-collapse:collapse;margin-top:12px;font-size:12px}th,td{padding:8px;border:1px solid #eee;text-align:left}</style></head><body>`; 
+      html += `<div class="header"><div class="logo">Z</div><div><h1>Laporan Asset — Zeppelin</h1><div class="muted">Dicetak: ${date}</div></div></div>`; 
+      html += `<div class="kpi-row"><div class="kpi"><strong>Total Asset</strong><div>${total}</div></div><div class="kpi"><strong>PC (Laptop/Desktop)</strong><div>${pcCount}</div></div></div>`; 
+      html += `<table><thead><tr><th>ID</th><th>Nama</th><th>Jenis</th><th>Serial</th><th>Qty</th><th>PIC</th><th>Lokasi</th><th>QC</th></tr></thead><tbody>`; 
+      assets.forEach(a=>{ html += `<tr><td>${window.escapeHtml(a.id)}</td><td>${window.escapeHtml(a.name)}</td><td>${window.escapeHtml(a.type)}</td><td>${window.escapeHtml(a.serial||'')}</td><td>${a.qty}</td><td>${window.escapeHtml(a.pic||'')}</td><td>${window.escapeHtml(a.location||'')}</td><td>${window.escapeHtml(a.qcStatus||'')}</td></tr>`; }); 
+      html += `</tbody></table></body></html>`; 
+      const win = window.open('','_blank','width=900,height=700'); 
+      if(win){ win.document.write(html); win.document.close(); setTimeout(()=> win.print(), 500); } else showToast('Pop-up diblokir. Izinkan pop-up untuk mencetak.', true); 
+    }); 
+  }
 
   function attachFilterHandlers(){ ['#globalSearch','#filterType','#filterQc','#filterLoc','#filterPic'].forEach(id=>{ const el=$(id); if(el) { el.addEventListener('input', ()=> applyFiltersAndSearch()); el.addEventListener('change', ()=> applyFiltersAndSearch()); } }); }
 
-  document.addEventListener('DOMContentLoaded', ()=>{ if(typeof window.load === 'function') window.load(); if(typeof window.render === 'function') window.render(); refreshFilterOptions(); attachFilterHandlers(); enableSorting(); initTheme(); hookSaveEvents(); attachPrintReport(); const rb = document.getElementById('restoreBackupBtn'); if(rb) rb.addEventListener('click', ()=>{ try{ const bk = JSON.parse(localStorage.getItem(STORAGE_KEY + '_backup')||'null'); if(!bk) return alert('Tidak ada backup terakhir.'); localStorage.setItem(STORAGE_KEY, JSON.stringify(bk.data)); window.load && window.load(); window.render && window.render(); window.showToast && window.showToast('Backup dipulihkan'); }catch(e){ alert('Gagal restore: '+e.message); } }); });
+  document.addEventListener('DOMContentLoaded', ()=>{ 
+    attachFilterHandlers(); 
+    enableSorting(); 
+    initTheme(); 
+    attachPrintReport(); 
+  });
 
 })();
 </script>
@@ -436,13 +923,18 @@ mark{background:rgba(255,235,59,0.25);padding:0 2px;border-radius:2px}
   const closeBtn = document.getElementById('closeDetailBtn');
   const closeBtn2 = document.getElementById('closeDetailBtn2');
   const editBtn = document.getElementById('editFromDetailBtn');
+  
   document.addEventListener('click', function(e){
     const btn = e.target.closest('button[data-action="detail"]');
     if(!btn) return;
     const id = btn.getAttribute('data-id');
-    const db = (JSON.parse(localStorage.getItem(window.ASSET_STORAGE_KEY)||'{"assets":[]}')).assets||[];
-    const a = db.find(x=>x.id===id);
-    if(!a) return alert('Data tidak ditemukan');
+    
+    if (!window.ZeppelinApp) return;
+    const db = window.ZeppelinApp.getDB();
+    const a = (db.assets || []).find(x=>x.id===id);
+    
+    if(!a) return window.showToast('Data tidak ditemukan di cache', true);
+    
     const rows = [
       ['ID', a.id],
       ['Nama', a.name || '-'],
@@ -457,12 +949,43 @@ mark{background:rgba(255,235,59,0.25);padding:0 2px;border-radius:2px}
       ['Status QC', a.qcStatus || '-'],
       ['Keterangan', a.notes || '-']
     ];
+    if (a.qc) {
+        rows.push(['--- QC CHECKLIST ---', '---']);
+        for (const [key, value] of Object.entries(a.qc)) {
+            rows.push([key, value ? '✅ Lulus' : '❌ Gagal']);
+        }
+    }
+
     tbody.innerHTML = rows.map(r=>`<tr><td style="padding:8px 10px; color:var(--muted); width:40%; border-bottom:1px solid rgba(255,255,255,0.04)"><strong>${r[0]}</strong></td><td style="padding:8px 10px; border-bottom:1px solid rgba(255,255,255,0.04)">${r[1]}</td></tr>`).join('');
     overlay.style.display = 'flex';
-    // wire edit
-    editBtn.onclick = function(){ overlay.style.display='none'; const editBtnEl = document.querySelector('#assetTable button[data-action="edit"][data-id="'+id+'"]'); if(editBtnEl) editBtnEl.click(); };
-    copyBtn.onclick = function(){ try{ navigator.clipboard.writeText(a.id); window.showToast && window.showToast('ID disalin'); }catch(e){ alert('Gagal salin'); } };
+    
+    editBtn.onclick = function(){ 
+      overlay.style.display='none'; 
+      const editBtnEl = document.querySelector('#assetTable button[data-action="edit"][data-id="'+id+'"]'); 
+      if(editBtnEl) {
+        editBtnEl.click(); 
+        if (a.qc) {
+            const qcListEl = document.getElementById('qcList');
+            qcListEl.querySelectorAll('input[type=checkbox]').forEach(cb => {
+                cb.checked = !!a.qc[cb.dataset.k];
+            });
+            document.getElementById('qcTargetId').value = a.id;
+        }
+      }
+    };
+    copyBtn.onclick = function(){ 
+      try{ 
+        const el = document.createElement('textarea');
+        el.value = a.id;
+        document.body.appendChild(el);
+        el.select();
+        document.execCommand('copy');
+        document.body.removeChild(el);
+        window.showToast && window.showToast('ID disalin'); 
+      }catch(e){ window.showToast('Gagal salin', true); } 
+    };
   });
+  
   closeBtn && closeBtn.addEventListener('click', ()=> overlay.style.display='none');
   closeBtn2 && closeBtn2.addEventListener('click', ()=> overlay.style.display='none');
   overlay && overlay.addEventListener('click', function(ev){ if(ev.target === overlay) overlay.style.display='none'; });
