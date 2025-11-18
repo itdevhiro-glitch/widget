@@ -5,8 +5,7 @@
 <meta content="width=device-width,initial-scale=1" name="viewport"/>
 <title>Zeppelin — Asset Manager (Admin)</title>
 <meta content="Bima Adhitya" name="author"/>
-<meta content="Asset Manager &amp; QC — Zeppelin. Terhubung ke Firebase Firestore." name="description"/>
-<!-- (BARU) Icon Pack untuk ikon-ikon -->
+<meta content="Asset Manager & QC — Zeppelin. Terhubung ke Firebase Firestore." name="description"/>
 <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css">
 <style>
 :root {
@@ -46,25 +45,12 @@ header{
   border-bottom: 1px solid var(--border);
 }
 .brand{display:flex;align-items:center;gap:14px}
-.logo-img,.logo-placeholder{width:52px;height:52px;border-radius:12px;object-fit:cover}
-.logo-placeholder{background:linear-gradient(135deg,var(--accent),#ffb24d);display:flex;align-items:center;justify-content:center;font-weight:800;color:#08101a}
+.logo-placeholder{width:52px;height:52px;border-radius:12px;background:linear-gradient(135deg,var(--accent),#ffb24d);display:flex;align-items:center;justify-content:center;font-weight:800;color:#08101a}
 h1{font-size:clamp(18px,1.8vw,22px);margin:0}
 .sub{font-size:clamp(12px,1vw,14px);color:var(--muted)}
-
-/* (BARU) Breadcrumb */
-.breadcrumb {
-  font-size: 14px;
-  color: var(--muted);
-  font-weight: 500;
-}
-.breadcrumb a {
-  color: var(--accent);
-  text-decoration: none;
-  font-weight: 600;
-}
-.breadcrumb a:hover {
-  text-decoration: underline;
-}
+.breadcrumb { font-size: 14px; color: var(--muted); font-weight: 500; }
+.breadcrumb a { color: var(--accent); text-decoration: none; font-weight: 600; }
+.breadcrumb a:hover { text-decoration: underline; }
 
 .controls{display:flex;align-items:center;gap:8px;flex-wrap:wrap}
 .btn{background:var(--accent);border:none;padding:8px 14px;border-radius:8px;color:#08101a;font-weight:600;cursor:pointer;transition:all .2s ease;box-shadow:var(--shadow)}
@@ -76,24 +62,9 @@ h1{font-size:clamp(18px,1.8vw,22px);margin:0}
 @media (max-width:1100px){ .grid{grid-template-columns:1fr} }
 .card{background:var(--card);border-radius:12px;padding:20px 24px;border:1px solid var(--border);box-shadow:var(--shadow)}
 
-/* (BARU) Form Section Styling */
-.form-section {
-  margin-top: 16px;
-  padding-top: 16px;
-  border-top: 1px solid var(--border);
-}
-.form-section:first-child {
-  margin-top: 0;
-  padding-top: 0;
-  border-top: none;
-}
-.form-section h4 {
-  font-size: 1rem;
-  font-weight: 600;
-  color: var(--accent);
-  margin-top: 0;
-  margin-bottom: 12px;
-}
+.form-section { margin-top: 16px; padding-top: 16px; border-top: 1px solid var(--border); }
+.form-section:first-child { margin-top: 0; padding-top: 0; border-top: none; }
+.form-section h4 { font-size: 1rem; font-weight: 600; color: var(--accent); margin-top: 0; margin-bottom: 12px; }
 
 .kpi-row{display:flex;gap:16px;flex-wrap:wrap;margin-top:16px}
 .kpi{flex:1;min-width:180px;background:var(--card-light);padding:16px;border-radius:10px;border:1px solid var(--border);text-align:center}
@@ -114,40 +85,20 @@ input:focus, select:focus, textarea:focus {
 }
 textarea{min-height:70px}
 
-/* (BARU) Tombol Aksi Ikon */
-.action-buttons {
-  display: flex;
-  gap: 6px;
-}
+.action-buttons { display: flex; gap: 6px; }
 .btn-icon {
-  background: var(--card-light);
-  border: 1px solid var(--border);
-  color: var(--muted);
-  border-radius: 6px;
-  padding: 6px;
-  cursor: pointer;
-  transition: all 0.2s ease;
-  width: 32px;
-  height: 32px;
-  display: inline-flex;
-  align-items: center;
-  justify-content: center;
+  background: var(--card-light); border: 1px solid var(--border); color: var(--muted);
+  border-radius: 6px; padding: 6px; cursor: pointer; transition: all 0.2s ease;
+  width: 32px; height: 32px; display: inline-flex; align-items: center; justify-content: center;
 }
 .btn-icon svg { width: 16px; height: 16px; }
-.btn-icon:hover {
-  background: var(--accent);
-  color: #fff;
-  border-color: var(--accent);
-}
-.btn-icon.delete:hover {
-  background: var(--error);
-  border-color: var(--error);
-}
+.btn-icon:hover { background: var(--accent); color: #fff; border-color: var(--accent); }
+.btn-icon.delete:hover { background: var(--error); border-color: var(--error); }
 
 footer{margin-top:32px;text-align:center;color:var(--muted);font-size:13px;padding:16px 0}
 mark{background:rgba(255,235,59,0.25);padding:0 2px;border-radius:2px}
 
-/* (BARU) Layar Verifikasi */
+/* Layar Verifikasi */
 #authVerificationScreen {
   position: fixed; inset: 0; 
   background: var(--login-bg); 
@@ -168,108 +119,74 @@ mark{background:rgba(255,235,59,0.25);padding:0 2px;border-radius:2px}
   border: 1px solid var(--login-border);
   box-shadow: var(--login-shadow);
 }
-#authBox h3 {
-  color: var(--login-text);
-  font-size: 1.3rem;
-  font-weight: 600;
-  margin-top: 0;
-  margin-bottom: 10px;
-}
-#authBox p {
-  font-size: 1rem;
-  color: #555;
-  margin-top: 15px;
-  line-height: 1.6;
-}
+#authBox h3 { color: var(--login-text); font-size: 1.3rem; font-weight: 600; margin-top: 0; margin-bottom: 10px; }
+#authBox p { font-size: 1rem; color: #555; margin-top: 15px; line-height: 1.6; }
 #authBox a {
   display: none; /* Sembunyi by default */
-  margin-top: 20px;
-  padding: 12px 20px;
-  border-radius: 8px;
-  background-color: var(--login-primary);
-  color: white;
-  font-weight: 700;
-  text-decoration: none;
-  transition: background-color 0.3s;
+  margin-top: 20px; padding: 12px 20px; border-radius: 8px;
+  background-color: var(--login-primary); color: white;
+  font-weight: 700; text-decoration: none; transition: background-color 0.3s;
 }
-#authBox a:hover {
-  background-color: #B01B22;
-}
+#authBox a:hover { background-color: #B01B22; }
 
-/* (BARU) Spinner Animasi */
+/* Spinner Animasi */
 .spinner {
-  width: 40px;
-  height: 40px;
+  width: 40px; height: 40px;
   border: 4px solid #f3f3f3;
   border-top-color: var(--login-primary);
   border-radius: 50%;
   animation: spin 1s linear infinite;
   margin: 0 auto 20px auto;
 }
-@keyframes spin {
-  100% { transform: rotate(360deg); }
-}
+@keyframes spin { 100% { transform: rotate(360deg); } }
 
 /* Loading Spinner (untuk data) */
 #loader {
-  position: fixed;
-  inset: 0;
+  position: fixed; inset: 0;
   background: rgba(0, 0, 0, 0.5);
   display: none; /* Sembunyi by default */
-  align-items: center;
-  justify-content: center;
-  z-index: 10000;
-  color: white;
-  font-size: 1.2rem;
-  flex-direction: column;
-  gap: 10px;
+  align-items: center; justify-content: center;
+  z-index: 10000; color: white;
+  font-size: 1.2rem; flex-direction: column; gap: 10px;
 }
 #loader::after {
-  content: '';
-  width: 40px;
-  height: 40px;
-  border: 4px solid #fff;
-  border-top-color: var(--accent);
-  border-radius: 50%;
-  animation: spin 1s linear infinite;
+  content: ''; width: 40px; height: 40px;
+  border: 4px solid #fff; border-top-color: var(--accent);
+  border-radius: 50%; animation: spin 1s linear infinite;
 }
 </style>
 </head>
 <body>
 
-<!-- (BARU) Layar Verifikasi Otentikasi -->
+<!-- Layar Verifikasi Otentikasi -->
 <div id="authVerificationScreen">
   <div id="authBox">
     <div class="spinner" id="authSpinner"></div>
     <h3 id="authMessage">Memverifikasi Sesi Admin...</h3>
     <p id="authSubMessage">Mengecek otentikasi Anda dengan Firebase...</p>
-    <!-- (PERBAIKAN) Menggunakan ../ untuk kembali ke root -->
     <a href="../index.html" id="authBackButton">Kembali ke Admin Dashboard</a>
   </div>
 </div>
 
 <div id="loader">Memuat data dari Firebase...</div>
 
-<!-- (BARU) Konten Aplikasi dibungkus di sini -->
+<!-- Konten Aplikasi -->
 <div class="app-content">
   <div class="wrap">
   <header>
   <div class="brand">
   <div id="logoWrap">
-  <!-- (PERBAIKAN) Menghapus <img>, hanya pakai placeholder -->
   <div class="logo-placeholder" id="logoFallback" style="display:flex">Z</div>
   </div>
   <div>
   <h1>Zeppelin — Asset Manager</h1>
   <div class="sub" id="subhead">
-    <!-- (BARU) Breadcrumb -->
     <span class="breadcrumb"><a href="../index.html">Admin Dashboard</a> / Asset Manager</span>
   </div>
   </div>
   </div>
   <div class="controls no-print">
   
-  <!-- Info User & Tombol Logout -->
   <div id="userInfo" class="small" style="text-align: right; color: white;">
     Logged in as:<br>
     <strong id="userEmailDisplay" style="color: var(--accent);"></strong>
@@ -319,7 +236,6 @@ mark{background:rgba(255,235,59,0.25);padding:0 2px;border-radius:2px}
   </section>
   <div class="grid" style="margin-top:24px">
   <aside class="card">
-  <!-- (BARU) Form yang Dikelompokkan -->
   <div class="form-section">
     <h4><i class="fa-solid fa-box" style="margin-right: 8px;"></i> Detail Barang</h4>
     <label>Nama Barang</label>
@@ -412,12 +328,12 @@ mark{background:rgba(255,235,59,0.25);padding:0 2px;border-radius:2px}
 <script crossorigin="anonymous" integrity="" src="https://cdn.jsdelivr.net/npm/chart.js"></script>
 <script crossorigin="anonymous" integrity="" src="https://cdn.jsdelivr.net/npm/xlsx/dist/xlsx.full.min.js"></script>
 
-<!-- (BARU) Firebase SDKs v8 (Sama seperti index.html) -->
+<!-- Firebase SDKs v8 (Sama seperti index.html) -->
 <script src="https://www.gstatic.com/firebasejs/8.10.1/firebase-app.js"></script>
 <script src="https://www.gstatic.com/firebasejs/8.10.1/firebase-auth.js"></script>
 <script src="https://www.gstatic.com/firebasejs/8.10.1/firebase-firestore.js"></script>
 
-<!-- (BARU) Inline SVG untuk Ikon Aksi -->
+<!-- Inline SVG untuk Ikon Aksi -->
 <svg width="0" height="0" style="position:absolute">
   <defs>
     <svg id="icon-edit" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 20 20" fill="currentColor">
@@ -978,7 +894,7 @@ mark{background:rgba(255,235,59,0.25);padding:0 2px;border-radius:2px}
       const assets = window.ZeppelinApp.getDB().assets || [];
       const typeSet=new Set(); const locSet=new Set(); const picSet=new Set(); 
       assets.forEach(a=>{ if(a.type) typeSet.add(a.type); if(a.location) locSet.add(a.location); if(a.pic) picSet.add(a.pic); }); 
-      const selType=$('#filterType'); const selLoc=$$('#filterLoc'); const selPic=$('#filterPic'); 
+      const selType=$('#filterType'); const selLoc=$('#filterLoc'); const selPic=$('#filterPic'); 
       // (PERBAIKAN) Tambahkan null check
       if(!selType || !selLoc || !selPic) return; 
       
