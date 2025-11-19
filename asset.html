@@ -15,18 +15,18 @@
     theme: {
       extend: {
         colors: {
-          // Palet Warna Semantik Standar
+          // Palet Warna Semantik Standar & Profesional
           'primary': '#007bff', // BIRU - Default Highlight/Primary Action
           'primary-hover': '#0069d9',
           'accent': '#ff7a18', // ORANYE - Secondary Highlight/General Chart Color
-          'dark-bg': '#FFFFFF', // PUTIH - Background Utama
-          'dark-card': '#F8F8F8', // PUTIH MUDA - Background Card
-          'dark-border': '#E0E0E0', // ABU RINGAN - Border
+          'light-bg': '#FFFFFF', // PUTIH - Background Utama
+          'light-card': '#F8F8F8', // PUTIH MUDA - Background Card/Sidebar
+          'light-border': '#E0E0E0', // ABU RINGAN - Border/Garis
           'dark-text': '#333333', // ABU GELAP - Teks Utama
           'dark-muted': '#777777', // ABU MUTE - Teks Sekunder
+          'success': '#1db954', // HIJAU - Status Lulus QC
           'error': '#dc3545', // MERAH - Status Gagal QC
-          'success': '#1db954', // HIJAU - Status Lulus QC (Sesuai permintaan dan semantik)
-          'warning': '#007bff', // BIRU PRIMARY - Status Belum QC (Menggunakan Biru untuk kontras)
+          'warning': '#007bff', // BIRU PRIMARY - Status Belum QC (Digunakan untuk kontras di chart)
         },
       },
     },
@@ -34,50 +34,40 @@
 </script>
 
 <style>
-  /* Menggunakan font Inter */
+  /* FONT DAN SCROLLBAR */
   html { font-family: 'Inter', system-ui, sans-serif; }
-  /* Custom Scrollbar */
   ::-webkit-scrollbar { width: 8px; height: 8px; }
   ::-webkit-scrollbar-track { background: #f0f0f0; } 
   ::-webkit-scrollbar-thumb { background: #bbb; border-radius: 4px; }
   ::-webkit-scrollbar-thumb:hover { background: #999; }
   
-  /* Transisi Halaman & Modal yang Halus */
+  /* TRANSISI DAN MODAL */
   .page, .modal-backdrop {
     opacity: 0;
     visibility: hidden;
     pointer-events: none;
     transition: opacity 0.3s ease, visibility 0s 0.3s;
   }
-  
-  /* .page sekarang 'absolute' untuk menumpuk
-     dan 'overflow-y-auto' untuk scrolling per halaman */
   .page {
     position: absolute;
-    top: 0;
-    left: 0;
-    width: 100%;
-    height: 100%;
-    overflow-y: auto; 
+    top: 0; left: 0; width: 100%; height: 100%; overflow-y: auto; 
   }
   .modal-backdrop { display: flex; }
-  
   .page.active, .modal-backdrop.active {
     opacity: 1;
     visibility: visible;
     pointer-events: auto;
     transition: opacity 0.3s ease;
   }
-  
   .modal-backdrop > div {
-    transform: scale(0.95);
+    transform: scale(0.98); /* Lebih halus */
     transition: transform 0.3s cubic-bezier(0.175, 0.885, 0.32, 1.275);
   }
   .modal-backdrop.active > div {
     transform: scale(1);
   }
   
-  /* Animasi Spinner */
+  /* ANIMASI SPINNER */
   .spinner {
     width: 40px; height: 40px;
     border: 4px solid #f3f3f3;
@@ -88,7 +78,7 @@
   }
   @keyframes spin { 100% { transform: rotate(360deg); } }
 
-  /* Tombol Aksi Tabel */
+  /* KOMPONEN INTERAKTIF */
   .action-btn {
     padding: 6px 10px;
     font-size: 13px;
@@ -100,51 +90,41 @@
      transform: scale(1.05);
   }
 
-  /* Efek Hover, Input, dan Sidebar */
   .kpi-card {
     transition: transform 0.3s ease, box-shadow 0.3s ease;
+    box-shadow: 0 4px 10px rgba(0,0,0,0.05); /* Shadow Profesional */
     will-change: transform;
   }
   .kpi-card:hover {
-    transform: translateY(-5px);
+    transform: translateY(-3px);
     box-shadow: 0 8px 20px rgba(0,0,0,0.1); 
   }
 
-  #addAssetBtn, #saveAssetBtn, #addVendorBtn, #saveVendorBtn {
-    transition: transform 0.2s ease, box-shadow 0.2s ease, opacity 0.2s ease;
-    will-change: transform;
-  }
-  #addAssetBtn:hover, #saveAssetBtn:hover, #addVendorBtn:hover, #saveVendorBtn:hover {
-    transform: scale(1.03);
-    box-shadow: 0 4px 15px rgba(255, 122, 24, 0.3); /* Shadow Oranye */
-    opacity: 1;
-  }
-
-  #asset-table-body tr, #vendor-table-body tr {
-    transition: background-color 0.2s ease;
-  }
-  
+  /* Input dan Search disederhanakan */
   .input, .search {
     border: 1px solid #E0E0E0; 
     background-color: #ffffff; 
     color: #333333;
+    padding: 8px 12px; /* Padding lebih konsisten */
+    border-radius: 6px;
     transition: border-color 0.2s ease, box-shadow 0.2s ease;
   }
   .input:focus, .search:focus {
-    border-color: #ff7a18; /* accent */
-    box-shadow: 0 0 0 3px rgba(255, 122, 24, 0.15);
+    border-color: #007bff; /* Primary Blue di fokus */
+    box-shadow: 0 0 0 3px rgba(0, 123, 255, 0.15);
   }
   
+  /* Nav Item Aktif */
   .nav-item.active {
     position: relative;
     box-shadow: inset 4px 0 0px #ff7a18; /* ACCENT */
   }
 </style>
 </head>
-<body class="bg-dark-bg text-dark-text">
+<body class="bg-light-bg text-dark-text">
 
-<div id="authVerificationScreen" class="fixed inset-0 z-50 flex items-center justify-center bg-dark-bg text-dark-text p-4 text-center">
-  <div class="bg-dark-card p-8 md:p-12 rounded-lg shadow-2xl border border-dark-border">
+<div id="authVerificationScreen" class="fixed inset-0 z-50 flex items-center justify-center bg-light-bg text-dark-text p-4 text-center">
+  <div class="bg-light-card p-8 md:p-12 rounded-lg shadow-2xl border border-light-border">
     <div class="spinner" id="authSpinner"></div>
     <h3 id="authMessage" class="text-xl font-bold mb-2 text-dark-text">Memverifikasi Sesi Admin...</h3>
     <p id="authSubMessage" class="text-dark-muted">Mengecek otentikasi Anda dengan Firebase...</p>
@@ -152,7 +132,7 @@
   </div>
 </div>
 
-<header id="mobileHeader" class="md:hidden sticky top-0 z-40 bg-dark-card border-b border-dark-border p-4 flex items-center justify-between">
+<header id="mobileHeader" class="md:hidden sticky top-0 z-40 bg-light-card border-b border-light-border p-4 flex items-center justify-between">
     <h2 class="text-xl font-bold text-dark-text">ZEPPELIN</h2>
     <button id="mobileNavToggle" class="text-dark-muted hover:text-dark-text transition p-1">
       <i class="fa-solid fa-bars text-xl"></i>
@@ -163,35 +143,35 @@
 
 <div id="appContainer" class="hidden min-h-screen md:flex">
   
-  <nav id="sidebar" class="w-64 bg-dark-card border-r border-dark-border flex-shrink-0 flex flex-col fixed inset-y-0 left-0 z-50 transform -translate-x-full transition-transform duration-300 md:relative md:translate-x-0">
-    <div class="p-6 text-center border-b border-dark-border">
+  <nav id="sidebar" class="w-64 bg-light-card border-r border-light-border flex-shrink-0 flex flex-col fixed inset-y-0 left-0 z-50 transform -translate-x-full transition-transform duration-300 md:relative md:translate-x-0">
+    <div class="p-6 text-center border-b border-light-border">
       <h2 class="text-2xl font-bold text-dark-text">ZEPPELIN</h2>
       <span class="text-sm font-semibold text-accent">IT ASSET MANAGER</span>
     </div>
     <ul class="py-6 space-y-2 flex-grow">
       <li>
-        <a href="#dashboard" class="nav-item active flex items-center gap-3 px-6 py-3 text-dark-text font-semibold bg-dark-bg">
+        <a href="#dashboard" class="nav-item active flex items-center gap-3 px-6 py-3 text-dark-text font-semibold bg-light-bg">
           <i class="fa-solid fa-chart-pie w-5 text-center"></i>
           <span>Dashboard</span>
         </a>
       </li>
       <li>
-        <a href="#assets" class="nav-item flex items-center gap-3 px-6 py-3 text-dark-muted font-semibold transition hover:text-dark-text hover:bg-dark-bg">
+        <a href="#assets" class="nav-item flex items-center gap-3 px-6 py-3 text-dark-muted font-semibold transition hover:text-dark-text hover:bg-light-bg">
           <i class="fa-solid fa-boxes-stacked w-5 text-center"></i>
           <span>Database Aset</span>
         </a>
       </li>
       <li>
-        <a href="#vendors" class="nav-item flex items-center gap-3 px-6 py-3 text-dark-muted font-semibold transition hover:text-dark-text hover:bg-dark-bg">
+        <a href="#vendors" class="nav-item flex items-center gap-3 px-6 py-3 text-dark-muted font-semibold transition hover:text-dark-text hover:bg-light-bg">
           <i class="fa-solid fa-store w-5 text-center"></i>
           <span>Vendor</span>
         </a>
       </li>
     </ul>
-    <div class="p-6 border-t border-dark-border">
+    <div class="p-6 border-t border-light-border">
       <div class="text-sm text-dark-muted">Logged in as:</div>
       <div id="userEmailDisplay" class="text-sm font-bold text-accent truncate">...</div>
-      <button id="logoutBtn" class="mt-4 w-full text-center py-2 px-4 rounded-md bg-dark-bg text-dark-muted font-semibold border border-dark-border transition hover:bg-error/20 hover:text-error hover:border-error">
+      <button id="logoutBtn" class="mt-4 w-full text-center py-2 px-4 rounded-md bg-light-bg text-dark-muted font-semibold border border-light-border transition hover:bg-error/10 hover:text-error hover:border-error">
         <i class="fa-solid fa-right-from-bracket mr-2"></i>Logout
       </button>
     </div>
@@ -203,28 +183,28 @@
       <h1 class="text-3xl font-bold text-dark-text mb-6">Dashboard</h1>
       
       <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
-        <div class="kpi-card bg-dark-card p-6 rounded-lg shadow-lg border border-dark-border">
+        <div class="kpi-card bg-light-card p-6 rounded-lg shadow-lg border border-light-border">
           <div class="flex items-center justify-between">
             <span class="text-sm font-semibold text-dark-muted uppercase">Total Item (Qty)</span>
             <i class="fa-solid fa-boxes-stacked text-2xl text-accent"></i>
           </div>
           <div id="kpi-total-items" class="text-4xl font-extrabold text-dark-text mt-4">0</div>
         </div>
-        <div class="kpi-card bg-dark-card p-6 rounded-lg shadow-lg border border-dark-border">
+        <div class="kpi-card bg-light-card p-6 rounded-lg shadow-lg border border-light-border">
           <div class="flex items-center justify-between">
             <span class="text-sm font-semibold text-dark-muted uppercase">Aset Unik</span>
             <i class="fa-solid fa-hashtag text-2xl text-primary"></i>
           </div>
           <div id="kpi-unique-assets" class="text-4xl font-extrabold text-dark-text mt-4">0</div>
         </div>
-        <div class="kpi-card bg-dark-card p-6 rounded-lg shadow-lg border border-dark-border">
+        <div class="kpi-card bg-light-card p-6 rounded-lg shadow-lg border border-light-border">
           <div class="flex items-center justify-between">
             <span class="text-sm font-semibold text-dark-muted uppercase">Lulus QC</span>
             <i class="fa-solid fa-check-double text-2xl text-success"></i>
           </div>
           <div id="kpi-lulus-qc" class="text-4xl font-extrabold text-dark-text mt-4">0</div>
         </div>
-        <div class="kpi-card bg-dark-card p-6 rounded-lg shadow-lg border border-dark-border">
+        <div class="kpi-card bg-light-card p-6 rounded-lg shadow-lg border border-light-border">
           <div class="flex items-center justify-between">
             <span class="text-sm font-semibold text-dark-muted uppercase">Gagal / Belum QC</span>
             <i class="fa-solid fa-triangle-exclamation text-2xl text-warning"></i>
@@ -234,11 +214,11 @@
       </div>
 
       <div class="grid grid-cols-1 lg:grid-cols-5 gap-6 mt-8">
-        <div class="lg:col-span-3 bg-dark-card p-6 rounded-lg shadow-lg border border-dark-border">
+        <div class="lg:col-span-3 bg-light-card p-6 rounded-lg shadow-lg border border-light-border">
           <h3 class="text-xl font-semibold text-dark-text mb-4">Aset Berdasarkan Tipe</h3>
           <canvas id="typeChart" height="150"></canvas>
         </div>
-        <div class="lg:col-span-2 bg-dark-card p-6 rounded-lg shadow-lg border border-dark-border">
+        <div class="lg:col-span-2 bg-light-card p-6 rounded-lg shadow-lg border border-light-border">
           <h3 class="text-xl font-semibold text-dark-text mb-4">Aset Berdasarkan Status QC</h3>
           <canvas id="qcStatusChart" height="150"></canvas>
         </div>
@@ -248,26 +228,26 @@
     <div id="page-assets" class="page p-8 md:p-10">
       <div class="flex items-center justify-between mb-6">
         <h1 class="text-3xl font-bold text-dark-text">Database Aset</h1>
-        <button id="addAssetBtn" class="py-2 px-5 rounded-md bg-accent text-dark-text font-bold shadow-md">
+        <button id="addAssetBtn" class="py-2 px-5 rounded-md bg-accent text-light-bg font-bold shadow-md">
           <i class="fa-solid fa-plus mr-2"></i>Tambah Aset Baru
         </button>
       </div>
       
-      <div class="bg-dark-card p-4 rounded-lg shadow-lg border border-dark-border mb-6 flex flex-col md:flex-row md:items-center md:justify-between gap-4">
+      <div class="bg-light-card p-4 rounded-lg shadow-lg border border-light-border mb-6 flex flex-col md:flex-row md:items-center md:justify-between gap-4">
         <div class="relative flex-grow">
           <i class="fa-solid fa-search absolute left-4 top-1/2 -translate-y-1/2 text-dark-muted"></i>
-          <input id="searchInput" type="text" placeholder="Cari berdasarkan nama, serial, lokasi, atau PIC..." class="search w-full bg-dark-bg pl-10 pr-4 py-2 rounded-md focus:ring-accent focus:ring-1">
+          <input id="searchInput" type="text" placeholder="Cari berdasarkan nama, serial, lokasi, atau PIC..." class="search w-full light-bg pl-10 pr-4 py-2 rounded-md focus:ring-primary focus:ring-1">
         </div>
         
         <div class="flex flex-shrink-0 gap-3 flex-wrap flex-col md:flex-row"> 
-          <select id="filterQcStatus" class="search bg-dark-bg rounded-md focus:ring-accent focus:ring-1">
+          <select id="filterQcStatus" class="search light-bg rounded-md focus:ring-primary focus:ring-1">
             <option value="">Semua Status QC</option>
             <option value="Lulus QC">Lulus QC</option>
             <option value="Gagal QC">Gagal QC</option>
             <option value="Belum QC">Belum QC</option>
           </select>
           
-          <select id="filterType" class="search bg-dark-bg rounded-md focus:ring-accent focus:ring-1">
+          <select id="filterType" class="search light-bg rounded-md focus:ring-primary focus:ring-1">
             <option value="">Semua Tipe Aset</option>
             <optgroup label="Komputer">
               <option value="Laptop">Laptop</option>
@@ -302,16 +282,16 @@
             </optgroup>
           </select>
           
-          <button id="exportExcelBtn" class="py-2 px-4 rounded-md bg-dark-card text-dark-muted font-semibold border border-dark-border transition hover:bg-success/20 hover:text-success hover:border-success">
+          <button id="exportExcelBtn" class="py-2 px-4 rounded-md bg-light-card text-dark-muted font-semibold border border-light-border transition hover:bg-success/10 hover:text-success hover:border-success">
             <i class="fa-solid fa-file-excel mr-2"></i>Export
           </button>
         </div>
       </div>
 
-      <div class="bg-dark-card rounded-lg shadow-lg border border-dark-border overflow-hidden">
+      <div class="bg-light-card rounded-lg shadow-lg border border-light-border overflow-hidden">
         <div class="overflow-x-auto">
           <table class="w-full min-w-[1000px]">
-            <thead class="bg-dark-bg">
+            <thead class="bg-light-bg">
               <tr>
                 <th class="p-4 text-left text-xs font-medium text-dark-muted uppercase tracking-wider">Nama Aset</th>
                 <th class="p-4 text-left text-xs font-medium text-dark-muted uppercase tracking-wider">Tipe</th>
@@ -323,7 +303,7 @@
                 <th class="p-4 text-right text-xs font-medium text-dark-muted uppercase tracking-wider">Aksi</th>
               </tr>
             </thead>
-            <tbody id="asset-table-body" class="divide-y divide-dark-border">
+            <tbody id="asset-table-body" class="divide-y divide-light-border">
               <tr><td colspan="8" class="p-6 text-center text-dark-muted">Memuat data aset...</td></tr>
             </tbody>
           </table>
@@ -334,22 +314,22 @@
     <div id="page-vendors" class="page p-8 md:p-10">
       <div class="flex items-center justify-between mb-6">
         <h1 class="text-3xl font-bold text-dark-text">Manajemen Vendor</h1>
-        <button id="addVendorBtn" class="py-2 px-5 rounded-md bg-accent text-dark-text font-bold shadow-md">
+        <button id="addVendorBtn" class="py-2 px-5 rounded-md bg-accent text-light-bg font-bold shadow-md">
           <i class="fa-solid fa-plus mr-2"></i>Tambah Vendor Baru
         </button>
       </div>
 
-      <div class="bg-dark-card p-4 rounded-lg shadow-lg border border-dark-border mb-6 flex flex-col md:flex-row md:items-center md:justify-between gap-4">
+      <div class="bg-light-card p-4 rounded-lg shadow-lg border border-light-border mb-6 flex flex-col md:flex-row md:items-center md:justify-between gap-4">
         <div class="relative flex-grow">
           <i class="fa-solid fa-search absolute left-4 top-1/2 -translate-y-1/2 text-dark-muted"></i>
-          <input id="searchVendorInput" type="text" placeholder="Cari berdasarkan nama vendor, kontak, atau email..." class="search w-full bg-dark-bg pl-10 pr-4 py-2 rounded-md focus:ring-accent focus:ring-1">
+          <input id="searchVendorInput" type="text" placeholder="Cari berdasarkan nama vendor, kontak, atau email..." class="search w-full light-bg pl-10 pr-4 py-2 rounded-md focus:ring-primary focus:ring-1">
         </div>
       </div>
 
-      <div class="bg-dark-card rounded-lg shadow-lg border border-dark-border overflow-hidden">
+      <div class="bg-light-card rounded-lg shadow-lg border border-light-border overflow-hidden">
         <div class="overflow-x-auto">
           <table class="w-full min-w-[1000px]">
-            <thead class="bg-dark-bg">
+            <thead class="bg-light-bg">
               <tr>
                 <th class="p-4 text-left text-xs font-medium text-dark-muted uppercase tracking-wider">Nama Vendor</th>
                 <th class="p-4 text-left text-xs font-medium text-dark-muted uppercase tracking-wider">Kontak Person</th>
@@ -359,7 +339,7 @@
                 <th class="p-4 text-right text-xs font-medium text-dark-muted uppercase tracking-wider">Aksi</th>
               </tr>
             </thead>
-            <tbody id="vendor-table-body" class="divide-y divide-dark-border">
+            <tbody id="vendor-table-body" class="divide-y divide-light-border">
               <tr><td colspan="6" class="p-6 text-center text-dark-muted">Memuat data vendor...</td></tr>
             </tbody>
           </table>
@@ -374,8 +354,8 @@
 </div>
 
 <div id="assetModal" class="modal-backdrop fixed inset-0 z-50 bg-black/60 items-center justify-center p-4">
-  <div class="bg-dark-card rounded-lg shadow-2xl border border-dark-border w-full max-w-3xl max-h-[90vh] flex flex-col">
-    <div class="flex items-center justify-between p-5 border-b border-dark-border">
+  <div class="bg-light-card rounded-lg shadow-2xl border border-light-border w-full max-w-3xl max-h-[90vh] flex flex-col">
+    <div class="flex items-center justify-between p-5 border-b border-light-border">
       <h3 id="assetModalTitle" class="text-xl font-bold text-dark-text">Tambah Aset Baru</h3>
       <button id="closeAssetModal" class="text-dark-muted hover:text-dark-text transition text-3xl font-light">&times;</button>
     </div>
@@ -385,11 +365,11 @@
       <div class="grid grid-cols-1 md:grid-cols-3 gap-6">
         <div class="md:col-span-2">
           <label for="assetName" class="block text-sm font-medium text-dark-muted mb-1">Nama Aset*</label>
-          <input type="text" id="assetName" required class="input w-full bg-dark-bg rounded-md focus:ring-accent focus:ring-1">
+          <input type="text" id="assetName" required class="input w-full light-bg rounded-md focus:ring-primary focus:ring-1">
         </div>
         <div>
           <label for="qty" class="block text-sm font-medium text-dark-muted mb-1">Quantity*</label>
-          <input type="number" id="qty" value="1" required class="input w-full bg-dark-bg rounded-md focus:ring-accent focus:ring-1">
+          <input type="number" id="qty" value="1" required class="input w-full light-bg rounded-md focus:ring-primary focus:ring-1">
         </div>
       </div>
       
@@ -397,7 +377,7 @@
         <div>
           <label for="type" class="block text-sm font-medium text-dark-muted mb-1">Tipe Aset*</label>
           
-          <select id="type" required class="input w-full bg-dark-bg rounded-md focus:ring-accent focus:ring-1">
+          <select id="type" required class="input w-full light-bg rounded-md focus:ring-primary focus:ring-1">
             <option value="">-- Pilih Tipe Aset --</option>
             <optgroup label="Komputer">
               <option value="Laptop">Laptop</option>
@@ -435,18 +415,18 @@
         </div>
         <div>
           <label for="serialNumber" class="block text-sm font-medium text-dark-muted mb-1">Serial Number</label>
-          <input type="text" id="serialNumber" class="input w-full bg-dark-bg rounded-md focus:ring-accent focus:ring-1">
+          <input type="text" id="serialNumber" class="input w-full light-bg rounded-md focus:ring-primary focus:ring-1">
         </div>
       </div>
       
       <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
         <div>
           <label for="purchasePrice" class="block text-sm font-medium text-dark-muted mb-1">Harga Beli (Rp)</label>
-          <input type="number" id="purchasePrice" placeholder="Contoh: 15000000" class="input w-full bg-dark-bg rounded-md focus:ring-accent focus:ring-1">
+          <input type="number" id="purchasePrice" placeholder="Contoh: 15000000" class="input w-full light-bg rounded-md focus:ring-primary focus:ring-1">
         </div>
         <div>
           <label for="vendorId" class="block text-sm font-medium text-dark-muted mb-1">Vendor Pembelian</label>
-          <select id="vendorId" class="input w-full bg-dark-bg rounded-md focus:ring-accent focus:ring-1">
+          <select id="vendorId" class="input w-full light-bg rounded-md focus:ring-primary focus:ring-1">
             <option value="">-- Tidak Ditentukan --</option>
             </select>
         </div>
@@ -455,7 +435,7 @@
       <div class="grid grid-cols-1 md:grid-cols-3 gap-6">
         <div>
           <label for="qcStatus" class="block text-sm font-medium text-dark-muted mb-1">Status QC*</label>
-          <select id="qcStatus" required class="input w-full bg-dark-bg rounded-md focus:ring-accent focus:ring-1">
+          <select id="qcStatus" required class="input w-full light-bg rounded-md focus:ring-primary focus:ring-1">
             <option value="Lulus QC">Lulus QC</option>
             <option value="Gagal QC">Gagal QC</option>
             <option value="Belum QC" selected>Belum QC</option>
@@ -463,46 +443,46 @@
         </div>
         <div>
           <label for="location" class="block text-sm font-medium text-dark-muted mb-1">Lokasi</label>
-          <input type="text" id="location" placeholder="e.g., Ruang IT, Lt. 3 Finance" class="input w-full bg-dark-bg rounded-md focus:ring-accent focus:ring-1">
+          <input type="text" id="location" placeholder="e.g., Ruang IT, Lt. 3 Finance" class="input w-full light-bg rounded-md focus:ring-primary focus:ring-1">
         </div>
         <div>
           <label for="pic" class="block text-sm font-medium text-dark-muted mb-1">PIC (User)</label>
-          <input type="text" id="pic" placeholder="Nama pengguna" class="input w-full bg-dark-bg rounded-md focus:ring-accent focus:ring-1">
+          <input type="text" id="pic" placeholder="Nama pengguna" class="input w-full light-bg rounded-md focus:ring-primary focus:ring-1">
         </div>
       </div>
 
       <div class="grid grid-cols-1 md:grid-cols-3 gap-6">
         <div>
           <label for="purchaseDate" class="block text-sm font-medium text-dark-muted mb-1">Tgl. Pembelian</label>
-          <input type="date" id="purchaseDate" class="input w-full bg-dark-bg rounded-md focus:ring-accent focus:ring-1">
+          <input type="date" id="purchaseDate" class="input w-full light-bg rounded-md focus:ring-primary focus:ring-1">
         </div>
         <div>
           <label for="warrantyUntil" class="block text-sm font-medium text-dark-muted mb-1">Garansi Sampai</label>
-          <input type="date" id="warrantyUntil" class="input w-full bg-dark-bg rounded-md focus:ring-accent focus:ring-1">
+          <input type="date" id="warrantyUntil" class="input w-full light-bg rounded-md focus:ring-primary focus:ring-1">
         </div>
         <div>
           <label for="software" class="block text-sm font-medium text-dark-muted mb-1">Software Terinstall</label>
-          <input type="text" id="software" placeholder="e.g., Win 11, Office 2021" class="input w-full bg-dark-bg rounded-md focus:ring-accent focus:ring-1">
+          <input type="text" id="software" placeholder="e.g., Win 11, Office 2021" class="input w-full light-bg rounded-md focus:ring-primary focus:ring-1">
         </div>
       </div>
       
       <div>
         <label for="notes" class="block text-sm font-medium text-dark-muted mb-1">Catatan</label>
-        <textarea id="notes" rows="3" placeholder="Spesifikasi, riwayat perbaikan singkat, dll..." class="input w-full bg-dark-bg rounded-md focus:ring-accent focus:ring-1"></textarea>
+        <textarea id="notes" rows="3" placeholder="Spesifikasi, riwayat perbaikan singkat, dll..." class="input w-full light-bg rounded-md focus:ring-primary focus:ring-1"></textarea>
       </div>
 
     </form>
     
-    <div class="flex items-center justify-end p-5 border-t border-dark-border bg-dark-bg">
-      <button id="cancelAssetModal" type="button" class="py-2 px-5 rounded-md bg-dark-bg text-dark-muted font-bold border border-dark-border transition hover:bg-dark-border">Batal</button>
-      <button id="saveAssetBtn" type="submit" form="assetForm" class="ml-3 py-2 px-5 rounded-md bg-accent text-dark-text font-bold shadow-md">Simpan Aset</button>
+    <div class="flex items-center justify-end p-5 border-t border-light-border bg-light-bg">
+      <button id="cancelAssetModal" type="button" class="py-2 px-5 rounded-md bg-light-bg text-dark-muted font-bold border border-light-border transition hover:bg-light-border">Batal</button>
+      <button id="saveAssetBtn" type="submit" form="assetForm" class="ml-3 py-2 px-5 rounded-md bg-accent text-light-bg font-bold shadow-md">Simpan Aset</button>
     </div>
   </div>
 </div>
 
 <div id="viewAssetModal" class="modal-backdrop fixed inset-0 z-50 bg-black/60 items-center justify-center p-4">
-  <div class="bg-dark-card rounded-lg shadow-2xl border border-dark-border w-full max-w-3xl max-h-[90vh] flex flex-col">
-    <div class="flex items-center justify-between p-5 border-b border-dark-border">
+  <div class="bg-light-card rounded-lg shadow-2xl border border-light-border w-full max-w-3xl max-h-[90vh] flex flex-col">
+    <div class="flex items-center justify-between p-5 border-b border-light-border">
       <h3 id="viewModalTitle" class="text-xl font-bold text-dark-text">Detail Aset</h3>
       <button id="closeViewModal" class="text-dark-muted hover:text-dark-text transition text-3xl font-light">&times;</button>
     </div>
@@ -564,12 +544,12 @@
 
       <div>
         <span class="text-sm font-medium text-dark-muted">Catatan</span>
-        <p id="view-notes" class="text-base text-dark-text bg-dark-bg p-4 rounded-md mt-1 whitespace-pre-wrap"></p>
+        <p id="view-notes" class="text-base text-dark-text bg-light-bg p-4 rounded-md mt-1 whitespace-pre-wrap"></p>
       </div>
 
       <div>
-        <h4 class="text-lg font-semibold text-dark-text mb-2 border-t border-dark-border pt-4">Riwayat Aset</h4>
-        <div id="view-history" class="space-y-3 max-h-48 overflow-y-auto bg-dark-bg p-4 rounded-md">
+        <h4 class="text-lg font-semibold text-dark-text mb-2 border-t border-light-border pt-4">Riwayat Aset</h4>
+        <div id="view-history" class="space-y-3 max-h-48 overflow-y-auto bg-light-bg p-4 rounded-md">
           <p class="text-dark-muted text-sm">Memuat riwayat...</p>
         </div>
       </div>
@@ -579,8 +559,8 @@
 </div>
 
 <div id="vendorModal" class="modal-backdrop fixed inset-0 z-50 bg-black/60 items-center justify-center p-4">
-  <div class="bg-dark-card rounded-lg shadow-2xl border border-dark-border w-full max-w-2xl max-h-[90vh] flex flex-col">
-    <div class="flex items-center justify-between p-5 border-b border-dark-border">
+  <div class="bg-light-card rounded-lg shadow-2xl border border-light-border w-full max-w-2xl max-h-[90vh] flex flex-col">
+    <div class="flex items-center justify-between p-5 border-b border-light-border">
       <h3 id="vendorModalTitle" class="text-xl font-bold text-dark-text">Tambah Vendor Baru</h3>
       <button id="closeVendorModal" class="text-dark-muted hover:text-dark-text transition text-3xl font-light">&times;</button>
     </div>
@@ -589,46 +569,46 @@
       
       <div>
         <label for="vendorName" class="block text-sm font-medium text-dark-muted mb-1">Nama Vendor*</label>
-        <input type="text" id="vendorName" required class="input w-full bg-dark-bg rounded-md focus:ring-accent focus:ring-1">
+        <input type="text" id="vendorName" required class="input w-full light-bg rounded-md focus:ring-primary focus:ring-1">
       </div>
       
       <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
         <div>
           <label for="contactPerson" class="block text-sm font-medium text-dark-muted mb-1">Kontak Person</label>
-          <input type="text" id="contactPerson" class="input w-full bg-dark-bg rounded-md focus:ring-accent focus:ring-1">
+          <input type="text" id="contactPerson" class="input w-full light-bg rounded-md focus:ring-primary focus:ring-1">
         </div>
         <div>
           <label for="phone" class="block text-sm font-medium text-dark-muted mb-1">Telepon</label>
-          <input type="tel" id="phone" class="input w-full bg-dark-bg rounded-md focus:ring-accent focus:ring-1">
+          <input type="tel" id="phone" class="input w-full light-bg rounded-md focus:ring-primary focus:ring-1">
         </div>
       </div>
       
       <div>
         <label for="email" class="block text-sm font-medium text-dark-muted mb-1">Email</label>
-        <input type="email" id="email" class="input w-full bg-dark-bg rounded-md focus:ring-accent focus:ring-1">
+        <input type="email" id="email" class="input w-full light-bg rounded-md focus:ring-primary focus:ring-1">
       </div>
       
       <div>
         <label for="address" class="block text-sm font-medium text-dark-muted mb-1">Alamat</label>
-        <textarea id="address" rows="2" class="input w-full bg-dark-bg rounded-md focus:ring-accent focus:ring-1"></textarea>
+        <textarea id="address" rows="2" class="input w-full light-bg rounded-md focus:ring-primary focus:ring-1"></textarea>
       </div>
       
       <div>
         <label for="vendorNotes" class="block text-sm font-medium text-dark-muted mb-1">Catatan</label>
-        <textarea id="vendorNotes" rows="3" placeholder="Produk/layanan yang disediakan, dll..." class="input w-full bg-dark-bg rounded-md focus:ring-accent focus:ring-1"></textarea>
+        <textarea id="vendorNotes" rows="3" placeholder="Produk/layanan yang disediakan, dll..." class="input w-full light-bg rounded-md focus:ring-primary focus:ring-1"></textarea>
       </div>
 
     </form>
-    <div class="flex items-center justify-end p-5 border-t border-dark-border bg-dark-bg">
-      <button id="cancelVendorModal" type="button" class="py-2 px-5 rounded-md bg-dark-bg text-dark-muted font-bold border border-dark-border transition hover:bg-dark-border">Batal</button>
-      <button id="saveVendorBtn" type="submit" form="vendorForm" class="ml-3 py-2 px-5 rounded-md bg-accent text-dark-text font-bold shadow-md">Simpan Vendor</button>
+    <div class="flex items-center justify-end p-5 border-t border-light-border bg-light-bg">
+      <button id="cancelVendorModal" type="button" class="py-2 px-5 rounded-md bg-light-bg text-dark-muted font-bold border border-light-border transition hover:bg-light-border">Batal</button>
+      <button id="saveVendorBtn" type="submit" form="vendorForm" class="ml-3 py-2 px-5 rounded-md bg-accent text-light-bg font-bold shadow-md">Simpan Vendor</button>
     </div>
   </div>
 </div>
 
 <div id="viewVendorModal" class="modal-backdrop fixed inset-0 z-50 bg-black/60 items-center justify-center p-4">
-  <div class="bg-dark-card rounded-lg shadow-2xl border border-dark-border w-full max-w-2xl max-h-[90vh] flex flex-col">
-    <div class="flex items-center justify-between p-5 border-b border-dark-border">
+  <div class="bg-light-card rounded-lg shadow-2xl border border-light-border w-full max-w-2xl max-h-[90vh] flex flex-col">
+    <div class="flex items-center justify-between p-5 border-b border-light-border">
       <h3 id="viewVendorModalTitle" class="text-xl font-bold text-dark-text">Detail Vendor</h3>
       <button id="closeViewVendorModal" class="text-dark-muted hover:text-dark-text transition text-3xl font-light">&times;</button>
     </div>
@@ -660,7 +640,7 @@
 
       <div>
         <span class="text-sm font-medium text-dark-muted">Catatan</span>
-        <p id="view-vendorNotes" class="text-base text-dark-text bg-dark-bg p-4 rounded-md mt-1 whitespace-pre-wrap"></p>
+        <p id="view-vendorNotes" class="text-base text-dark-text bg-light-bg p-4 rounded-md mt-1 whitespace-pre-wrap"></p>
       </div>
     </div>
   </div>
@@ -697,7 +677,6 @@
         position: 'fixed', right: '20px', bottom: '20px', zIndex: '10000',
         padding: '12px 20px', borderRadius: '8px', color: 'white',
         fontWeight: '600', boxShadow: '0 4px 12px rgba(0,0,0,0.3)',
-        // Menggunakan Hijau dan Merah untuk Toast
         background: isError ? '#dc3545' : '#1db954' 
       });
       document.body.appendChild(t); 
@@ -786,13 +765,11 @@
         $("#authSubMessage").textContent = "Selamat datang, Admin. Memuat data...";
         
         fb_userId = user.uid;
-        // Inisialisasi koleksi Aset dan Vendor
         fb_assetsCollectionRef = fb_db.collection('users').doc(fb_userId).collection('assets_v2');
         fb_vendorsCollectionRef = fb_db.collection('users').doc(fb_userId).collection('vendors');
 
         els.userEmailDisplay.textContent = user.email;
         
-        // Muat kedua set data
         await Promise.all([
           loadAssetData(),
           loadVendorData() 
@@ -800,7 +777,6 @@
         
         els.authScreen.style.display = 'none';
         els.appContainer.style.display = 'flex';
-        // Menyembunyikan header mobile di desktop
         if (els.mobileHeader) els.mobileHeader.classList.add('md:hidden'); 
         
     } else {
@@ -837,10 +813,11 @@
         e.preventDefault();
         const targetId = item.getAttribute('href').substring(1);
         
-        $all('.nav-item').forEach(nav => nav.classList.remove('active', 'bg-dark-bg'));
+        // Mengganti class bg-dark-bg menjadi bg-light-bg
+        $all('.nav-item').forEach(nav => nav.classList.remove('active', 'bg-light-bg'));
         $all('.page').forEach(page => page.classList.remove('active'));
 
-        item.classList.add('active', 'bg-dark-bg');
+        item.classList.add('active', 'bg-light-bg');
         $('#page-' + targetId).classList.add('active');
         
         const sidebar = $('#sidebar');
@@ -1237,7 +1214,7 @@
 
     tableBody.innerHTML = filteredVendors.map(vendor => {
       return `
-        <tr class="hover:bg-dark-card">
+        <tr class="hover:bg-light-card">
           <td class="p-4 align-top">
             <div class="font-bold text-dark-text">${vendor.name || '-'}</div>
             <div class="text-xs text-dark-muted">${vendor.id}</div>
@@ -1248,9 +1225,9 @@
           <td class="p-4 align-top text-sm text-dark-text">${(vendor.address || '-').substring(0, 50)}...</td>
           <td class="p-4 align-top text-right">
             <div class="flex items-center justify-end gap-2">
-              <button data-action="view" data-id="${vendor.id}" class="action-btn bg-dark-card text-dark-muted border border-dark-border hover:border-primary hover:text-primary">Lihat</button>
-              <button data-action="edit" data-id="${vendor.id}" class="action-btn bg-dark-card text-dark-muted border border-dark-border hover:border-accent hover:text-accent">Edit</button>
-              <button data-action="delete" data-id="${vendor.id}" class="action-btn bg-dark-card text-dark-muted border border-dark-border hover:border-error hover:text-error">Hapus</button>
+              <button data-action="view" data-id="${vendor.id}" class="action-btn bg-light-card text-dark-muted border border-light-border hover:border-primary hover:text-primary">Lihat</button>
+              <button data-action="edit" data-id="${vendor.id}" class="action-btn bg-light-card text-dark-muted border border-light-border hover:border-accent hover:text-accent">Edit</button>
+              <button data-action="delete" data-id="${vendor.id}" class="action-btn bg-light-card text-dark-muted border border-light-border hover:border-error hover:text-error">Hapus</button>
             </div>
           </td>
         </tr>
@@ -1360,15 +1337,14 @@
     tableBody.innerHTML = filteredAssets.map(asset => {
       let statusClass = '';
       switch (asset.qcStatus) {
-        // Menggunakan skema warna baru: HIJAU (Lulus), MERAH (Gagal), BIRU (Belum)
         case 'Lulus QC': statusClass = 'bg-success/20 text-success'; break;
         case 'Gagal QC': statusClass = 'bg-error/20 text-error'; break;
         case 'Belum QC': statusClass = 'bg-warning/20 text-warning'; break;
-        default: statusClass = 'bg-dark-border text-dark-muted';
+        default: statusClass = 'bg-light-border text-dark-muted';
       }
 
       return `
-        <tr class="hover:bg-dark-card">
+        <tr class="hover:bg-light-card">
           <td class="p-4 align-top">
             <div class="font-bold text-dark-text">${asset.name || '-'}</div>
             <div class="text-xs text-dark-muted">${asset.id}</div>
@@ -1385,9 +1361,9 @@
           <td class="p-4 align-top text-sm font-mono text-dark-text">${asset.serial || '-'}</td>
           <td class="p-4 align-top text-right">
             <div class="flex items-center justify-end gap-2">
-              <button data-action="view" data-id="${asset.id}" class="action-btn bg-dark-card text-dark-muted border border-dark-border hover:border-primary hover:text-primary">Lihat</button>
-              <button data-action="edit" data-id="${asset.id}" class="action-btn bg-dark-card text-dark-muted border border-dark-border hover:border-accent hover:text-accent">Edit</button>
-              <button data-action="delete" data-id="${asset.id}" class="action-btn bg-dark-card text-dark-muted border border-dark-border hover:border-error hover:text-error">Hapus</button>
+              <button data-action="view" data-id="${asset.id}" class="action-btn bg-light-card text-dark-muted border border-light-border hover:border-primary hover:text-primary">Lihat</button>
+              <button data-action="edit" data-id="${asset.id}" class="action-btn bg-light-card text-dark-muted border border-light-border hover:border-accent hover:text-accent">Edit</button>
+              <button data-action="delete" data-id="${asset.id}" class="action-btn bg-light-card text-dark-muted border border-light-border hover:border-error hover:text-error">Hapus</button>
             </div>
           </td>
         </tr>
@@ -1434,7 +1410,7 @@
       data: { labels: typeLabels, datasets: [{
           label: 'Jumlah Aset', 
           data: typeData, 
-          backgroundColor: '#ff7a18', // Warna Bar Chart menggunakan Accent (Oranye)
+          backgroundColor: '#ff7a18', // Menggunakan Accent (Oranye)
           borderRadius: 4,
       }]},
       options: {
@@ -1468,7 +1444,7 @@
       data: {
         labels: qcLabels,
         datasets: [{
-          backgroundColor: dataColors, // Menggunakan warna Hijau, Merah, Biru
+          backgroundColor: dataColors, // Menggunakan warna Hijau, Merah, Biru semantik
           data: qcData,
           borderColor: '#F8F8F8', borderWidth: 3,
         }]
@@ -1488,7 +1464,7 @@
     const action = target.dataset.action;
     const id = target.dataset.id;
     const asset = allAssetsCache.find(a => a.id === id);
-    if (!asset) return showToast('Error: Aset tidak ditemukan lagi.', true);
+    if (!asset) return showToast('Error: Aset tidak ditemukan.', true);
 
     if (action === 'view') openViewModal(asset);
     else if (action === 'edit') openAssetModal(asset);
@@ -1590,7 +1566,7 @@
             <p class="text-dark-text ml-2">${log.message} (by ${log.adminEmail || 'Admin'})</p>
           </div>
         `;
-      }).join('<hr class="border-dark-border/50 my-2">');
+      }).join('<hr class="border-light-border/50 my-2">');
 
     } catch (e) {
       console.error("Error fetching asset history: ", e);
