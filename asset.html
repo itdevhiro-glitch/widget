@@ -149,9 +149,18 @@
   </div>
 </div>
 
+<header id="mobileHeader" class="md:hidden sticky top-0 z-40 bg-dark-card border-b border-dark-border p-4 flex items-center justify-between">
+    <h2 class="text-xl font-bold text-white">ZEPPELIN</h2>
+    <button id="mobileNavToggle" class="text-dark-muted hover:text-white transition p-1">
+      <i class="fa-solid fa-bars text-xl"></i>
+    </button>
+</header>
+
+<div id="mobileNavOverlay" class="fixed inset-0 z-40 bg-black/60 hidden md:hidden"></div>
+
 <div id="appContainer" class="hidden min-h-screen md:flex">
   
-  <nav class="w-64 bg-dark-card border-r border-dark-border flex-shrink-0 flex flex-col">
+  <nav id="sidebar" class="w-64 bg-dark-card border-r border-dark-border flex-shrink-0 flex flex-col fixed inset-y-0 left-0 z-50 transform -translate-x-full transition-transform duration-300 md:relative md:translate-x-0">
     <div class="p-6 text-center border-b border-dark-border">
       <h2 class="text-2xl font-bold text-white">ZEPPELIN</h2>
       <span class="text-sm font-semibold text-accent">IT ASSET MANAGER</span>
@@ -246,7 +255,8 @@
           <i class="fa-solid fa-search absolute left-4 top-1/2 -translate-y-1/2 text-dark-muted"></i>
           <input id="searchInput" type="text" placeholder="Cari berdasarkan nama, serial, lokasi, atau PIC..." class="search w-full bg-dark-bg pl-10 pr-4 py-2 rounded-md focus:ring-accent focus:ring-1">
         </div>
-        <div class="flex flex-shrink-0 gap-3 flex-wrap md:flex-nowrap">
+        
+        <div class="flex flex-shrink-0 gap-3 flex-wrap flex-col md:flex-row"> 
           <select id="filterQcStatus" class="search bg-dark-bg rounded-md focus:ring-accent focus:ring-1">
             <option value="">Semua Status QC</option>
             <option value="Lulus QC">Lulus QC</option>
@@ -763,7 +773,8 @@
     const els = {
       authScreen: $("#authVerificationScreen"),
       appContainer: $("#appContainer"),
-      userEmailDisplay: $("#userEmailDisplay")
+      userEmailDisplay: $("#userEmailDisplay"),
+      mobileHeader: $("#mobileHeader")
     };
 
     if (user && user.uid === ADMIN_UID) {
@@ -772,13 +783,9 @@
         $("#authSubMessage").textContent = "Selamat datang, Admin. Memuat data...";
         
         fb_userId = user.uid;
-        // Inisialisasi koleksi Aset
+        // Inisialisasi koleksi Aset dan Vendor
         fb_assetsCollectionRef = fb_db.collection('users').doc(fb_userId).collection('assets_v2');
-        console.log("Firestore collection path (Assets):", `users/${fb_userId}/assets_v2`);
-        
-        // Inisialisasi koleksi Vendor
         fb_vendorsCollectionRef = fb_db.collection('users').doc(fb_userId).collection('vendors');
-        console.log("Firestore collection path (Vendors):", `users/${fb_userId}/vendors`);
 
         els.userEmailDisplay.textContent = user.email;
         
@@ -790,11 +797,13 @@
         
         els.authScreen.style.display = 'none';
         els.appContainer.style.display = 'flex';
+        if (els.mobileHeader) els.mobileHeader.style.display = 'flex'; 
         
     } else {
         if(user) {
             console.log("Access Denied. User is not admin:", user.uid);
-            await fb_auth.signOut(); 
+            // Menggunakan .then().catch() untuk SignOut agar tidak ada masalah 'await'
+            fb_auth.signOut().then(() => console.log("SignOut complete")).catch(e => console.error("SignOut failed:", e));
         } else {
             console.log("Access Denied. User not logged in.");
         }
@@ -804,7 +813,8 @@
         fb_userId = null;
         els.authScreen.style.display = 'flex'; 
         els.appContainer.style.display = 'none'; 
-        $('#loader').style.display = 'none';
+        if (els.mobileHeader) els.mobileHeader.style.display = 'none';
+        $('#loader').style.display = 'none'; 
         if (assetListener) assetListener();
         if (vendorListener) vendorListener(); 
     }
@@ -829,12 +839,49 @@
 
         item.classList.add('active', 'bg-dark-bg');
         $('#page-' + targetId).classList.add('active');
+        
+        const sidebar = $('#sidebar');
+        const overlay = $('#mobileNavOverlay');
+        if (window.innerWidth < 768 && sidebar && overlay) { 
+            sidebar.classList.add('-translate-x-full');
+            overlay.classList.add('hidden');
+        }
       });
     });
 
-    $('#logoutBtn').addEventListener('click', async () => {
-      if (confirm("Apakah Anda yakin ingin logout?")) await fb_auth.signOut();
+    // --- (PERBAIKAN FINAL: MENGGUNAKAN PROMISE CHAIN) Logout Button ---
+    // Baris 1559 di kode asli Anda adalah di sini, sekarang menggunakan Promise standard.
+    $('#logoutBtn').addEventListener('click', (e) => {
+      e.preventDefault();
+      if (confirm("Apakah Anda yakin ingin logout?")) {
+        fb_auth.signOut()
+          .then(() => {
+            console.log("Logout successful via listener.");
+          })
+          .catch((error) => {
+            console.error("Logout failed:", error);
+            showToast("Gagal logout: " + error.message, true);
+          });
+      }
     });
+    // -----------------------------------------------------------------
+    
+    // --- Listener Navigasi Mobile ---
+    const sidebar = $('#sidebar');
+    const toggleBtn = $('#mobileNavToggle');
+    const overlay = $('#mobileNavOverlay');
+    
+    if (toggleBtn && sidebar && overlay) {
+      toggleBtn.addEventListener('click', () => {
+        sidebar.classList.toggle('-translate-x-full');
+        overlay.classList.toggle('hidden');
+      });
+      
+      overlay.addEventListener('click', () => {
+        sidebar.classList.add('-translate-x-full');
+        overlay.classList.add('hidden');
+      });
+    }
 
     // --- Listener Aset ---
     $('#addAssetBtn').addEventListener('click', () => openAssetModal());
@@ -848,7 +895,7 @@
     $('#asset-table-body').addEventListener('click', handleTableActions);
     $('#exportExcelBtn').addEventListener('click', exportToExcel);
 
-    // --- (BARU) Listener Vendor ---
+    // --- Listener Vendor ---
     $('#addVendorBtn').addEventListener('click', () => openVendorModal());
     $('#closeVendorModal').addEventListener('click', () => $('#vendorModal').classList.remove('active'));
     $('#cancelVendorModal').addEventListener('click', () => $('#vendorModal').classList.remove('active'));
@@ -859,12 +906,9 @@
   }
 
   // ==================================================================
-  // FUNGSI PEMBANTU KODE UNIK (BARU)
+  // FUNGSI PEMBANTU KODE UNIK
   // ==================================================================
   
-  /**
-   * Mengubah tipe aset menjadi 3 huruf prefix.
-   */
   function getPrefixByType(type) {
       if (!type) return 'UNK';
       const map = {
@@ -875,38 +919,27 @@
           'Hard Drive': 'HDD', 'SSD': 'SSD', 'RAM': 'RAM',
           'UPS': 'UPS', 'Software': 'SFW', 'Lainnya': 'OTH' 
       };
-      // Ambil 3 huruf awal jika tidak ada di map
       return map[type] || type.replace(/[^a-zA-Z]/g, '').substring(0, 3).toUpperCase();
   }
 
-  /**
-   * Mengubah lokasi menjadi 2 huruf prefix.
-   */
   function getPrefixByLocation(location) {
       if (!location) return 'XX';
       location = location.toUpperCase().trim();
       
-      // Mapping lokasi umum atau kunci
       if (location.includes('IT')) return 'IT';
       if (location.includes('FINANCE') || location.includes('FIN')) return 'FN';
       if (location.includes('HR')) return 'HR';
       if (location.includes('SERVER')) return 'SV';
       if (location.includes('WAREHOUSE') || location.includes('WH')) return 'WH';
       
-      // Ambil dua huruf pertama (Fallback)
       return location.replace(/[^A-Z0-9]/g, '').substring(0, 2) || 'XX';
   }
 
-  /**
-   * Mendapatkan Kode Aset Unik berdasarkan Tipe dan Lokasi menggunakan Transaksi.
-   */
   async function generateUniqueAssetCode(assetData) {
-      // 1. Buat Kunci Kombinasi (misal: LAP-IT)
       const typePrefix = getPrefixByType(assetData.type);
       const locationPrefix = getPrefixByLocation(assetData.location);
       const uniqueKey = `${typePrefix}-${locationPrefix}`; 
 
-      // 2. Tentukan referensi counter berdasarkan kunci unik
       const counterRef = fb_db.collection('counters').doc(uniqueKey);
       let nextCode = '';
 
@@ -921,11 +954,9 @@
 
               const newCount = currentCount + 1;
               
-              // Format INDEX: 001, 010, 100 (3 digit)
               const paddedCount = newCount.toString().padStart(3, '0');
-              nextCode = `${uniqueKey}-${paddedCount}`; // Contoh: LAP-IT-001
+              nextCode = `${uniqueKey}-${paddedCount}`; 
 
-              // Simpan hitungan yang baru
               transaction.set(counterRef, { count: newCount, prefix: uniqueKey });
               
               console.log("Kode Aset unik baru:", nextCode);
@@ -935,7 +966,6 @@
           
       } catch (e) {
           console.error("Gagal mendapatkan kode unik terstruktur:", e);
-          // Fallback ke ID Firestore acak jika transaksi gagal
           showToast('Gagal membuat kode aset unik, menggunakan ID acak.', true);
           return fb_assetsCollectionRef.doc().id; 
       }
@@ -947,7 +977,16 @@
 
   async function saveAsset(e) {
     e.preventDefault();
+    
+    // --- PENCEGAHAN DOUBLE CLICK ---
+    const saveBtn = $('#saveAssetBtn');
+    if (saveBtn.disabled) return; 
+
+    saveBtn.disabled = true; 
+    saveBtn.textContent = 'Menyimpan...';
+    saveBtn.classList.add('opacity-50', 'cursor-not-allowed');
     $('#loader').style.display = 'flex';
+    // --------------------------------
 
     const assetData = {
       name: $('#assetName').value,
@@ -970,6 +1009,10 @@
     
     if (!assetData.type) {
       showToast('Error: Tipe Aset harus dipilih', true);
+      // --- RESET TOMBOL JIKA ADA ERROR VALIDASI ---
+      saveBtn.disabled = false;
+      saveBtn.textContent = 'Simpan Aset';
+      saveBtn.classList.remove('opacity-50', 'cursor-not-allowed');
       $('#loader').style.display = 'none';
       return;
     }
@@ -999,14 +1042,11 @@
         // --- CREATE ASET (LOGIKA KODE UNIK) ---
         assetData.createdAt = firebase.firestore.FieldValue.serverTimestamp();
         
-        // 1. Dapatkan Kode Unik Berdasarkan Tipe & Lokasi
         const newAssetCode = await generateUniqueAssetCode(assetData); 
         
-        // 2. Simpan menggunakan Kode Unik sebagai Document ID
         const docRef = fb_assetsCollectionRef.doc(newAssetCode); 
-        await docRef.set(assetData); // Menggunakan .set(data) + .doc(id)
+        await docRef.set(assetData); 
         
-        // 3. Update log dan notifikasi
         logMessage = `Aset dibuat dengan ID kustom ${newAssetCode} dan status QC '${assetData.qcStatus}'.`;
         await addAssetLog(newAssetCode, logMessage, "Create");
         showToast(`Aset baru (${newAssetCode}) berhasil ditambahkan`);
@@ -1018,6 +1058,10 @@
       console.error("Error saving asset: ", e);
       showToast('Gagal menyimpan aset: ' + e.message, true);
     } finally {
+      // --- RESET TOMBOL DAN LOADER ---
+      saveBtn.disabled = false;
+      saveBtn.textContent = 'Simpan Aset';
+      saveBtn.classList.remove('opacity-50', 'cursor-not-allowed');
       $('#loader').style.display = 'none';
     }
   }
@@ -1082,7 +1126,16 @@
 
   async function saveVendor(e) {
     e.preventDefault();
+    
+    // --- PENCEGAHAN DOUBLE CLICK ---
+    const saveBtn = $('#saveVendorBtn');
+    if (saveBtn.disabled) return;
+    
+    saveBtn.disabled = true; 
+    saveBtn.textContent = 'Menyimpan...';
+    saveBtn.classList.add('opacity-50', 'cursor-not-allowed');
     $('#loader').style.display = 'flex';
+    // --------------------------------
 
     const vendorData = {
       name: $('#vendorName').value,
@@ -1116,6 +1169,10 @@
       console.error("Error saving vendor: ", e);
       showToast('Gagal menyimpan vendor: ' + e.message, true);
     } finally {
+      // --- RESET TOMBOL DAN LOADER ---
+      saveBtn.disabled = false;
+      saveBtn.textContent = 'Simpan Vendor';
+      saveBtn.classList.remove('opacity-50', 'cursor-not-allowed');
       $('#loader').style.display = 'none';
     }
   }
@@ -1216,6 +1273,12 @@
     const modal = $('#vendorModal');
     $('#vendorForm').reset();
     
+    // Reset tombol save saat modal dibuka
+    const saveBtn = $('#saveVendorBtn');
+    saveBtn.disabled = false;
+    saveBtn.textContent = 'Simpan Vendor';
+    saveBtn.classList.remove('opacity-50', 'cursor-not-allowed');
+    
     if (vendor) {
       // --- MODE EDIT ---
       $('#vendorModalTitle').textContent = 'Edit Vendor';
@@ -1265,9 +1328,6 @@
     });
   }
 
-  /**
-   * Merender tabel aset (v2)
-   */
   function renderAssetTable(assets) {
     const tableBody = $('#asset-table-body');
     if (!tableBody) return;
@@ -1282,7 +1342,7 @@
         (asset.serial && asset.serial.toLowerCase().includes(searchTerm)) ||
         (asset.pic && asset.pic.toLowerCase().includes(searchTerm)) ||
         (asset.location && asset.location.toLowerCase().includes(searchTerm)) ||
-        (asset.id && asset.id.toLowerCase().includes(searchTerm)); // Tambah filter berdasarkan ID
+        (asset.id && asset.id.toLowerCase().includes(searchTerm)); 
       
       const qcStatusMatch = !qcStatusFilter || asset.qcStatus === qcStatusFilter;
       const typeMatch = !typeFilter || asset.type === typeFilter;
@@ -1291,7 +1351,6 @@
     });
 
     if (filteredAssets.length === 0) {
-      // [DIUBAH] Colspan kembali ke 8
       tableBody.innerHTML = `<tr><td colspan="8" class="p-6 text-center text-dark-muted">Tidak ada aset yang ditemukan.</td></tr>`;
       return;
     }
@@ -1333,9 +1392,6 @@
     }).join('');
   }
 
-  /**
-   * Memperbarui Dashboard (v2)
-   */
   function updateDashboard(assets) {
     let totalItems = 0;
     let lulusQcCount = 0;
@@ -1362,19 +1418,19 @@
     animateCountUp($('#kpi-total-items'), totalItems);
     animateCountUp($('#kpi-unique-assets'), assets.length);
     animateCountUp($('#kpi-lulus-qc'), lulusQcCount);
-    animateCountUp($('#kpi-fail-qc'), (failQcCount + belumQcCount)); // Gagal + Belum
+    animateCountUp($('#kpi-fail-qc'), (failQcCount + belumQcCount)); 
 
     // Update Chart Tipe (Bar)
     const typeCtx = $('#typeChart').getContext('2d');
     const typeLabels = Object.keys(typeCounts);
-    const typeData = Object.values(typeCounts); // <--- Data yang benar ada di sini
+    const typeData = Object.values(typeCounts); 
     
     if (typeChartInstance) typeChartInstance.destroy();
     typeChartInstance = new Chart(typeCtx, {
       type: 'bar',
       data: { labels: typeLabels, datasets: [{
           label: 'Jumlah Aset', 
-          data: typeData, // <--- [PERBAIKAN TYPO]
+          data: typeData, 
           backgroundColor: '#ff7a18', borderRadius: 4,
       }]},
       options: {
@@ -1425,12 +1481,15 @@
     else if (action === 'delete') deleteAsset(id);
   }
 
-  /**
-   * Membuka modal Tambah/Edit Aset (v2)
-   */
   function openAssetModal(asset = null) {
     const modal = $('#assetModal');
     $('#assetForm').reset(); 
+    
+    // Reset tombol save saat modal dibuka
+    const saveBtn = $('#saveAssetBtn');
+    saveBtn.disabled = false;
+    saveBtn.textContent = 'Simpan Aset';
+    saveBtn.classList.remove('opacity-50', 'cursor-not-allowed');
     
     if (asset) {
       // --- MODE EDIT ---
@@ -1465,9 +1524,6 @@
     modal.classList.add('active');
   }
   
-  /**
-   * Membuka modal Lihat Detail Aset (v2)
-   */
   async function openViewModal(asset) {
     const modal = $('#viewAssetModal');
     
@@ -1528,9 +1584,6 @@
     }
   }
   
-  /**
-   * Meng-export data ke Excel (v2)
-   */
   function exportToExcel() {
     const searchTerm = $('#searchInput').value.toLowerCase();
     const qcStatusFilter = $('#filterQcStatus').value;
@@ -1542,7 +1595,7 @@
         (asset.serial && asset.serial.toLowerCase().includes(searchTerm)) ||
         (asset.pic && asset.pic.toLowerCase().includes(searchTerm)) ||
         (asset.location && asset.location.toLowerCase().includes(searchTerm)) ||
-        (asset.id && asset.id.toLowerCase().includes(searchTerm)); // Tambah filter berdasarkan ID
+        (asset.id && asset.id.toLowerCase().includes(searchTerm)); 
       const qcStatusMatch = !qcStatusFilter || asset.qcStatus === qcStatusFilter;
       const typeMatch = !typeFilter || asset.type === typeFilter;
       return searchMatch && qcStatusMatch && typeMatch;
