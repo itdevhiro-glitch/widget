@@ -145,6 +145,32 @@
     min-width: 80px;
     text-align: center;
   }
+  /* Tambahan CSS di dalam tag <style> */
+  .info-group {
+    padding: 8px 0;
+  }
+  .info-group .label {
+    display: flex;
+    align-items: center;
+    font-size: 13px;
+    font-weight: 500;
+    color: #777777; /* dark-muted */
+    margin-bottom: 2px;
+  }
+  .info-group .value {
+    font-size: 16px;
+    font-weight: 600;
+    color: #333333; /* dark-text */
+  }
+  .status-header {
+      padding: 10px 15px;
+      border-radius: 8px;
+      font-size: 16px;
+      font-weight: 700;
+      margin-bottom: 20px;
+      display: flex;
+      align-items: center;
+  }
 </style>
 </head>
 <body class="bg-light-bg text-dark-text">
@@ -537,77 +563,85 @@
   </div>
 </div>
 <div id="viewAssetModal" class="modal-backdrop fixed inset-0 z-50 bg-black/60 items-center justify-center p-4">
-  <div class="bg-light-card rounded-lg shadow-2xl border border-light-border w-full max-w-3xl max-h-[90vh] flex flex-col">
+  <div class="bg-light-card rounded-lg shadow-2xl border border-light-border w-full max-w-4xl max-h-[90vh] flex flex-col">
     <div class="flex items-center justify-between p-5 border-b border-light-border">
       <h3 id="viewModalTitle" class="text-xl font-bold text-dark-text">Detail Aset</h3>
       <button id="closeViewModal" class="text-dark-muted hover:text-dark-text transition text-3xl font-light">&times;</button>
     </div>
+    
     <div class="flex-grow overflow-y-auto p-6 space-y-6">
       
-      <div class="grid grid-cols-2 md:grid-cols-3 gap-6">
-        <div class="info-group">
-          <span class="text-sm font-medium text-dark-muted">Nama Aset</span>
-          <p id="view-name" class="text-lg font-semibold text-dark-text"></p>
+      <div id="view-status-header" class="status-header">
         </div>
-        <div class="info-group">
-          <span class="text-sm font-medium text-dark-muted">Tipe Aset</span>
-          <p id="view-type" class="text-lg font-semibold text-dark-text"></p>
+      
+      <div class="grid grid-cols-1 md:grid-cols-3 gap-6">
+        
+        <div class="space-y-4">
+          <h4 class="text-lg font-bold text-primary mb-3"><i class="fa-solid fa-file-invoice-dollar mr-2"></i> Finansial & Pembelian</h4>
+          
+          <div class="info-group">
+            <div class="label"><i class="fa-solid fa-tag w-5 text-center mr-2"></i>Harga Beli</div>
+            <p id="view-purchasePrice" class="value"></p>
+          </div>
+          <div class="info-group">
+            <div class="label"><i class="fa-solid fa-calendar-alt w-5 text-center mr-2"></i>Tgl. Pembelian</div>
+            <p id="view-purchaseDate" class="value"></p>
+          </div>
+          <div class="info-group">
+            <div class="label"><i class="fa-solid fa-store w-5 text-center mr-2"></i>Vendor</div>
+            <p id="view-vendor" class="value"></p>
+          </div>
+          <div class="info-group">
+            <div class="label"><i class="fa-solid fa-shield-alt w-5 text-center mr-2"></i>Garansi Sampai</div>
+            <p id="view-warrantyUntil" class="value"></p>
+          </div>
         </div>
-        <div class="info-group">
-          <span class="text-sm font-medium text-dark-muted">Quantity</span>
-          <p id="view-qty" class="text-lg font-semibold text-dark-text"></p>
-        </div>
-        <div class="info-group">
-          <span class="text-sm font-medium text-dark-muted">Serial Number</span>
-          <p id="view-serial" class="text-lg font-semibold text-dark-text"></p>
-        </div>
-        <div class="info-group">
-          <span class="text-sm font-medium text-dark-muted">Status QC</span>
-          <p id="view-qcStatus" class="text-lg font-semibold text-dark-text"></p>
-        </div>
-        <div class="info-group">
-          <span class="text-sm font-medium text-dark-muted">Lokasi</span>
-          <p id="view-location" class="text-lg font-semibold text-dark-text"></p>
-        </div>
-        <div class="info-group">
-          <span class="text-sm font-medium text-dark-muted">PIC</span>
-          <p id="view-pic" class="text-lg font-semibold text-dark-text"></p>
-        </div>
-        <div class="info-group">
-          <span class="text-sm font-medium text-dark-muted">Tgl. Pembelian</span>
-          <p id="view-purchaseDate" class="text-lg font-semibold text-dark-text"></p>
-        </div>
-        <div class="info-group">
-          <span class="text-sm font-medium text-dark-muted">Garansi Sampai</span>
-          <p id="view-warrantyUntil" class="text-lg font-semibold text-dark-text"></p>
+
+        <div class="space-y-4">
+          <h4 class="text-lg font-bold text-primary mb-3"><i class="fa-solid fa-barcode mr-2"></i> Identifikasi & Spesifikasi</h4>
+          
+          <div class="info-group">
+            <div class="label"><i class="fa-solid fa-boxes-stacked w-5 text-center mr-2"></i>Tipe Aset</div>
+            <p id="view-type" class="value"></p>
+          </div>
+          <div class="info-group">
+            <div class="label"><i class="fa-solid fa-hashtag w-5 text-center mr-2"></i>Serial Number</div>
+            <p id="view-serial" class="value font-mono"></p>
+          </div>
+          <div class="info-group">
+            <div class="label"><i class="fa-solid fa-cubes w-5 text-center mr-2"></i>Quantity</div>
+            <p id="view-qty" class="value"></p>
+          </div>
+          <div class="info-group">
+            <div class="label"><i class="fa-solid fa-laptop-code w-5 text-center mr-2"></i>Software Terinstall</div>
+            <p id="view-software" class="value"></p>
+          </div>
         </div>
         
-        <div class="info-group">
-          <span class="text-sm font-medium text-dark-muted">Harga Beli</span>
-          <p id="view-purchasePrice" class="text-lg font-semibold text-dark-text"></p>
+        <div class="space-y-4">
+          <h4 class="text-lg font-bold text-primary mb-3"><i class="fa-solid fa-map-marker-alt mr-2"></i> Lokasi & Pengguna</h4>
+          
+          <div class="info-group">
+            <div class="label"><i class="fa-solid fa-location-dot w-5 text-center mr-2"></i>Lokasi Sekarang</div>
+            <p id="view-location" class="value"></p>
+          </div>
+          <div class="info-group">
+            <div class="label"><i class="fa-solid fa-user-tag w-5 text-center mr-2"></i>PIC (Pengguna)</div>
+            <p id="view-pic" class="value"></p>
+          </div>
+
+          <div>
+            <h4 class="text-lg font-bold text-primary mb-2 mt-4 border-t border-light-border/70 pt-4"><i class="fa-solid fa-history mr-2"></i>Riwayat Aset</h4>
+            <div id="view-history" class="space-y-3 max-h-48 overflow-y-auto bg-light-card/70 p-3 rounded-md border border-light-border">
+              <p class="text-dark-muted text-sm">Memuat riwayat...</p>
+            </div>
+          </div>
         </div>
-        <div class="info-group">
-          <span class="text-sm font-medium text-dark-muted">Vendor</span>
-          <p id="view-vendor" class="text-lg font-semibold text-dark-text"></p>
-        </div>
-        
       </div>
       
-      <div class="info-group">
-        <span class="text-sm font-medium text-dark-muted">Software</span>
-        <p id="view-software" class="text-lg font-semibold text-dark-text"></p>
-      </div>
-
-      <div>
-        <span class="text-sm font-medium text-dark-muted">Catatan</span>
-        <p id="view-notes" class="text-base text-dark-text bg-light-bg p-4 rounded-md mt-1 whitespace-pre-wrap"></p>
-      </div>
-
-      <div>
-        <h4 class="text-lg font-semibold text-dark-text mb-2 border-t border-light-border pt-4">Riwayat Aset</h4>
-        <div id="view-history" class="space-y-3 max-h-48 overflow-y-auto bg-light-bg p-4 rounded-md">
-          <p class="text-dark-muted text-sm">Memuat riwayat...</p>
-        </div>
+      <div class="mt-6">
+        <h4 class="text-lg font-bold text-primary mb-2"><i class="fa-solid fa-pencil-alt mr-2"></i>Catatan Tambahan</h4>
+        <p id="view-notes" class="text-base text-dark-text bg-light-card/70 p-4 rounded-md border border-light-border whitespace-pre-wrap min-h-[100px]"></p>
       </div>
 
     </div>
@@ -988,11 +1022,9 @@
             resolve();
         }, error => { 
             console.error("Error loading disposed assets:", error);
-            // Hanya tampilkan toast error jika bukan permission denied, karena itu urusan rules
             if (error.code !== 'permission-denied') { 
                 showToast('Gagal memuat data disposed: ' + error.message, true);
             }
-            // Karena ini listener, kita tetap resolve/reject untuk promise luar
             reject(error);
         });
     });
@@ -1643,37 +1675,68 @@
   async function openViewModal(asset) {
     const modal = $('#viewAssetModal');
     
-    $('#viewModalTitle').textContent = `Detail: ${asset.name}`;
-    $('#view-name').textContent = asset.name || '-';
-    $('#view-type').textContent = asset.type || '-';
-    $('#view-qty').textContent = asset.qty || '0';
-    $('#view-serial').textContent = asset.serial || '-';
-    $('#view-qcStatus').textContent = asset.qcStatus || '-';
-    $('#view-location').textContent = asset.location || '-';
-    $('#view-pic').textContent = asset.pic || '-';
-    $('#view-purchaseDate').textContent = formatDate(asset.purchaseDate);
-    $('#view-warrantyUntil').textContent = formatDate(asset.warrantyUntil);
-    $('#view-software').textContent = asset.software || '-';
-    $('#view-notes').textContent = asset.notes || '(Tidak ada catatan)';
+    // Tentukan warna status dan ikon
+    let statusClass, statusIcon;
+    let statusText = asset.qcStatus || 'Unknown';
+
+    switch (statusText) {
+      case 'Lulus QC': 
+          statusClass = 'bg-success/20 text-success border border-success/50'; 
+          statusIcon = '<i class="fa-solid fa-circle-check mr-2"></i>';
+          break;
+      case 'Gagal QC': 
+          statusClass = 'bg-error/20 text-error border border-error/50'; 
+          statusIcon = '<i class="fa-solid fa-circle-xmark mr-2"></i>';
+          break;
+      case 'Belum QC': 
+          statusClass = 'bg-warning/20 text-primary border border-primary/50'; 
+          statusIcon = '<i class="fa-solid fa-hourglass-half mr-2"></i>';
+          break;
+      default: 
+          statusClass = 'bg-light-border text-dark-muted border border-light-border';
+          statusIcon = '<i class="fa-solid fa-circle-question mr-2"></i>';
+    }
+
+    // Isi Header Status
+    // Perbaikan error setting textContent of null:
+    const viewStatusHeader = $('#view-status-header');
+    if (viewStatusHeader) {
+        viewStatusHeader.className = `status-header ${statusClass}`;
+        viewStatusHeader.innerHTML = `${statusIcon} STATUS: ${statusText.toUpperCase()} ${asset.disposedAt ? '(DISPOSED)' : ''}`;
+    }
+    
+    // Isi info dasar
+    $('#viewModalTitle').textContent = `Detail Aset: ${asset.name}`;
     
     const formattedPrice = (asset.purchasePrice || 0).toLocaleString('id-ID', {
       style: 'currency',
       currency: 'IDR',
       maximumFractionDigits: 0
     });
-    $('#view-purchasePrice').textContent = asset.purchasePrice ? formattedPrice : '-';
+    
+    // Mengisi data ke elemen yang baru (Ditambahkan cek null untuk robustness)
+    if ($('#view-name')) $('#view-name').textContent = asset.name || '-';
+    if ($('#view-type')) $('#view-type').textContent = asset.type || '-';
+    if ($('#view-qty')) $('#view-qty').textContent = asset.qty || '0';
+    if ($('#view-serial')) $('#view-serial').textContent = asset.serial || '-';
+    if ($('#view-location')) $('#view-location').textContent = asset.location || '-';
+    if ($('#view-pic')) $('#view-pic').textContent = asset.pic || '-';
+    if ($('#view-purchaseDate')) $('#view-purchaseDate').textContent = formatDate(asset.purchaseDate);
+    if ($('#view-warrantyUntil')) $('#view-warrantyUntil').textContent = formatDate(asset.warrantyUntil);
+    if ($('#view-software')) $('#view-software').textContent = asset.software || '-';
+    if ($('#view-notes')) $('#view-notes').textContent = asset.notes || '(Tidak ada catatan)';
+    if ($('#view-purchasePrice')) $('#view-purchasePrice').textContent = asset.purchasePrice ? formattedPrice : '-';
 
     const vendor = allVendorsCache.find(v => v.id === asset.vendorId);
-    $('#view-vendor').textContent = vendor ? vendor.name : '-';
+    if ($('#view-vendor')) $('#view-vendor').textContent = vendor ? vendor.name : '-';
     
     modal.classList.add('active');
     
-    // Ambil dan tampilkan riwayat
+    // Ambil dan tampilkan riwayat (Logika sama, menggunakan koleksi disposed jika ada)
     const historyContainer = $('#view-history');
     historyContainer.innerHTML = `<p class="text-dark-muted text-sm">Memuat riwayat...</p>`;
     
     try {
-      // Logic untuk koleksi assets_v2 atau disposed_assets
       const isDisposed = asset.disposedAt ? true : false;
       const historyCollection = isDisposed ? fb_disposedCollectionRef.doc(asset.id).collection('history') : fb_assetsCollectionRef.doc(asset.id).collection('history');
       
