@@ -17,15 +17,15 @@
         colors: {
           'primary': '#007bff',
           'primary-hover': '#0069d9',
-          'accent': '#ff7a18',
-          'dark-bg': '#0f172a',
-          'dark-card': '#1e293b',
-          'dark-border': '#334155',
-          'dark-text': '#f1f5f9',
-          'dark-muted': '#94a3b8',
-          'error': '#dc3545',
-          'success': '#1db954', // Status Lulus
-          'warning': '#f59e0b', // Status Belum
+          'accent': '#ff7a18', // ORANYE - Highlight
+          'dark-bg': '#FFFFFF', // PUTIH - Background Utama
+          'dark-card': '#F8F8F8', // PUTIH MUDA - Background Card
+          'dark-border': '#E0E0E0', // ABU RINGAN - Border
+          'dark-text': '#333333', // ABU GELAP - Teks Utama
+          'dark-muted': '#777777', // ABU MUTE - Teks Sekunder
+          'error': '#dc3545', // MERAH - Status Error/Gagal
+          'success': '#dc3545', // MERAH - Status Lulus QC (Diubah dari Hijau ke Merah)
+          'warning': '#ff7a18', // ORANYE - Status Belum QC (Diubah dari Kuning ke Oranye)
         },
       },
     },
@@ -37,9 +37,9 @@
   html { font-family: 'Inter', system-ui, sans-serif; }
   /* Custom Scrollbar */
   ::-webkit-scrollbar { width: 8px; height: 8px; }
-  ::-webkit-scrollbar-track { background: #2c3e50; }
-  ::-webkit-scrollbar-thumb { background: #888; border-radius: 4px; }
-  ::-webkit-scrollbar-thumb:hover { background: #555; }
+  ::-webkit-scrollbar-track { background: #f0f0f0; } /* Disusaikan untuk tema terang */
+  ::-webkit-scrollbar-thumb { background: #bbb; border-radius: 4px; }
+  ::-webkit-scrollbar-thumb:hover { background: #999; }
   
   /* Transisi Halaman & Modal yang Halus */
   .page, .modal-backdrop {
@@ -80,7 +80,7 @@
   .spinner {
     width: 40px; height: 40px;
     border: 4px solid #f3f3f3;
-    border-top-color: #ff7a18; 
+    border-top-color: #ff7a18; /* ACCENT */
     border-radius: 50%;
     animation: spin 1s linear infinite;
     margin: 0 auto 20px auto;
@@ -106,7 +106,7 @@
   }
   .kpi-card:hover {
     transform: translateY(-5px);
-    box-shadow: 0 8px 20px rgba(0,0,0,0.25);
+    box-shadow: 0 8px 20px rgba(0,0,0,0.1); /* Shadow ringan untuk tema terang */
   }
 
   #addAssetBtn, #saveAssetBtn, #addVendorBtn, #saveVendorBtn {
@@ -115,7 +115,7 @@
   }
   #addAssetBtn:hover, #saveAssetBtn:hover, #addVendorBtn:hover, #saveVendorBtn:hover {
     transform: scale(1.03);
-    box-shadow: 0 4px 15px rgba(255, 122, 24, 0.3);
+    box-shadow: 0 4px 15px rgba(255, 122, 24, 0.3); /* Shadow Oranye */
     opacity: 1;
   }
 
@@ -124,17 +124,19 @@
   }
   
   .input, .search {
-    border: 1px solid #334155;
+    border: 1px solid #E0E0E0; /* dark-border baru */
+    background-color: #ffffff; /* Pastikan input putih */
+    color: #333333;
     transition: border-color 0.2s ease, box-shadow 0.2s ease;
   }
   .input:focus, .search:focus {
-    border-color: #ff7a18;
+    border-color: #ff7a18; /* accent */
     box-shadow: 0 0 0 3px rgba(255, 122, 24, 0.15);
   }
   
   .nav-item.active {
     position: relative;
-    box-shadow: inset 4px 0 0px #ff7a18;
+    box-shadow: inset 4px 0 0px #ff7a18; /* ACCENT */
   }
 </style>
 </head>
@@ -143,15 +145,15 @@
 <div id="authVerificationScreen" class="fixed inset-0 z-50 flex items-center justify-center bg-dark-bg text-dark-text p-4 text-center">
   <div class="bg-dark-card p-8 md:p-12 rounded-lg shadow-2xl border border-dark-border">
     <div class="spinner" id="authSpinner"></div>
-    <h3 id="authMessage" class="text-xl font-bold mb-2 text-white">Memverifikasi Sesi Admin...</h3>
+    <h3 id="authMessage" class="text-xl font-bold mb-2 text-dark-text">Memverifikasi Sesi Admin...</h3>
     <p id="authSubMessage" class="text-dark-muted">Mengecek otentikasi Anda dengan Firebase...</p>
     <a href="../index.html" id="authBackButton" class="mt-6 inline-block rounded-md bg-error px-6 py-3 text-sm font-bold text-white shadow-md transition hover:bg-red-700" style="display: none;">Kembali ke Admin Dashboard</a>
   </div>
 </div>
 
 <header id="mobileHeader" class="md:hidden sticky top-0 z-40 bg-dark-card border-b border-dark-border p-4 flex items-center justify-between">
-    <h2 class="text-xl font-bold text-white">ZEPPELIN</h2>
-    <button id="mobileNavToggle" class="text-dark-muted hover:text-white transition p-1">
+    <h2 class="text-xl font-bold text-dark-text">ZEPPELIN</h2>
+    <button id="mobileNavToggle" class="text-dark-muted hover:text-dark-text transition p-1">
       <i class="fa-solid fa-bars text-xl"></i>
     </button>
 </header>
@@ -162,7 +164,7 @@
   
   <nav id="sidebar" class="w-64 bg-dark-card border-r border-dark-border flex-shrink-0 flex flex-col fixed inset-y-0 left-0 z-50 transform -translate-x-full transition-transform duration-300 md:relative md:translate-x-0">
     <div class="p-6 text-center border-b border-dark-border">
-      <h2 class="text-2xl font-bold text-white">ZEPPELIN</h2>
+      <h2 class="text-2xl font-bold text-dark-text">ZEPPELIN</h2>
       <span class="text-sm font-semibold text-accent">IT ASSET MANAGER</span>
     </div>
     <ul class="py-6 space-y-2 flex-grow">
@@ -173,13 +175,13 @@
         </a>
       </li>
       <li>
-        <a href="#assets" class="nav-item flex items-center gap-3 px-6 py-3 text-dark-muted font-semibold transition hover:text-dark-text hover:bg-dark-bg/50">
+        <a href="#assets" class="nav-item flex items-center gap-3 px-6 py-3 text-dark-muted font-semibold transition hover:text-dark-text hover:bg-dark-bg">
           <i class="fa-solid fa-boxes-stacked w-5 text-center"></i>
           <span>Database Aset</span>
         </a>
       </li>
       <li>
-        <a href="#vendors" class="nav-item flex items-center gap-3 px-6 py-3 text-dark-muted font-semibold transition hover:text-dark-text hover:bg-dark-bg/50">
+        <a href="#vendors" class="nav-item flex items-center gap-3 px-6 py-3 text-dark-muted font-semibold transition hover:text-dark-text hover:bg-dark-bg">
           <i class="fa-solid fa-store w-5 text-center"></i>
           <span>Vendor</span>
         </a>
@@ -188,7 +190,7 @@
     <div class="p-6 border-t border-dark-border">
       <div class="text-sm text-dark-muted">Logged in as:</div>
       <div id="userEmailDisplay" class="text-sm font-bold text-accent truncate">...</div>
-      <button id="logoutBtn" class="mt-4 w-full text-center py-2 px-4 rounded-md bg-dark-bg text-dark-muted font-semibold border border-dark-border transition hover:bg-red-600/20 hover:text-red-400 hover:border-red-500">
+      <button id="logoutBtn" class="mt-4 w-full text-center py-2 px-4 rounded-md bg-dark-bg text-dark-muted font-semibold border border-dark-border transition hover:bg-error/20 hover:text-error hover:border-error">
         <i class="fa-solid fa-right-from-bracket mr-2"></i>Logout
       </button>
     </div>
@@ -197,7 +199,7 @@
   <main class="flex-1 relative">
     
     <div id="page-dashboard" class="page active p-8 md:p-10">
-      <h1 class="text-3xl font-bold text-white mb-6">Dashboard</h1>
+      <h1 class="text-3xl font-bold text-dark-text mb-6">Dashboard</h1>
       
       <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
         <div class="kpi-card bg-dark-card p-6 rounded-lg shadow-lg border border-dark-border">
@@ -205,38 +207,38 @@
             <span class="text-sm font-semibold text-dark-muted uppercase">Total Item (Qty)</span>
             <i class="fa-solid fa-boxes-stacked text-2xl text-accent"></i>
           </div>
-          <div id="kpi-total-items" class="text-4xl font-extrabold text-white mt-4">0</div>
+          <div id="kpi-total-items" class="text-4xl font-extrabold text-dark-text mt-4">0</div>
         </div>
         <div class="kpi-card bg-dark-card p-6 rounded-lg shadow-lg border border-dark-border">
           <div class="flex items-center justify-between">
             <span class="text-sm font-semibold text-dark-muted uppercase">Aset Unik</span>
-            <i class="fa-solid fa-hashtag text-2xl text-blue-500"></i>
+            <i class="fa-solid fa-hashtag text-2xl text-primary"></i>
           </div>
-          <div id="kpi-unique-assets" class="text-4xl font-extrabold text-white mt-4">0</div>
+          <div id="kpi-unique-assets" class="text-4xl font-extrabold text-dark-text mt-4">0</div>
         </div>
         <div class="kpi-card bg-dark-card p-6 rounded-lg shadow-lg border border-dark-border">
           <div class="flex items-center justify-between">
             <span class="text-sm font-semibold text-dark-muted uppercase">Lulus QC</span>
             <i class="fa-solid fa-check-double text-2xl text-success"></i>
           </div>
-          <div id="kpi-lulus-qc" class="text-4xl font-extrabold text-white mt-4">0</div>
+          <div id="kpi-lulus-qc" class="text-4xl font-extrabold text-dark-text mt-4">0</div>
         </div>
         <div class="kpi-card bg-dark-card p-6 rounded-lg shadow-lg border border-dark-border">
           <div class="flex items-center justify-between">
             <span class="text-sm font-semibold text-dark-muted uppercase">Gagal / Belum QC</span>
             <i class="fa-solid fa-triangle-exclamation text-2xl text-warning"></i>
           </div>
-          <div id="kpi-fail-qc" class="text-4xl font-extrabold text-white mt-4">0</div>
+          <div id="kpi-fail-qc" class="text-4xl font-extrabold text-dark-text mt-4">0</div>
         </div>
       </div>
 
       <div class="grid grid-cols-1 lg:grid-cols-5 gap-6 mt-8">
         <div class="lg:col-span-3 bg-dark-card p-6 rounded-lg shadow-lg border border-dark-border">
-          <h3 class="text-xl font-semibold text-white mb-4">Aset Berdasarkan Tipe</h3>
+          <h3 class="text-xl font-semibold text-dark-text mb-4">Aset Berdasarkan Tipe</h3>
           <canvas id="typeChart" height="150"></canvas>
         </div>
         <div class="lg:col-span-2 bg-dark-card p-6 rounded-lg shadow-lg border border-dark-border">
-          <h3 class="text-xl font-semibold text-white mb-4">Aset Berdasarkan Status QC</h3>
+          <h3 class="text-xl font-semibold text-dark-text mb-4">Aset Berdasarkan Status QC</h3>
           <canvas id="qcStatusChart" height="150"></canvas>
         </div>
       </div>
@@ -244,8 +246,8 @@
 
     <div id="page-assets" class="page p-8 md:p-10">
       <div class="flex items-center justify-between mb-6">
-        <h1 class="text-3xl font-bold text-white">Database Aset</h1>
-        <button id="addAssetBtn" class="py-2 px-5 rounded-md bg-accent text-black font-bold shadow-md">
+        <h1 class="text-3xl font-bold text-dark-text">Database Aset</h1>
+        <button id="addAssetBtn" class="py-2 px-5 rounded-md bg-accent text-dark-text font-bold shadow-md">
           <i class="fa-solid fa-plus mr-2"></i>Tambah Aset Baru
         </button>
       </div>
@@ -299,7 +301,7 @@
             </optgroup>
           </select>
           
-          <button id="exportExcelBtn" class="py-2 px-4 rounded-md bg-dark-bg text-dark-muted font-semibold border border-dark-border transition hover:bg-green-600/20 hover:text-green-400 hover:border-green-500">
+          <button id="exportExcelBtn" class="py-2 px-4 rounded-md bg-dark-card text-dark-muted font-semibold border border-dark-border transition hover:bg-success/20 hover:text-success hover:border-success">
             <i class="fa-solid fa-file-excel mr-2"></i>Export
           </button>
         </div>
@@ -308,7 +310,7 @@
       <div class="bg-dark-card rounded-lg shadow-lg border border-dark-border overflow-hidden">
         <div class="overflow-x-auto">
           <table class="w-full min-w-[1000px]">
-            <thead class="bg-dark-bg/50">
+            <thead class="bg-dark-bg">
               <tr>
                 <th class="p-4 text-left text-xs font-medium text-dark-muted uppercase tracking-wider">Nama Aset</th>
                 <th class="p-4 text-left text-xs font-medium text-dark-muted uppercase tracking-wider">Tipe</th>
@@ -330,8 +332,8 @@
 
     <div id="page-vendors" class="page p-8 md:p-10">
       <div class="flex items-center justify-between mb-6">
-        <h1 class="text-3xl font-bold text-white">Manajemen Vendor</h1>
-        <button id="addVendorBtn" class="py-2 px-5 rounded-md bg-accent text-black font-bold shadow-md">
+        <h1 class="text-3xl font-bold text-dark-text">Manajemen Vendor</h1>
+        <button id="addVendorBtn" class="py-2 px-5 rounded-md bg-accent text-dark-text font-bold shadow-md">
           <i class="fa-solid fa-plus mr-2"></i>Tambah Vendor Baru
         </button>
       </div>
@@ -346,7 +348,7 @@
       <div class="bg-dark-card rounded-lg shadow-lg border border-dark-border overflow-hidden">
         <div class="overflow-x-auto">
           <table class="w-full min-w-[1000px]">
-            <thead class="bg-dark-bg/50">
+            <thead class="bg-dark-bg">
               <tr>
                 <th class="p-4 text-left text-xs font-medium text-dark-muted uppercase tracking-wider">Nama Vendor</th>
                 <th class="p-4 text-left text-xs font-medium text-dark-muted uppercase tracking-wider">Kontak Person</th>
@@ -373,8 +375,8 @@
 <div id="assetModal" class="modal-backdrop fixed inset-0 z-50 bg-black/60 items-center justify-center p-4">
   <div class="bg-dark-card rounded-lg shadow-2xl border border-dark-border w-full max-w-3xl max-h-[90vh] flex flex-col">
     <div class="flex items-center justify-between p-5 border-b border-dark-border">
-      <h3 id="assetModalTitle" class="text-xl font-bold text-white">Tambah Aset Baru</h3>
-      <button id="closeAssetModal" class="text-dark-muted hover:text-white transition text-3xl font-light">&times;</button>
+      <h3 id="assetModalTitle" class="text-xl font-bold text-dark-text">Tambah Aset Baru</h3>
+      <button id="closeAssetModal" class="text-dark-muted hover:text-dark-text transition text-3xl font-light">&times;</button>
     </div>
     <form id="assetForm" class="flex-grow overflow-y-auto p-6 space-y-6">
       <input type="hidden" id="assetId">
@@ -490,9 +492,9 @@
 
     </form>
     
-    <div class="flex items-center justify-end p-5 border-t border-dark-border bg-dark-bg/50 rounded-b-lg">
+    <div class="flex items-center justify-end p-5 border-t border-dark-border bg-dark-bg">
       <button id="cancelAssetModal" type="button" class="py-2 px-5 rounded-md bg-dark-bg text-dark-muted font-bold border border-dark-border transition hover:bg-dark-border">Batal</button>
-      <button id="saveAssetBtn" type="submit" form="assetForm" class="ml-3 py-2 px-5 rounded-md bg-accent text-black font-bold shadow-md">Simpan Aset</button>
+      <button id="saveAssetBtn" type="submit" form="assetForm" class="ml-3 py-2 px-5 rounded-md bg-accent text-dark-text font-bold shadow-md">Simpan Aset</button>
     </div>
   </div>
 </div>
@@ -500,73 +502,73 @@
 <div id="viewAssetModal" class="modal-backdrop fixed inset-0 z-50 bg-black/60 items-center justify-center p-4">
   <div class="bg-dark-card rounded-lg shadow-2xl border border-dark-border w-full max-w-3xl max-h-[90vh] flex flex-col">
     <div class="flex items-center justify-between p-5 border-b border-dark-border">
-      <h3 id="viewModalTitle" class="text-xl font-bold text-white">Detail Aset</h3>
-      <button id="closeViewModal" class="text-dark-muted hover:text-white transition text-3xl font-light">&times;</button>
+      <h3 id="viewModalTitle" class="text-xl font-bold text-dark-text">Detail Aset</h3>
+      <button id="closeViewModal" class="text-dark-muted hover:text-dark-text transition text-3xl font-light">&times;</button>
     </div>
     <div class="flex-grow overflow-y-auto p-6 space-y-6">
       
       <div class="grid grid-cols-2 md:grid-cols-3 gap-6">
         <div class="info-group">
           <span class="text-sm font-medium text-dark-muted">Nama Aset</span>
-          <p id="view-name" class="text-lg font-semibold text-white"></p>
+          <p id="view-name" class="text-lg font-semibold text-dark-text"></p>
         </div>
         <div class="info-group">
           <span class="text-sm font-medium text-dark-muted">Tipe Aset</span>
-          <p id="view-type" class="text-lg font-semibold text-white"></p>
+          <p id="view-type" class="text-lg font-semibold text-dark-text"></p>
         </div>
         <div class="info-group">
           <span class="text-sm font-medium text-dark-muted">Quantity</span>
-          <p id="view-qty" class="text-lg font-semibold text-white"></p>
+          <p id="view-qty" class="text-lg font-semibold text-dark-text"></p>
         </div>
         <div class="info-group">
           <span class="text-sm font-medium text-dark-muted">Serial Number</span>
-          <p id="view-serial" class="text-lg font-semibold text-white"></p>
+          <p id="view-serial" class="text-lg font-semibold text-dark-text"></p>
         </div>
         <div class="info-group">
           <span class="text-sm font-medium text-dark-muted">Status QC</span>
-          <p id="view-qcStatus" class="text-lg font-semibold text-white"></p>
+          <p id="view-qcStatus" class="text-lg font-semibold text-dark-text"></p>
         </div>
         <div class="info-group">
           <span class="text-sm font-medium text-dark-muted">Lokasi</span>
-          <p id="view-location" class="text-lg font-semibold text-white"></p>
+          <p id="view-location" class="text-lg font-semibold text-dark-text"></p>
         </div>
         <div class="info-group">
           <span class="text-sm font-medium text-dark-muted">PIC</span>
-          <p id="view-pic" class="text-lg font-semibold text-white"></p>
+          <p id="view-pic" class="text-lg font-semibold text-dark-text"></p>
         </div>
         <div class="info-group">
           <span class="text-sm font-medium text-dark-muted">Tgl. Pembelian</span>
-          <p id="view-purchaseDate" class="text-lg font-semibold text-white"></p>
+          <p id="view-purchaseDate" class="text-lg font-semibold text-dark-text"></p>
         </div>
         <div class="info-group">
           <span class="text-sm font-medium text-dark-muted">Garansi Sampai</span>
-          <p id="view-warrantyUntil" class="text-lg font-semibold text-white"></p>
+          <p id="view-warrantyUntil" class="text-lg font-semibold text-dark-text"></p>
         </div>
         
         <div class="info-group">
           <span class="text-sm font-medium text-dark-muted">Harga Beli</span>
-          <p id="view-purchasePrice" class="text-lg font-semibold text-white"></p>
+          <p id="view-purchasePrice" class="text-lg font-semibold text-dark-text"></p>
         </div>
         <div class="info-group">
           <span class="text-sm font-medium text-dark-muted">Vendor</span>
-          <p id="view-vendor" class="text-lg font-semibold text-white"></p>
+          <p id="view-vendor" class="text-lg font-semibold text-dark-text"></p>
         </div>
         
       </div>
       
       <div class="info-group">
         <span class="text-sm font-medium text-dark-muted">Software</span>
-        <p id="view-software" class="text-lg font-semibold text-white"></p>
+        <p id="view-software" class="text-lg font-semibold text-dark-text"></p>
       </div>
 
       <div>
         <span class="text-sm font-medium text-dark-muted">Catatan</span>
-        <p id="view-notes" class="text-base text-white bg-dark-bg/50 p-4 rounded-md mt-1 whitespace-pre-wrap"></p>
+        <p id="view-notes" class="text-base text-dark-text bg-dark-bg p-4 rounded-md mt-1 whitespace-pre-wrap"></p>
       </div>
 
       <div>
-        <h4 class="text-lg font-semibold text-white mb-2 border-t border-dark-border pt-4">Riwayat Aset</h4>
-        <div id="view-history" class="space-y-3 max-h-48 overflow-y-auto bg-dark-bg/50 p-4 rounded-md">
+        <h4 class="text-lg font-semibold text-dark-text mb-2 border-t border-dark-border pt-4">Riwayat Aset</h4>
+        <div id="view-history" class="space-y-3 max-h-48 overflow-y-auto bg-dark-bg p-4 rounded-md">
           <p class="text-dark-muted text-sm">Memuat riwayat...</p>
         </div>
       </div>
@@ -578,8 +580,8 @@
 <div id="vendorModal" class="modal-backdrop fixed inset-0 z-50 bg-black/60 items-center justify-center p-4">
   <div class="bg-dark-card rounded-lg shadow-2xl border border-dark-border w-full max-w-2xl max-h-[90vh] flex flex-col">
     <div class="flex items-center justify-between p-5 border-b border-dark-border">
-      <h3 id="vendorModalTitle" class="text-xl font-bold text-white">Tambah Vendor Baru</h3>
-      <button id="closeVendorModal" class="text-dark-muted hover:text-white transition text-3xl font-light">&times;</button>
+      <h3 id="vendorModalTitle" class="text-xl font-bold text-dark-text">Tambah Vendor Baru</h3>
+      <button id="closeVendorModal" class="text-dark-muted hover:text-dark-text transition text-3xl font-light">&times;</button>
     </div>
     <form id="vendorForm" class="flex-grow overflow-y-auto p-6 space-y-6">
       <input type="hidden" id="vendorId">
@@ -616,9 +618,9 @@
       </div>
 
     </form>
-    <div class="flex items-center justify-end p-5 border-t border-dark-border bg-dark-bg/50 rounded-b-lg">
+    <div class="flex items-center justify-end p-5 border-t border-dark-border bg-dark-bg">
       <button id="cancelVendorModal" type="button" class="py-2 px-5 rounded-md bg-dark-bg text-dark-muted font-bold border border-dark-border transition hover:bg-dark-border">Batal</button>
-      <button id="saveVendorBtn" type="submit" form="vendorForm" class="ml-3 py-2 px-5 rounded-md bg-accent text-black font-bold shadow-md">Simpan Vendor</button>
+      <button id="saveVendorBtn" type="submit" form="vendorForm" class="ml-3 py-2 px-5 rounded-md bg-accent text-dark-text font-bold shadow-md">Simpan Vendor</button>
     </div>
   </div>
 </div>
@@ -626,38 +628,38 @@
 <div id="viewVendorModal" class="modal-backdrop fixed inset-0 z-50 bg-black/60 items-center justify-center p-4">
   <div class="bg-dark-card rounded-lg shadow-2xl border border-dark-border w-full max-w-2xl max-h-[90vh] flex flex-col">
     <div class="flex items-center justify-between p-5 border-b border-dark-border">
-      <h3 id="viewVendorModalTitle" class="text-xl font-bold text-white">Detail Vendor</h3>
-      <button id="closeViewVendorModal" class="text-dark-muted hover:text-white transition text-3xl font-light">&times;</button>
+      <h3 id="viewVendorModalTitle" class="text-xl font-bold text-dark-text">Detail Vendor</h3>
+      <button id="closeViewVendorModal" class="text-dark-muted hover:text-dark-text transition text-3xl font-light">&times;</button>
     </div>
     <div class="flex-grow overflow-y-auto p-6 space-y-6">
       
       <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
         <div class="info-group">
           <span class="text-sm font-medium text-dark-muted">Nama Vendor</span>
-          <p id="view-vendorName" class="text-lg font-semibold text-white"></p>
+          <p id="view-vendorName" class="text-lg font-semibold text-dark-text"></p>
         </div>
         <div class="info-group">
           <span class="text-sm font-medium text-dark-muted">Kontak Person</span>
-          <p id="view-contactPerson" class="text-lg font-semibold text-white"></p>
+          <p id="view-contactPerson" class="text-lg font-semibold text-dark-text"></p>
         </div>
         <div class="info-group">
           <span class="text-sm font-medium text-dark-muted">Telepon</span>
-          <p id="view-phone" class="text-lg font-semibold text-white"></p>
+          <p id="view-phone" class="text-lg font-semibold text-dark-text"></p>
         </div>
         <div class="info-group">
           <span class="text-sm font-medium text-dark-muted">Email</span>
-          <p id="view-email" class="text-lg font-semibold text-white"></p>
+          <p id="view-email" class="text-lg font-semibold text-dark-text"></p>
         </div>
       </div>
       
       <div class="info-group">
         <span class="text-sm font-medium text-dark-muted">Alamat</span>
-        <p id="view-address" class="text-lg font-semibold text-white whitespace-pre-wrap"></p>
+        <p id="view-address" class="text-lg font-semibold text-dark-text whitespace-pre-wrap"></p>
       </div>
 
       <div>
         <span class="text-sm font-medium text-dark-muted">Catatan</span>
-        <p id="view-vendorNotes" class="text-base text-white bg-dark-bg/50 p-4 rounded-md mt-1 whitespace-pre-wrap"></p>
+        <p id="view-vendorNotes" class="text-base text-dark-text bg-dark-bg p-4 rounded-md mt-1 whitespace-pre-wrap"></p>
       </div>
     </div>
   </div>
@@ -797,12 +799,12 @@
         
         els.authScreen.style.display = 'none';
         els.appContainer.style.display = 'flex';
-        if (els.mobileHeader) els.mobileHeader.style.display = 'flex'; 
+        // Menyembunyikan header mobile di desktop
+        if (els.mobileHeader) els.mobileHeader.classList.add('md:hidden'); 
         
     } else {
         if(user) {
             console.log("Access Denied. User is not admin:", user.uid);
-            // Menggunakan .then().catch() untuk SignOut agar tidak ada masalah 'await'
             fb_auth.signOut().then(() => console.log("SignOut complete")).catch(e => console.error("SignOut failed:", e));
         } else {
             console.log("Access Denied. User not logged in.");
@@ -813,7 +815,8 @@
         fb_userId = null;
         els.authScreen.style.display = 'flex'; 
         els.appContainer.style.display = 'none'; 
-        if (els.mobileHeader) els.mobileHeader.style.display = 'none';
+        // Menyembunyikan header mobile saat akses ditolak
+        if (els.mobileHeader) els.mobileHeader.classList.add('md:hidden');
         $('#loader').style.display = 'none'; 
         if (assetListener) assetListener();
         if (vendorListener) vendorListener(); 
@@ -849,8 +852,7 @@
       });
     });
 
-    // --- (PERBAIKAN FINAL: MENGGUNAKAN PROMISE CHAIN) Logout Button ---
-    // Baris 1559 di kode asli Anda adalah di sini, sekarang menggunakan Promise standard.
+    // --- Logout Button menggunakan Promise Chain ---
     $('#logoutBtn').addEventListener('click', (e) => {
       e.preventDefault();
       if (confirm("Apakah Anda yakin ingin logout?")) {
@@ -864,9 +866,9 @@
           });
       }
     });
-    // -----------------------------------------------------------------
+    // ---------------------------------------------
     
-    // --- Listener Navigasi Mobile ---
+    // --- Listener Navigasi Mobile (Toggle) ---
     const sidebar = $('#sidebar');
     const toggleBtn = $('#mobileNavToggle');
     const overlay = $('#mobileNavOverlay');
@@ -1235,18 +1237,18 @@
 
     tableBody.innerHTML = filteredVendors.map(vendor => {
       return `
-        <tr class="hover:bg-dark-bg/30">
+        <tr class="hover:bg-dark-card">
           <td class="p-4 align-top">
-            <div class="font-bold text-white">${vendor.name || '-'}</div>
+            <div class="font-bold text-dark-text">${vendor.name || '-'}</div>
             <div class="text-xs text-dark-muted">${vendor.id}</div>
           </td>
-          <td class="p-4 align-top text-sm">${vendor.contact || '-'}</td>
-          <td class="p-4 align-top text-sm">${vendor.phone || '-'}</td>
-          <td class="p-4 align-top text-sm">${vendor.email || '-'}</td>
-          <td class="p-4 align-top text-sm">${(vendor.address || '-').substring(0, 50)}...</td>
+          <td class="p-4 align-top text-sm text-dark-text">${vendor.contact || '-'}</td>
+          <td class="p-4 align-top text-sm text-dark-text">${vendor.phone || '-'}</td>
+          <td class="p-4 align-top text-sm text-dark-text">${vendor.email || '-'}</td>
+          <td class="p-4 align-top text-sm text-dark-text">${(vendor.address || '-').substring(0, 50)}...</td>
           <td class="p-4 align-top text-right">
             <div class="flex items-center justify-end gap-2">
-              <button data-action="view" data-id="${vendor.id}" class="action-btn bg-dark-card text-dark-muted border border-dark-border hover:border-blue-500 hover:text-blue-500">Lihat</button>
+              <button data-action="view" data-id="${vendor.id}" class="action-btn bg-dark-card text-dark-muted border border-dark-border hover:border-primary hover:text-primary">Lihat</button>
               <button data-action="edit" data-id="${vendor.id}" class="action-btn bg-dark-card text-dark-muted border border-dark-border hover:border-accent hover:text-accent">Edit</button>
               <button data-action="delete" data-id="${vendor.id}" class="action-btn bg-dark-card text-dark-muted border border-dark-border hover:border-error hover:text-error">Hapus</button>
             </div>
@@ -1262,7 +1264,7 @@
     const action = target.dataset.action;
     const id = target.dataset.id;
     const vendor = allVendorsCache.find(v => v.id === id);
-    if (!vendor) return showToast('Error: Vendor tidak ditemukan lagi.', true);
+    if (!vendor) return showToast('Error: Vendor tidak ditemukan.', true);
 
     if (action === 'view') openViewVendorModal(vendor);
     else if (action === 'edit') openVendorModal(vendor);
@@ -1365,24 +1367,24 @@
       }
 
       return `
-        <tr class="hover:bg-dark-bg/30">
+        <tr class="hover:bg-dark-card">
           <td class="p-4 align-top">
-            <div class="font-bold text-white">${asset.name || '-'}</div>
+            <div class="font-bold text-dark-text">${asset.name || '-'}</div>
             <div class="text-xs text-dark-muted">${asset.id}</div>
           </td>
-          <td class="p-4 align-top text-sm">${asset.type || '-'}</td>
+          <td class="p-4 align-top text-sm text-dark-text">${asset.type || '-'}</td>
           <td class="p-4 align-top">
             <span class="px-3 py-1 text-xs font-bold rounded-full ${statusClass}">
               ${asset.qcStatus || '-'}
             </span>
           </td>
-          <td class="p-4 align-top text-sm font-bold text-center">${asset.qty || 0}</td>
-          <td class="p-4 align-top text-sm">${asset.location || '-'}</td>
-          <td class="p-4 align-top text-sm">${asset.pic || '-'}</td>
-          <td class="p-4 align-top text-sm font-mono">${asset.serial || '-'}</td>
+          <td class="p-4 align-top text-sm font-bold text-center text-dark-text">${asset.qty || 0}</td>
+          <td class="p-4 align-top text-sm text-dark-text">${asset.location || '-'}</td>
+          <td class="p-4 align-top text-sm text-dark-text">${asset.pic || '-'}</td>
+          <td class="p-4 align-top text-sm font-mono text-dark-text">${asset.serial || '-'}</td>
           <td class="p-4 align-top text-right">
             <div class="flex items-center justify-end gap-2">
-              <button data-action="view" data-id="${asset.id}" class="action-btn bg-dark-card text-dark-muted border border-dark-border hover:border-blue-500 hover:text-blue-500">Lihat</button>
+              <button data-action="view" data-id="${asset.id}" class="action-btn bg-dark-card text-dark-muted border border-dark-border hover:border-primary hover:text-primary">Lihat</button>
               <button data-action="edit" data-id="${asset.id}" class="action-btn bg-dark-card text-dark-muted border border-dark-border hover:border-accent hover:text-accent">Edit</button>
               <button data-action="delete" data-id="${asset.id}" class="action-btn bg-dark-card text-dark-muted border border-dark-border hover:border-error hover:text-error">Hapus</button>
             </div>
@@ -1437,8 +1439,8 @@
         responsive: true,
         plugins: { legend: { display: false } },
         scales: {
-          y: { beginAtZero: true, ticks: { color: '#94a3b8' }, grid: { color: '#334155' } },
-          x: { ticks: { color: '#94a3b8' }, grid: { display: false } }
+          y: { beginAtZero: true, ticks: { color: '#777777' }, grid: { color: '#E0E0E0' } },
+          x: { ticks: { color: '#777777' }, grid: { display: false } }
         }
       }
     });
@@ -1454,15 +1456,15 @@
       data: {
         labels: qcLabels,
         datasets: [{
+          backgroundColor: ['#dc3545', '#dc3545', '#ff7a18', '#777777'], // Lulus (Merah), Gagal (Merah), Belum (Oranye), Unknown
           data: qcData,
-          backgroundColor: ['#1db954', '#dc3545', '#f59e0b', '#6b7280'], // Lulus, Gagal, Belum, Unknown
-          borderColor: '#1e293b', borderWidth: 3,
+          borderColor: '#F8F8F8', borderWidth: 3,
         }]
       },
       options: {
         responsive: true,
         plugins: {
-          legend: { position: 'bottom', labels: { color: '#94a3b8', boxWidth: 12, padding: 20 } }
+          legend: { position: 'bottom', labels: { color: '#777777', boxWidth: 12, padding: 20 } }
         }
       }
     });
@@ -1573,7 +1575,7 @@
           <div class="text-sm">
             <span class="font-bold text-accent">[${log.type}]</span>
             <span class="text-dark-muted">${timestamp}</span>
-            <p class="text-white ml-2">${log.message} (by ${log.adminEmail || 'Admin'})</p>
+            <p class="text-dark-text ml-2">${log.message} (by ${log.adminEmail || 'Admin'})</p>
           </div>
         `;
       }).join('<hr class="border-dark-border/50 my-2">');
