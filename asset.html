@@ -114,7 +114,7 @@
   /* Input dan Search dengan fokus yang bersih */
   .input, .search {
     border: 1px solid #E0E0E0; 
-    background-color: #ffffff; 
+    background-color: #FFFFFF; 
     color: #333333;
     padding: 8px 12px; 
     border-radius: 6px;
@@ -191,6 +191,12 @@
         <a href="#vendors" class="nav-item flex items-center gap-3 px-6 py-3 text-dark-muted font-semibold hover:text-dark-text hover:bg-light-bg">
           <i class="fa-solid fa-store w-5 text-center"></i>
           <span>Vendor</span>
+        </a>
+      </li>
+      <li>
+        <a href="#disposed" class="nav-item flex items-center gap-3 px-6 py-3 text-dark-muted font-semibold hover:text-dark-text hover:bg-light-bg">
+          <i class="fa-solid fa-trash-can w-5 text-center"></i>
+          <span>Aset Disposed</span>
         </a>
       </li>
     </ul>
@@ -372,6 +378,31 @@
         </div>
       </div>
     </div>
+    
+    <div id="page-disposed" class="page p-8 md:p-10">
+      <h1 class="text-3xl font-bold text-dark-text">Aset Disposed (Arsip)</h1>
+      <p class="text-dark-muted mt-2">Daftar aset yang telah dipindahkan karena Gagal QC atau alasan lainnya. Aset di sini tidak termasuk dalam inventaris aktif.</p>
+      
+      <div class="bg-light-card rounded-lg shadow-lg border border-light-border overflow-hidden mt-6">
+        <div class="overflow-x-auto">
+          <table class="w-full min-w-[1000px]">
+            <thead class="bg-light-bg">
+              <tr>
+                <th class="p-4 text-left text-xs font-medium text-dark-muted uppercase tracking-wider">ID Aset</th>
+                <th class="p-4 text-left text-xs font-medium text-dark-muted uppercase tracking-wider">Nama & Tipe</th>
+                <th class="p-4 text-left text-xs font-medium text-dark-muted uppercase tracking-wider">Serial</th>
+                <th class="p-4 text-left text-xs font-medium text-dark-muted uppercase tracking-wider">Lokasi Asal</th>
+                <th class="p-4 text-left text-xs font-medium text-dark-muted uppercase tracking-wider">Tgl. Dispose</th>
+                <th class="p-4 text-right text-xs font-medium text-dark-muted uppercase tracking-wider">Aksi</th>
+              </tr>
+            </thead>
+            <tbody id="disposed-table-body" class="divide-y divide-light-border">
+              <tr><td colspan="6" class="p-6 text-center text-dark-muted">Memuat data disposed...</td></tr>
+            </tbody>
+          </table>
+        </div>
+      </div>
+    </div>
     </main>
 </div>
 
@@ -505,7 +536,6 @@
     </div>
   </div>
 </div>
-
 <div id="viewAssetModal" class="modal-backdrop fixed inset-0 z-50 bg-black/60 items-center justify-center p-4">
   <div class="bg-light-card rounded-lg shadow-2xl border border-light-border w-full max-w-3xl max-h-[90vh] flex flex-col">
     <div class="flex items-center justify-between p-5 border-b border-light-border">
@@ -583,7 +613,6 @@
     </div>
   </div>
 </div>
-
 <div id="vendorModal" class="modal-backdrop fixed inset-0 z-50 bg-black/60 items-center justify-center p-4">
   <div class="bg-light-card rounded-lg shadow-2xl border border-light-border w-full max-w-2xl max-h-[90vh] flex flex-col">
     <div class="flex items-center justify-between p-5 border-b border-light-border">
@@ -631,7 +660,6 @@
     </div>
   </div>
 </div>
-
 <div id="viewVendorModal" class="modal-backdrop fixed inset-0 z-50 bg-black/60 items-center justify-center p-4">
   <div class="bg-light-card rounded-lg shadow-2xl border border-light-border w-full max-w-2xl max-h-[90vh] flex flex-col">
     <div class="flex items-center justify-between p-5 border-b border-light-border">
@@ -694,6 +722,17 @@
   // ID Admin
   const ADMIN_UID = "Ogy9lUbGHbSu8wYIYx2gQsTtFDF2";
 
+  // --- Variabel Global Aplikasi (Tambahkan Koleksi Disposed) ---
+  let fb_app, fb_db, fb_auth, fb_userId, fb_assetsCollectionRef, fb_vendorsCollectionRef, fb_disposedCollectionRef;
+  let allAssetsCache = [];
+  let allVendorsCache = []; 
+  let allDisposedCache = []; // Cache untuk data disposed
+  let assetListener = null;
+  let vendorListener = null; 
+  let disposedListener = null; // Listener baru
+  let typeChartInstance = null;
+  let qcStatusChartInstance = null;
+  
   // --- Toast Helper (Global) ---
   function showToast(txt, isError = false){ 
     let t = document.getElementById('toastMsg'); 
@@ -747,15 +786,6 @@
       return `Rp ${price}`;
   }
 
-  // --- Variabel Global Aplikasi ---
-  let fb_app, fb_db, fb_auth, fb_userId, fb_assetsCollectionRef, fb_vendorsCollectionRef;
-  let allAssetsCache = [];
-  let allVendorsCache = []; 
-  let assetListener = null;
-  let vendorListener = null; 
-  let typeChartInstance = null;
-  let qcStatusChartInstance = null;
-  
   // ==================================================================
   // TITIK MASUK UTAMA APLIKASI
   // ==================================================================
@@ -764,7 +794,6 @@
       fb_app = firebase.initializeApp(firebaseConfig);
       fb_db = firebase.firestore();
       fb_auth = firebase.auth();
-      console.log("Firebase App Initialized (v8). Waiting for Auth...");
       fb_auth.onAuthStateChanged(authVerificationHandler);
       attachUIListeners();
     } catch (e) {
@@ -786,19 +815,21 @@
     };
 
     if (user && user.uid === ADMIN_UID) {
-        console.log("Admin user authenticated:", user.uid);
         $("#authMessage").textContent = "Verifikasi Berhasil!";
         $("#authSubMessage").textContent = "Selamat datang, Admin. Memuat data...";
         
         fb_userId = user.uid;
         fb_assetsCollectionRef = fb_db.collection('users').doc(fb_userId).collection('assets_v2');
         fb_vendorsCollectionRef = fb_db.collection('users').doc(fb_userId).collection('vendors');
+        fb_disposedCollectionRef = fb_db.collection('users').doc(fb_userId).collection('disposed_assets');
 
         els.userEmailDisplay.textContent = user.email;
         
+        // Muat semua data (termasuk disposed)
         await Promise.all([
           loadAssetData(),
-          loadVendorData() 
+          loadVendorData(),
+          loadDisposedData() 
         ]);
         
         els.authScreen.style.display = 'none';
@@ -807,10 +838,7 @@
         
     } else {
         if(user) {
-            console.log("Access Denied. User is not admin:", user.uid);
             fb_auth.signOut().then(() => console.log("SignOut complete")).catch(e => console.error("SignOut failed:", e));
-        } else {
-            console.log("Access Denied. User not logged in.");
         }
         
         showAuthError("Akses Ditolak", "Anda harus login sebagai Admin untuk mengakses halaman ini.");
@@ -822,6 +850,7 @@
         $('#loader').style.display = 'none'; 
         if (assetListener) assetListener();
         if (vendorListener) vendorListener(); 
+        if (disposedListener) disposedListener(); 
     }
   }
 
@@ -859,11 +888,7 @@
       e.preventDefault();
       if (confirm("Apakah Anda yakin ingin logout?")) {
         fb_auth.signOut()
-          .then(() => {
-            console.log("Logout successful via listener.");
-          })
           .catch((error) => {
-            console.error("Logout failed:", error);
             showToast("Gagal logout: " + error.message, true);
           });
       }
@@ -907,12 +932,119 @@
     $('#closeViewVendorModal').addEventListener('click', () => $('#viewVendorModal').classList.remove('active'));
     $('#searchVendorInput').addEventListener('input', debounce(() => renderVendorTable(allVendorsCache), 300));
     $('#vendor-table-body').addEventListener('click', handleVendorTableActions);
+    
+    // --- Listener Disposed ---
+    $('#disposed-table-body').addEventListener('click', handleDisposedTableActions);
   }
 
   // ==================================================================
-  // FUNGSI PEMBANTU KODE UNIK
+  // FUNGSI UTAMA UNTUK DISPOSED ASSETS
   // ==================================================================
-  
+
+  // --- MODIFIKASI: FUNGSI DELETE MENJADI FUNGSI DISPOSE ---
+  async function deleteAsset(id) {
+    const asset = allAssetsCache.find(a => a.id === id);
+    if (!asset) return showToast('Error: Aset tidak ditemukan.', true);
+
+    const assetName = asset.name || asset.id;
+    if (!confirm(`Yakin ingin memindahkan aset "${assetName}" ke Arsip Disposal?\n\n*Aset akan dihapus dari inventaris aktif.*`)) return;
+    
+    $('#loader').style.display = 'flex';
+    try {
+      // 1. Ambil data aset lengkap
+      const assetDoc = await fb_assetsCollectionRef.doc(id).get();
+      const assetData = assetDoc.data();
+      
+      // 2. Tulis data aset ke koleksi DISPOSED
+      await fb_disposedCollectionRef.doc(id).set({
+          ...assetData,
+          disposedAt: firebase.firestore.FieldValue.serverTimestamp(),
+          disposedBy: fb_auth.currentUser.email
+      });
+      
+      // 3. Hapus aset dari koleksi UTAMA (assets_v2)
+      await fb_assetsCollectionRef.doc(id).delete();
+      
+      showToast('Aset berhasil di-Dispose dan dipindahkan ke Arsip.');
+      
+    } catch (e) {
+      console.error("Error disposing asset: ", e);
+      showToast('Gagal memproses Disposal aset: ' + e.message, true);
+    } finally {
+      $('#loader').style.display = 'none';
+    }
+  }
+
+  // --- FUNGSI UNTUK ME-LOAD DATA DISPOSED (Sintaks diperbaiki) ---
+  function loadDisposedData() {
+    return new Promise((resolve, reject) => {
+        if (disposedListener) disposedListener();
+
+        // Menggunakan callback error yang benar untuk onSnapshot (memperbaiki TypeError)
+        disposedListener = fb_disposedCollectionRef.orderBy('disposedAt', 'desc').onSnapshot(snapshot => {
+            console.log(`(DATA DISPOSED) Menerima ${snapshot.docs.length} dokumen.`);
+            allDisposedCache = snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() })); 
+            renderDisposedTable(allDisposedCache);
+            resolve();
+        }, error => { 
+            console.error("Error loading disposed assets:", error);
+            // Hanya tampilkan toast error jika bukan permission denied, karena itu urusan rules
+            if (error.code !== 'permission-denied') { 
+                showToast('Gagal memuat data disposed: ' + error.message, true);
+            }
+            // Karena ini listener, kita tetap resolve/reject untuk promise luar
+            reject(error);
+        });
+    });
+  }
+
+  // --- RENDER TABEL DISPOSED ASSETS ---
+  function renderDisposedTable(disposedAssets) {
+    const tableBody = $('#disposed-table-body');
+    if (!tableBody) return;
+
+    if (disposedAssets.length === 0) {
+      tableBody.innerHTML = `<tr><td colspan="6" class="p-6 text-center text-dark-muted">Tidak ada aset di arsip disposal.</td></tr>`;
+      return;
+    }
+
+    tableBody.innerHTML = disposedAssets.map(asset => {
+        const disposalDate = asset.disposedAt ? asset.disposedAt.toDate().toLocaleDateString('id-ID') : '-';
+
+        return `
+            <tr class="hover:bg-light-card">
+              <td class="p-4 align-top text-sm font-mono">${asset.id}</td>
+              <td class="p-4 align-top">
+                <div class="font-bold text-dark-text">${asset.name || '-'}</div>
+                <div class="text-xs text-dark-muted">${asset.type || '-'}</div>
+              </td>
+              <td class="p-4 align-top text-sm text-dark-text">${asset.serial || '-'}</td>
+              <td class="p-4 align-top text-sm text-dark-text">${asset.location || '-'}</td>
+              <td class="p-4 align-top text-sm text-dark-text">${disposalDate}</td>
+              <td class="p-4 align-top text-right">
+                <div class="flex items-center justify-end gap-2">
+                  <button data-action="view-disposed" data-id="${asset.id}" class="action-btn bg-light-card text-dark-muted border border-light-border hover:border-primary hover:text-primary">Lihat Detail</button>
+                </div>
+              </td>
+            </tr>
+        `;
+    }).join('');
+  }
+
+  function handleDisposedTableActions(e) {
+    const target = e.target.closest('button[data-action]');
+    if (!target) return;
+    const action = target.dataset.action;
+    const id = target.dataset.id;
+    const asset = allDisposedCache.find(a => a.id === id); 
+    if (!asset) return showToast('Error: Aset disposed tidak ditemukan.', true);
+
+    if (action === 'view-disposed') openViewModal(asset);
+  }
+  // ==================================================================
+  // END DISPOSED ASSETS FUNCTIONS
+  // ==================================================================
+
   function getPrefixByType(type) {
       if (!type) return 'UNK';
       const map = {
@@ -962,27 +1094,20 @@
               nextCode = `${uniqueKey}-${paddedCount}`; 
 
               transaction.set(counterRef, { count: newCount, prefix: uniqueKey });
-              
-              console.log("Kode Aset unik baru:", nextCode);
           });
           
           return nextCode;
           
       } catch (e) {
-          console.error("Gagal mendapatkan kode unik terstruktur:", e);
           showToast('Gagal membuat kode aset unik, menggunakan ID acak.', true);
           return fb_assetsCollectionRef.doc().id; 
       }
   }
 
-  // ==================================================================
-  // FUNGSI DATA ASET (CRUD & RENDER) - MODIFIED SAVE ASSET
-  // ==================================================================
-
+  // --- FUNGSI SAVE ASSET (Tidak berubah, sudah anti-double click) ---
   async function saveAsset(e) {
     e.preventDefault();
     
-    // --- PENCEGAHAN DOUBLE CLICK ---
     const saveBtn = $('#saveAssetBtn');
     if (saveBtn.disabled) return; 
 
@@ -990,7 +1115,6 @@
     saveBtn.textContent = 'Menyimpan...';
     saveBtn.classList.add('opacity-50', 'cursor-not-allowed');
     $('#loader').style.display = 'flex';
-    // --------------------------------
 
     const assetData = {
       name: $('#assetName').value,
@@ -1013,7 +1137,6 @@
     
     if (!assetData.type) {
       showToast('Error: Tipe Aset harus dipilih', true);
-      // --- RESET TOMBOL JIKA ADA ERROR VALIDASI ---
       saveBtn.disabled = false;
       saveBtn.textContent = 'Simpan Aset';
       saveBtn.classList.remove('opacity-50', 'cursor-not-allowed');
@@ -1026,7 +1149,6 @@
 
     try {
       if (assetId) {
-        // --- UPDATE ASET ---
         const docRef = fb_assetsCollectionRef.doc(assetId);
         const oldDoc = allAssetsCache.find(a => a.id === assetId);
         
@@ -1043,7 +1165,6 @@
         showToast('Aset berhasil diperbarui');
         
       } else {
-        // --- CREATE ASET (LOGIKA KODE UNIK) ---
         assetData.createdAt = firebase.firestore.FieldValue.serverTimestamp();
         
         const newAssetCode = await generateUniqueAssetCode(assetData); 
@@ -1059,10 +1180,8 @@
       $('#assetModal').classList.remove('active');
       
     } catch (e) {
-      console.error("Error saving asset: ", e);
       showToast('Gagal menyimpan aset: ' + e.message, true);
     } finally {
-      // --- RESET TOMBOL DAN LOADER ---
       saveBtn.disabled = false;
       saveBtn.textContent = 'Simpan Aset';
       saveBtn.classList.remove('opacity-50', 'cursor-not-allowed');
@@ -1076,16 +1195,12 @@
       $('#loader').style.display = 'flex';
 
       assetListener = fb_assetsCollectionRef.orderBy('name', 'asc').onSnapshot((snapshot) => {
-          console.log(`(DATA ASET) Menerima ${snapshot.docs.length} dokumen.`);
           allAssetsCache = snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() }));
-                    
           renderAssetTable(allAssetsCache);
           updateDashboard(allAssetsCache);
-          
           $('#loader').style.display = 'none';
           resolve();
       }, (error) => {
-          console.error("Error listening to assets:", error);
           showToast('Gagal memuat data aset: ' + error.message, true);
           $('#loader').style.display = 'none';
           reject(error);
@@ -1093,24 +1208,6 @@
     });
   }
 
-  async function deleteAsset(id) {
-    const asset = allAssetsCache.find(a => a.id === id);
-    if (!asset) return showToast('Error: Aset tidak ditemukan.', true);
-
-    if (!confirm(`Yakin ingin menghapus aset ini?\n\nNama: ${asset.name}\nSerial: ${asset.serial}\nID: ${asset.id}`)) return;
-    
-    $('#loader').style.display = 'flex';
-    try {
-      await fb_assetsCollectionRef.doc(id).delete();
-      showToast('Aset berhasil dihapus');
-    } catch (e) {
-      console.error("Error deleting asset: ", e);
-      showToast('Gagal menghapus aset: ' + e.message, true);
-    } finally {
-      $('#loader').style.display = 'none';
-    }
-  }
-  
   async function addAssetLog(assetId, message, type) {
     if (!assetId) return;
     try {
@@ -1120,18 +1217,18 @@
         timestamp: firebase.firestore.FieldValue.serverTimestamp(),
         adminEmail: fb_auth.currentUser.email
       };
+      // Log dicatat di koleksi aktif
       await fb_assetsCollectionRef.doc(assetId).collection('history').add(logData);
     } catch (e) { console.error("Error writing asset log: ", e); }
   }
 
   // ==================================================================
   // --- FUNGSI VENDOR (CRUD & RENDER) ---
+  // ... (Vendor functions remain the same) ...
   // ==================================================================
-
   async function saveVendor(e) {
     e.preventDefault();
     
-    // --- PENCEGAHAN DOUBLE CLICK ---
     const saveBtn = $('#saveVendorBtn');
     if (saveBtn.disabled) return;
     
@@ -1139,7 +1236,6 @@
     saveBtn.textContent = 'Menyimpan...';
     saveBtn.classList.add('opacity-50', 'cursor-not-allowed');
     $('#loader').style.display = 'flex';
-    // --------------------------------
 
     const vendorData = {
       name: $('#vendorName').value,
@@ -1155,13 +1251,11 @@
 
     try {
       if (vendorId) {
-        // --- UPDATE VENDOR ---
         const docRef = fb_vendorsCollectionRef.doc(vendorId);
         await docRef.update(vendorData);
         showToast('Data vendor berhasil diperbarui');
         
       } else {
-        // --- CREATE VENDOR ---
         vendorData.createdAt = firebase.firestore.FieldValue.serverTimestamp();
         const docRef = await fb_vendorsCollectionRef.add(vendorData);
         showToast('Vendor baru berhasil ditambahkan');
@@ -1170,10 +1264,8 @@
       $('#vendorModal').classList.remove('active');
       
     } catch (e) {
-      console.error("Error saving vendor: ", e);
       showToast('Gagal menyimpan vendor: ' + e.message, true);
     } finally {
-      // --- RESET TOMBOL DAN LOADER ---
       saveBtn.disabled = false;
       saveBtn.textContent = 'Simpan Vendor';
       saveBtn.classList.remove('opacity-50', 'cursor-not-allowed');
@@ -1186,7 +1278,6 @@
       if (vendorListener) vendorListener();
       
       vendorListener = fb_vendorsCollectionRef.orderBy('name', 'asc').onSnapshot((snapshot) => {
-          console.log(`(DATA VENDOR) Menerima ${snapshot.docs.length} dokumen.`);
           allVendorsCache = snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() }));
           
           renderVendorTable(allVendorsCache);
@@ -1194,7 +1285,6 @@
           resolve();
           
       }, (error) => {
-          console.error("Error listening to vendors:", error);
           showToast('Gagal memuat data vendor: ' + error.message, true);
           reject(error);
       });
@@ -1212,7 +1302,6 @@
       await fb_vendorsCollectionRef.doc(id).delete();
       showToast('Vendor berhasil dihapus');
     } catch (e) {
-      console.error("Error deleting vendor: ", e);
       showToast('Gagal menghapus vendor: ' + e.message, true);
     } finally {
       $('#loader').style.display = 'none';
@@ -1277,14 +1366,12 @@
     const modal = $('#vendorModal');
     $('#vendorForm').reset();
     
-    // Reset tombol save saat modal dibuka
     const saveBtn = $('#saveVendorBtn');
     saveBtn.disabled = false;
     saveBtn.textContent = 'Simpan Vendor';
     saveBtn.classList.remove('opacity-50', 'cursor-not-allowed');
     
     if (vendor) {
-      // --- MODE EDIT ---
       $('#vendorModalTitle').textContent = 'Edit Vendor';
       $('#vendorId').value = vendor.id;
       $('#vendorName').value = vendor.name || '';
@@ -1294,7 +1381,6 @@
       $('#address').value = vendor.address || '';
       $('#vendorNotes').value = vendor.notes || '';
     } else {
-      // --- MODE TAMBAH ---
       $('#vendorModalTitle').textContent = 'Tambah Vendor Baru';
       $('#vendorId').value = '';
     }
@@ -1362,11 +1448,30 @@
     tableBody.innerHTML = filteredAssets.map(asset => {
       let statusClass = '';
       let statusTextClass = 'status-badge ';
+      let actionButtons = `
+            <button data-action="view" data-id="${asset.id}" class="action-btn bg-light-card text-dark-muted border border-light-border hover:border-primary hover:text-primary">Lihat</button>
+            <button data-action="edit" data-id="${asset.id}" class="action-btn bg-light-card text-dark-muted border border-light-border hover:border-accent hover:text-accent">Edit</button>
+      `; // Default: Hanya Lihat & Edit (Tidak ada Hapus)
+
       switch (asset.qcStatus) {
-        case 'Lulus QC': statusClass = 'bg-success/10 text-success'; break;
-        case 'Gagal QC': statusClass = 'bg-error/10 text-error'; break;
-        case 'Belum QC': statusClass = 'bg-warning/10 text-warning'; break;
-        default: statusClass = 'bg-light-border text-dark-muted';
+        case 'Lulus QC': 
+            statusClass = 'bg-success/10 text-success'; 
+            break;
+            
+        case 'Gagal QC': 
+            statusClass = 'bg-error/10 text-error'; 
+            // KHUSUS GAGAL QC: Tambahkan tombol Dispose
+            actionButtons += `
+                <button data-action="delete" data-id="${asset.id}" class="action-btn bg-error/10 text-error border border-error hover:bg-error hover:text-white transition-all duration-300">Dispose</button>
+            `;
+            break;
+            
+        case 'Belum QC': 
+            statusClass = 'bg-warning/10 text-warning'; 
+            break;
+            
+        default: 
+            statusClass = 'bg-light-border text-dark-muted';
       }
 
       return `
@@ -1387,9 +1492,7 @@
           <td class="p-4 align-top text-sm font-mono text-dark-text">${asset.serial || '-'}</td>
           <td class="p-4 align-top text-right">
             <div class="flex items-center justify-end gap-2">
-              <button data-action="view" data-id="${asset.id}" class="action-btn bg-light-card text-dark-muted border border-light-border hover:border-primary hover:text-primary">Lihat</button>
-              <button data-action="edit" data-id="${asset.id}" class="action-btn bg-light-card text-dark-muted border border-light-border hover:border-accent hover:text-accent">Edit</button>
-              <button data-action="delete" data-id="${asset.id}" class="action-btn bg-light-card text-dark-muted border border-light-border hover:border-error hover:text-error">Hapus</button>
+              ${actionButtons}
             </div>
           </td>
         </tr>
@@ -1436,7 +1539,7 @@
       data: { labels: typeLabels, datasets: [{
           label: 'Jumlah Aset', 
           data: typeData, 
-          backgroundColor: '#007bff', // Menggunakan Primary (Biru) untuk Bar Chart
+          backgroundColor: '#007bff', // Menggunakan Primary (Biru)
           borderRadius: 4,
       }]},
       options: {
@@ -1494,21 +1597,19 @@
 
     if (action === 'view') openViewModal(asset);
     else if (action === 'edit') openAssetModal(asset);
-    else if (action === 'delete') deleteAsset(id);
+    else if (action === 'delete') deleteAsset(id); 
   }
 
   function openAssetModal(asset = null) {
     const modal = $('#assetModal');
     $('#assetForm').reset(); 
     
-    // Reset tombol save saat modal dibuka
     const saveBtn = $('#saveAssetBtn');
     saveBtn.disabled = false;
     saveBtn.textContent = 'Simpan Aset';
     saveBtn.classList.remove('opacity-50', 'cursor-not-allowed');
     
     if (asset) {
-      // --- MODE EDIT ---
       $('#assetModalTitle').textContent = 'Edit Aset';
       $('#assetId').value = asset.id;
       $('#assetName').value = asset.name || '';
@@ -1527,7 +1628,6 @@
       $('#software').value = asset.software || '';
       $('#notes').value = asset.notes || '';
     } else {
-      // --- MODE TAMBAH ---
       $('#assetModalTitle').textContent = 'Tambah Aset Baru';
       $('#assetId').value = '';
       $('#qty').value = 1;
@@ -1543,7 +1643,6 @@
   async function openViewModal(asset) {
     const modal = $('#viewAssetModal');
     
-    // Isi info dasar
     $('#viewModalTitle').textContent = `Detail: ${asset.name}`;
     $('#view-name').textContent = asset.name || '-';
     $('#view-type').textContent = asset.type || '-';
@@ -1574,7 +1673,11 @@
     historyContainer.innerHTML = `<p class="text-dark-muted text-sm">Memuat riwayat...</p>`;
     
     try {
-      const historyQuery = fb_assetsCollectionRef.doc(asset.id).collection('history').orderBy('timestamp', 'desc').limit(10);
+      // Logic untuk koleksi assets_v2 atau disposed_assets
+      const isDisposed = asset.disposedAt ? true : false;
+      const historyCollection = isDisposed ? fb_disposedCollectionRef.doc(asset.id).collection('history') : fb_assetsCollectionRef.doc(asset.id).collection('history');
+      
+      const historyQuery = historyCollection.orderBy('timestamp', 'desc').limit(10);
       const snapshot = await historyQuery.get();
       
       if (snapshot.empty) {
@@ -1595,7 +1698,6 @@
       }).join('<hr class="border-light-border/50 my-2">');
 
     } catch (e) {
-      console.error("Error fetching asset history: ", e);
       historyContainer.innerHTML = `<p class="text-error text-sm">Gagal memuat riwayat.</p>`;
     }
   }
@@ -1612,7 +1714,7 @@
         (asset.pic && asset.pic.toLowerCase().includes(searchTerm)) ||
         (asset.location && asset.location.toLowerCase().includes(searchTerm)) ||
         (asset.id && asset.id.toLowerCase().includes(searchTerm)); 
-      const qcStatusMatch = !qcStatusFilter || asset.qcStatus === qcStatusFilter;
+      const qcStatusMatch = !qcStatusFilter || asset.qcStatus === filterQcStatus;
       const typeMatch = !typeFilter || asset.type === typeFilter;
       return searchMatch && qcStatusMatch && typeMatch;
     });
@@ -1648,7 +1750,6 @@
       XLSX.writeFile(wb, `Export_Aset_IT_${new Date().toISOString().slice(0,10)}.xlsx`);
       showToast('Data berhasil diexport ke Excel');
     } catch(e) {
-      console.error("Gagal export Excel: ", e);
       showToast('Gagal export Excel', true);
     }
   }
