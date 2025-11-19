@@ -859,7 +859,90 @@
   }
 
   // ==================================================================
-  // FUNGSI DATA ASET (CRUD & RENDER)
+  // FUNGSI PEMBANTU KODE UNIK (BARU)
+  // ==================================================================
+  
+  /**
+   * Mengubah tipe aset menjadi 3 huruf prefix.
+   */
+  function getPrefixByType(type) {
+      if (!type) return 'UNK';
+      const map = {
+          'Laptop': 'LAP', 'Desktop': 'DES', 'All-in-One (AIO)': 'AIO', 'Server': 'SRV',
+          'Monitor': 'MON', 'Keyboard': 'KEY', 'Mouse': 'MOU', 'Printer': 'PRT',
+          'Scanner': 'SCN', 'Projector': 'PRJ', 'Headset/Speaker': 'HDS', 'Webcam': 'WCM',
+          'Router': 'RTR', 'Switch': 'SWT', 'Access Point': 'ACP',
+          'Hard Drive': 'HDD', 'SSD': 'SSD', 'RAM': 'RAM',
+          'UPS': 'UPS', 'Software': 'SFW', 'Lainnya': 'OTH' 
+      };
+      // Ambil 3 huruf awal jika tidak ada di map
+      return map[type] || type.replace(/[^a-zA-Z]/g, '').substring(0, 3).toUpperCase();
+  }
+
+  /**
+   * Mengubah lokasi menjadi 2 huruf prefix.
+   */
+  function getPrefixByLocation(location) {
+      if (!location) return 'XX';
+      location = location.toUpperCase().trim();
+      
+      // Mapping lokasi umum atau kunci
+      if (location.includes('IT')) return 'IT';
+      if (location.includes('FINANCE') || location.includes('FIN')) return 'FN';
+      if (location.includes('HR')) return 'HR';
+      if (location.includes('SERVER')) return 'SV';
+      if (location.includes('WAREHOUSE') || location.includes('WH')) return 'WH';
+      
+      // Ambil dua huruf pertama (Fallback)
+      return location.replace(/[^A-Z0-9]/g, '').substring(0, 2) || 'XX';
+  }
+
+  /**
+   * Mendapatkan Kode Aset Unik berdasarkan Tipe dan Lokasi menggunakan Transaksi.
+   */
+  async function generateUniqueAssetCode(assetData) {
+      // 1. Buat Kunci Kombinasi (misal: LAP-IT)
+      const typePrefix = getPrefixByType(assetData.type);
+      const locationPrefix = getPrefixByLocation(assetData.location);
+      const uniqueKey = `${typePrefix}-${locationPrefix}`; 
+
+      // 2. Tentukan referensi counter berdasarkan kunci unik
+      const counterRef = fb_db.collection('counters').doc(uniqueKey);
+      let nextCode = '';
+
+      try {
+          await fb_db.runTransaction(async (transaction) => {
+              const doc = await transaction.get(counterRef);
+
+              let currentCount = 0;
+              if (doc.exists) {
+                  currentCount = doc.data().count;
+              }
+
+              const newCount = currentCount + 1;
+              
+              // Format INDEX: 001, 010, 100 (3 digit)
+              const paddedCount = newCount.toString().padStart(3, '0');
+              nextCode = `${uniqueKey}-${paddedCount}`; // Contoh: LAP-IT-001
+
+              // Simpan hitungan yang baru
+              transaction.set(counterRef, { count: newCount, prefix: uniqueKey });
+              
+              console.log("Kode Aset unik baru:", nextCode);
+          });
+          
+          return nextCode;
+          
+      } catch (e) {
+          console.error("Gagal mendapatkan kode unik terstruktur:", e);
+          // Fallback ke ID Firestore acak jika transaksi gagal
+          showToast('Gagal membuat kode aset unik, menggunakan ID acak.', true);
+          return fb_assetsCollectionRef.doc().id; 
+      }
+  }
+
+  // ==================================================================
+  // FUNGSI DATA ASET (CRUD & RENDER) - MODIFIED SAVE ASSET
   // ==================================================================
 
   async function saveAsset(e) {
@@ -902,8 +985,8 @@
         
         if (oldDoc && oldDoc.qcStatus !== assetData.qcStatus) {
           logMessage = `Status QC diubah dari '${oldDoc.qcStatus}' menjadi '${assetData.qcStatus}'.`;
-        } else if (oldDoc && oldDoc.location !== assetData.location) {
-          logMessage = `Lokasi diubah dari '${oldDoc.location}' menjadi '${assetData.location}'. (PIC: ${assetData.pic})`;
+        } else if (oldDoc && (oldDoc.location !== assetData.location || oldDoc.pic !== assetData.pic)) {
+          logMessage = `Lokasi/PIC diubah dari '${oldDoc.location} (${oldDoc.pic})' menjadi '${assetData.location} (${assetData.pic})'.`;
         } else {
           logMessage = "Detail aset diperbarui.";
         }
@@ -913,12 +996,20 @@
         showToast('Aset berhasil diperbarui');
         
       } else {
-        // --- CREATE ASET ---
+        // --- CREATE ASET (LOGIKA KODE UNIK) ---
         assetData.createdAt = firebase.firestore.FieldValue.serverTimestamp();
-        const docRef = await fb_assetsCollectionRef.add(assetData);
-        logMessage = `Aset dibuat dengan status QC '${assetData.qcStatus}'.`;
-        await addAssetLog(docRef.id, logMessage, "Create");
-        showToast('Aset baru berhasil ditambahkan');
+        
+        // 1. Dapatkan Kode Unik Berdasarkan Tipe & Lokasi
+        const newAssetCode = await generateUniqueAssetCode(assetData); 
+        
+        // 2. Simpan menggunakan Kode Unik sebagai Document ID
+        const docRef = fb_assetsCollectionRef.doc(newAssetCode); 
+        await docRef.set(assetData); // Menggunakan .set(data) + .doc(id)
+        
+        // 3. Update log dan notifikasi
+        logMessage = `Aset dibuat dengan ID kustom ${newAssetCode} dan status QC '${assetData.qcStatus}'.`;
+        await addAssetLog(newAssetCode, logMessage, "Create");
+        showToast(`Aset baru (${newAssetCode}) berhasil ditambahkan`);
       }
       
       $('#assetModal').classList.remove('active');
@@ -958,7 +1049,7 @@
     const asset = allAssetsCache.find(a => a.id === id);
     if (!asset) return showToast('Error: Aset tidak ditemukan.', true);
 
-    if (!confirm(`Yakin ingin menghapus aset ini?\n\nNama: ${asset.name}\nSerial: ${asset.serial}`)) return;
+    if (!confirm(`Yakin ingin menghapus aset ini?\n\nNama: ${asset.name}\nSerial: ${asset.serial}\nID: ${asset.id}`)) return;
     
     $('#loader').style.display = 'flex';
     try {
@@ -1190,7 +1281,8 @@
         (asset.name && asset.name.toLowerCase().includes(searchTerm)) ||
         (asset.serial && asset.serial.toLowerCase().includes(searchTerm)) ||
         (asset.pic && asset.pic.toLowerCase().includes(searchTerm)) ||
-        (asset.location && asset.location.toLowerCase().includes(searchTerm));
+        (asset.location && asset.location.toLowerCase().includes(searchTerm)) ||
+        (asset.id && asset.id.toLowerCase().includes(searchTerm)); // Tambah filter berdasarkan ID
       
       const qcStatusMatch = !qcStatusFilter || asset.qcStatus === qcStatusFilter;
       const typeMatch = !typeFilter || asset.type === typeFilter;
@@ -1449,7 +1541,8 @@
         (asset.name && asset.name.toLowerCase().includes(searchTerm)) ||
         (asset.serial && asset.serial.toLowerCase().includes(searchTerm)) ||
         (asset.pic && asset.pic.toLowerCase().includes(searchTerm)) ||
-        (asset.location && asset.location.toLowerCase().includes(searchTerm));
+        (asset.location && asset.location.toLowerCase().includes(searchTerm)) ||
+        (asset.id && asset.id.toLowerCase().includes(searchTerm)); // Tambah filter berdasarkan ID
       const qcStatusMatch = !qcStatusFilter || asset.qcStatus === qcStatusFilter;
       const typeMatch = !typeFilter || asset.type === typeFilter;
       return searchMatch && qcStatusMatch && typeMatch;
