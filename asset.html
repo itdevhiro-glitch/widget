@@ -15,17 +15,18 @@
     theme: {
       extend: {
         colors: {
-          'primary': '#007bff',
+          // Palet Warna Semantik Standar
+          'primary': '#007bff', // BIRU - Default Highlight/Primary Action
           'primary-hover': '#0069d9',
-          'accent': '#ff7a18', // ORANYE - Highlight
+          'accent': '#ff7a18', // ORANYE - Secondary Highlight/General Chart Color
           'dark-bg': '#FFFFFF', // PUTIH - Background Utama
           'dark-card': '#F8F8F8', // PUTIH MUDA - Background Card
           'dark-border': '#E0E0E0', // ABU RINGAN - Border
           'dark-text': '#333333', // ABU GELAP - Teks Utama
           'dark-muted': '#777777', // ABU MUTE - Teks Sekunder
-          'error': '#dc3545', // MERAH - Status Error/Gagal
-          'success': '#dc3545', // MERAH - Status Lulus QC (Diubah dari Hijau ke Merah)
-          'warning': '#ff7a18', // ORANYE - Status Belum QC (Diubah dari Kuning ke Oranye)
+          'error': '#dc3545', // MERAH - Status Gagal QC
+          'success': '#1db954', // HIJAU - Status Lulus QC (Sesuai permintaan dan semantik)
+          'warning': '#007bff', // BIRU PRIMARY - Status Belum QC (Menggunakan Biru untuk kontras)
         },
       },
     },
@@ -37,7 +38,7 @@
   html { font-family: 'Inter', system-ui, sans-serif; }
   /* Custom Scrollbar */
   ::-webkit-scrollbar { width: 8px; height: 8px; }
-  ::-webkit-scrollbar-track { background: #f0f0f0; } /* Disusaikan untuk tema terang */
+  ::-webkit-scrollbar-track { background: #f0f0f0; } 
   ::-webkit-scrollbar-thumb { background: #bbb; border-radius: 4px; }
   ::-webkit-scrollbar-thumb:hover { background: #999; }
   
@@ -106,7 +107,7 @@
   }
   .kpi-card:hover {
     transform: translateY(-5px);
-    box-shadow: 0 8px 20px rgba(0,0,0,0.1); /* Shadow ringan untuk tema terang */
+    box-shadow: 0 8px 20px rgba(0,0,0,0.1); 
   }
 
   #addAssetBtn, #saveAssetBtn, #addVendorBtn, #saveVendorBtn {
@@ -124,8 +125,8 @@
   }
   
   .input, .search {
-    border: 1px solid #E0E0E0; /* dark-border baru */
-    background-color: #ffffff; /* Pastikan input putih */
+    border: 1px solid #E0E0E0; 
+    background-color: #ffffff; 
     color: #333333;
     transition: border-color 0.2s ease, box-shadow 0.2s ease;
   }
@@ -696,8 +697,8 @@
         position: 'fixed', right: '20px', bottom: '20px', zIndex: '10000',
         padding: '12px 20px', borderRadius: '8px', color: 'white',
         fontWeight: '600', boxShadow: '0 4px 12px rgba(0,0,0,0.3)',
-        transition: 'opacity 0.3s ease',
-        background: isError ? '#dc3545' : '#1db954'
+        // Menggunakan Hijau dan Merah untuk Toast
+        background: isError ? '#dc3545' : '#1db954' 
       });
       document.body.appendChild(t); 
     } 
@@ -815,7 +816,6 @@
         fb_userId = null;
         els.authScreen.style.display = 'flex'; 
         els.appContainer.style.display = 'none'; 
-        // Menyembunyikan header mobile saat akses ditolak
         if (els.mobileHeader) els.mobileHeader.classList.add('md:hidden');
         $('#loader').style.display = 'none'; 
         if (assetListener) assetListener();
@@ -1360,6 +1360,7 @@
     tableBody.innerHTML = filteredAssets.map(asset => {
       let statusClass = '';
       switch (asset.qcStatus) {
+        // Menggunakan skema warna baru: HIJAU (Lulus), MERAH (Gagal), BIRU (Belum)
         case 'Lulus QC': statusClass = 'bg-success/20 text-success'; break;
         case 'Gagal QC': statusClass = 'bg-error/20 text-error'; break;
         case 'Belum QC': statusClass = 'bg-warning/20 text-warning'; break;
@@ -1433,7 +1434,8 @@
       data: { labels: typeLabels, datasets: [{
           label: 'Jumlah Aset', 
           data: typeData, 
-          backgroundColor: '#ff7a18', borderRadius: 4,
+          backgroundColor: '#ff7a18', // Warna Bar Chart menggunakan Accent (Oranye)
+          borderRadius: 4,
       }]},
       options: {
         responsive: true,
@@ -1450,13 +1452,23 @@
     const qcLabels = Object.keys(qcStatusCounts);
     const qcData = Object.values(qcStatusCounts);
     
+    // Mapping warna untuk Doughnut Chart
+    const chartColors = {
+      'Lulus QC': '#1db954', // HIJAU
+      'Gagal QC': '#dc3545', // MERAH
+      'Belum QC': '#007bff', // BIRU
+      'Unknown': '#777777'   // ABU
+    };
+
+    const dataColors = qcLabels.map(label => chartColors[label] || chartColors['Unknown']);
+    
     if (qcStatusChartInstance) qcStatusChartInstance.destroy();
     qcStatusChartInstance = new Chart(qcCtx, {
       type: 'doughnut',
       data: {
         labels: qcLabels,
         datasets: [{
-          backgroundColor: ['#dc3545', '#dc3545', '#ff7a18', '#777777'], // Lulus (Merah), Gagal (Merah), Belum (Oranye), Unknown
+          backgroundColor: dataColors, // Menggunakan warna Hijau, Merah, Biru
           data: qcData,
           borderColor: '#F8F8F8', borderWidth: 3,
         }]
