@@ -15,18 +15,17 @@
     theme: {
       extend: {
         colors: {
-          // Palet Warna Semantik Standar & Profesional
-          'primary': '#007bff', // BIRU - Default Highlight/Primary Action
+          'primary': '#007bff', 
           'primary-hover': '#0069d9',
-          'accent': '#ff7a18', // ORANYE - Secondary Highlight/General Chart Color
-          'light-bg': '#FFFFFF', // PUTIH - Background Utama
-          'light-card': '#F8F8F8', // PUTIH MUDA - Background Card/Sidebar
-          'light-border': '#E0E0E0', // ABU RINGAN - Border/Garis
-          'dark-text': '#333333', // ABU GELAP - Teks Utama
-          'dark-muted': '#777777', // ABU MUTE - Teks Sekunder
-          'success': '#1db954', // HIJAU - Status Lulus QC
-          'error': '#dc3545', // MERAH - Status Gagal QC
-          'warning': '#007bff', // BIRU PRIMARY - Status Belum QC (Digunakan untuk kontras di chart)
+          'accent': '#ff7a18', 
+          'light-bg': '#FFFFFF', 
+          'light-card': '#F8F8F8', 
+          'light-border': '#E0E0E0', 
+          'dark-text': '#333333', 
+          'dark-muted': '#777777', 
+          'success': '#1db954', 
+          'error': '#dc3545', 
+          'warning': '#007bff', 
           'chart-blue': '#007bff',
           'chart-green': '#1db954',
           'chart-red': '#dc3545',
@@ -38,14 +37,12 @@
 </script>
 
 <style>
-  /* FONT DAN SCROLLBAR */
   html { font-family: 'Inter', system-ui, sans-serif; }
   ::-webkit-scrollbar { width: 8px; height: 8px; }
   ::-webkit-scrollbar-track { background: #f0f0f0; } 
   ::-webkit-scrollbar-thumb { background: #bbb; border-radius: 4px; }
   ::-webkit-scrollbar-thumb:hover { background: #999; }
   
-  /* TRANSISI DAN MODAL */
   .page, .modal-backdrop {
     opacity: 0;
     visibility: hidden;
@@ -71,18 +68,16 @@
     transform: scale(1);
   }
   
-  /* ANIMASI SPINNER */
   .spinner {
     width: 40px; height: 40px;
     border: 4px solid #f3f3f3;
-    border-top-color: #ff7a18; /* ACCENT */
+    border-top-color: #ff7a18; 
     border-radius: 50%;
     animation: spin 1s linear infinite;
     margin: 0 auto 20px auto;
   }
   @keyframes spin { 100% { transform: rotate(360deg); } }
 
-  /* KOMPONEN INTERAKTIF */
   .action-btn {
     padding: 6px 10px;
     font-size: 13px;
@@ -94,24 +89,21 @@
      transform: scale(1.05);
   }
 
-  /* KPI Cards dengan shadow yang lebih profesional */
   .kpi-card {
     transition: transform 0.3s ease, box-shadow 0.3s ease;
     box-shadow: 0 4px 12px rgba(0,0,0,0.06); 
     will-change: transform, box-shadow;
-    border-radius: 12px; /* Sudut lebih lembut */
+    border-radius: 12px; 
   }
   .kpi-card:hover {
     transform: translateY(-5px);
-    box-shadow: 0 10px 25px rgba(0,0,0,0.12); /* Efek lift yang lebih menonjol */
+    box-shadow: 0 10px 25px rgba(0,0,0,0.12); 
   }
 
-  /* Tabel Row Hover */
   #asset-table-body tr:hover, #vendor-table-body tr:hover {
-    background-color: #f0f0f0; /* Light hover */
+    background-color: #f0f0f0; 
   }
 
-  /* Input dan Search dengan fokus yang bersih */
   .input, .search {
     border: 1px solid #E0E0E0; 
     background-color: #FFFFFF; 
@@ -122,10 +114,9 @@
   }
   .input:focus, .search:focus {
     border-color: #007bff; 
-    box-shadow: 0 0 0 3px rgba(0, 123, 255, 0.2); /* Ring fokus yang lebih solid */
+    box-shadow: 0 0 0 3px rgba(0, 123, 255, 0.2); 
   }
   
-  /* Nav Item Aktif */
   .nav-item {
     transition: background-color 0.2s ease, color 0.2s ease;
   }
@@ -135,17 +126,15 @@
     font-weight: 700;
   }
 
-  /* Status Badge Styling */
   .status-badge {
     padding: 4px 10px;
     font-size: 12px;
     font-weight: 600;
-    border-radius: 9999px; /* Pill shape */
+    border-radius: 9999px; 
     display: inline-block;
     min-width: 80px;
     text-align: center;
   }
-  /* Tambahan CSS di dalam tag <style> */
   .info-group {
     padding: 8px 0;
   }
@@ -154,13 +143,13 @@
     align-items: center;
     font-size: 13px;
     font-weight: 500;
-    color: #777777; /* dark-muted */
+    color: #777777; 
     margin-bottom: 2px;
   }
   .info-group .value {
     font-size: 16px;
     font-weight: 600;
-    color: #333333; /* dark-text */
+    color: #333333; 
   }
   .status-header {
       padding: 10px 15px;
@@ -303,6 +292,7 @@
             <option value="Lulus QC">Lulus QC</option>
             <option value="Gagal QC">Gagal QC</option>
             <option value="Belum QC">Belum QC</option>
+            <option value="Maintenance">Maintenance</option>
           </select>
           
           <select id="filterType" class="search light-bg rounded-md focus:ring-primary focus:ring-1">
@@ -522,6 +512,7 @@
             <option value="Lulus QC">Lulus QC</option>
             <option value="Gagal QC">Gagal QC</option>
             <option value="Belum QC" selected>Belum QC</option>
+            <option value="Maintenance">Maintenance</option>
           </select>
         </div>
         <div>
@@ -635,6 +626,9 @@
             <div id="view-history" class="space-y-3 max-h-48 overflow-y-auto bg-light-card/70 p-3 rounded-md border border-light-border">
               <p class="text-dark-muted text-sm">Memuat riwayat...</p>
             </div>
+            <button id="createReportBtn" class="action-btn bg-error text-white border border-error hover:bg-error/90 mt-4 w-full" data-id="">
+              <i class="fa-solid fa-triangle-exclamation mr-2"></i> Buat Laporan Masalah
+            </button>
           </div>
         </div>
       </div>
@@ -741,7 +735,6 @@
 <script src="https://www.gstatic.com/firebasejs/8.10.1/firebase-firestore.js"></script>
 
 <script>
-  // Konfigurasi Firebase Anda
   const firebaseConfig = {
       apiKey: "AIzaSyA9wgSalrlTcveIZi2i-WND86z1i9JYHKw",
       authDomain: "it-support-53eeb.firebaseapp.com",
@@ -753,21 +746,18 @@
       measurementId: "G-33K6DDE1VR"
   };
   
-  // ID Admin
   const ADMIN_UID = "Ogy9lUbGHbSu8wYIYx2gQsTtFDF2";
 
-  // --- Variabel Global Aplikasi (Tambahkan Koleksi Disposed) ---
   let fb_app, fb_db, fb_auth, fb_userId, fb_assetsCollectionRef, fb_vendorsCollectionRef, fb_disposedCollectionRef;
   let allAssetsCache = [];
   let allVendorsCache = []; 
-  let allDisposedCache = []; // Cache untuk data disposed
+  let allDisposedCache = []; 
   let assetListener = null;
   let vendorListener = null; 
-  let disposedListener = null; // Listener baru
+  let disposedListener = null; 
   let typeChartInstance = null;
   let qcStatusChartInstance = null;
   
-  // --- Toast Helper (Global) ---
   function showToast(txt, isError = false){ 
     let t = document.getElementById('toastMsg'); 
     if(!t){ 
@@ -785,12 +775,10 @@
   }
   window.showToast = showToast;
     
-  // --- Helper Functions (Lokal) ---
   function debounce(fn, ms){ let t; return function(){ clearTimeout(t); t=setTimeout(()=>fn.apply(this,arguments), ms||200); }; }
   function $(sel){ return document.querySelector(sel); }
   function $all(sel){ return Array.from(document.querySelectorAll(sel)); }
   
-  // Fungsi Animasi Count-Up
   function animateCountUp(el, to) {
     const duration = 1200;
     const start = performance.now();
@@ -820,9 +808,6 @@
       return `Rp ${price}`;
   }
 
-  // ==================================================================
-  // TITIK MASUK UTAMA APLIKASI
-  // ==================================================================
   window.addEventListener('load', () => {
     try {
       fb_app = firebase.initializeApp(firebaseConfig);
@@ -835,10 +820,6 @@
       showAuthError("Error Firebase", "Gagal inisialisasi Firebase: " + e.message);
     }
   });
-
-  // ==================================================================
-  // FUNGSI INTI
-  // ==================================================================
 
   async function authVerificationHandler(user) {
     const els = {
@@ -859,7 +840,6 @@
 
         els.userEmailDisplay.textContent = user.email;
         
-        // Muat semua data (termasuk disposed)
         await Promise.all([
           loadAssetData(),
           loadVendorData(),
@@ -896,7 +876,6 @@
   }
 
   function attachUIListeners() {
-    // Navigasi Sidebar
     $all('.nav-item').forEach(item => {
       item.addEventListener('click', (e) => {
         e.preventDefault();
@@ -917,7 +896,6 @@
       });
     });
 
-    // --- Logout Button menggunakan Promise Chain ---
     $('#logoutBtn').addEventListener('click', (e) => {
       e.preventDefault();
       if (confirm("Apakah Anda yakin ingin logout?")) {
@@ -927,9 +905,7 @@
           });
       }
     });
-    // ---------------------------------------------
     
-    // --- Listener Navigasi Mobile (Toggle) ---
     const sidebar = $('#sidebar');
     const toggleBtn = $('#mobileNavToggle');
     const overlay = $('#mobileNavOverlay');
@@ -946,7 +922,6 @@
       });
     }
 
-    // --- Listener Aset ---
     $('#addAssetBtn').addEventListener('click', () => openAssetModal());
     $('#closeAssetModal').addEventListener('click', () => $('#assetModal').classList.remove('active'));
     $('#cancelAssetModal').addEventListener('click', () => $('#assetModal').classList.remove('active'));
@@ -958,7 +933,6 @@
     $('#asset-table-body').addEventListener('click', handleTableActions);
     $('#exportExcelBtn').addEventListener('click', exportToExcel);
 
-    // --- Listener Vendor ---
     $('#addVendorBtn').addEventListener('click', () => openVendorModal());
     $('#closeVendorModal').addEventListener('click', () => $('#vendorModal').classList.remove('active'));
     $('#cancelVendorModal').addEventListener('click', () => $('#vendorModal').classList.remove('active'));
@@ -967,15 +941,9 @@
     $('#searchVendorInput').addEventListener('input', debounce(() => renderVendorTable(allVendorsCache), 300));
     $('#vendor-table-body').addEventListener('click', handleVendorTableActions);
     
-    // --- Listener Disposed ---
     $('#disposed-table-body').addEventListener('click', handleDisposedTableActions);
   }
 
-  // ==================================================================
-  // FUNGSI UTAMA UNTUK DISPOSED ASSETS
-  // ==================================================================
-
-  // --- MODIFIKASI: FUNGSI DELETE MENJADI FUNGSI DISPOSE ---
   async function deleteAsset(id) {
     const asset = allAssetsCache.find(a => a.id === id);
     if (!asset) return showToast('Error: Aset tidak ditemukan.', true);
@@ -985,18 +953,15 @@
     
     $('#loader').style.display = 'flex';
     try {
-      // 1. Ambil data aset lengkap
       const assetDoc = await fb_assetsCollectionRef.doc(id).get();
       const assetData = assetDoc.data();
       
-      // 2. Tulis data aset ke koleksi DISPOSED
       await fb_disposedCollectionRef.doc(id).set({
           ...assetData,
           disposedAt: firebase.firestore.FieldValue.serverTimestamp(),
           disposedBy: fb_auth.currentUser.email
       });
       
-      // 3. Hapus aset dari koleksi UTAMA (assets_v2)
       await fb_assetsCollectionRef.doc(id).delete();
       
       showToast('Aset berhasil di-Dispose dan dipindahkan ke Arsip.');
@@ -1009,12 +974,10 @@
     }
   }
 
-  // --- FUNGSI UNTUK ME-LOAD DATA DISPOSED (Sintaks diperbaiki) ---
   function loadDisposedData() {
     return new Promise((resolve, reject) => {
         if (disposedListener) disposedListener();
 
-        // Menggunakan callback error yang benar untuk onSnapshot (memperbaiki TypeError)
         disposedListener = fb_disposedCollectionRef.orderBy('disposedAt', 'desc').onSnapshot(snapshot => {
             console.log(`(DATA DISPOSED) Menerima ${snapshot.docs.length} dokumen.`);
             allDisposedCache = snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() })); 
@@ -1030,7 +993,6 @@
     });
   }
 
-  // --- RENDER TABEL DISPOSED ASSETS ---
   function renderDisposedTable(disposedAssets) {
     const tableBody = $('#disposed-table-body');
     if (!tableBody) return;
@@ -1073,9 +1035,6 @@
 
     if (action === 'view-disposed') openViewModal(asset);
   }
-  // ==================================================================
-  // END DISPOSED ASSETS FUNCTIONS
-  // ==================================================================
 
   function getPrefixByType(type) {
       if (!type) return 'UNK';
@@ -1136,7 +1095,6 @@
       }
   }
 
-  // --- FUNGSI SAVE ASSET (Tidak berubah, sudah anti-double click) ---
   async function saveAsset(e) {
     e.preventDefault();
     
@@ -1249,15 +1207,10 @@
         timestamp: firebase.firestore.FieldValue.serverTimestamp(),
         adminEmail: fb_auth.currentUser.email
       };
-      // Log dicatat di koleksi aktif
       await fb_assetsCollectionRef.doc(assetId).collection('history').add(logData);
     } catch (e) { console.error("Error writing asset log: ", e); }
   }
 
-  // ==================================================================
-  // --- FUNGSI VENDOR (CRUD & RENDER) ---
-  // ... (Vendor functions remain the same) ...
-  // ==================================================================
   async function saveVendor(e) {
     e.preventDefault();
     
@@ -1433,10 +1386,6 @@
     modal.classList.add('active');
   }
   
-  // ==================================================================
-  // FUNGSI RENDER & UI (LAINNYA)
-  // ==================================================================
-
   function populateVendorDropdown(vendors) {
     const selectEl = $('#vendorId');
     if (!selectEl) return; 
@@ -1483,7 +1432,7 @@
       let actionButtons = `
             <button data-action="view" data-id="${asset.id}" class="action-btn bg-light-card text-dark-muted border border-light-border hover:border-primary hover:text-primary">Lihat</button>
             <button data-action="edit" data-id="${asset.id}" class="action-btn bg-light-card text-dark-muted border border-light-border hover:border-accent hover:text-accent">Edit</button>
-      `; // Default: Hanya Lihat & Edit (Tidak ada Hapus)
+      `; 
 
       switch (asset.qcStatus) {
         case 'Lulus QC': 
@@ -1492,16 +1441,19 @@
             
         case 'Gagal QC': 
             statusClass = 'bg-error/10 text-error'; 
-            // KHUSUS GAGAL QC: Tambahkan tombol Dispose
             actionButtons += `
                 <button data-action="delete" data-id="${asset.id}" class="action-btn bg-error/10 text-error border border-error hover:bg-error hover:text-white transition-all duration-300">Dispose</button>
             `;
             break;
             
         case 'Belum QC': 
-            statusClass = 'bg-warning/10 text-warning'; 
+            statusClass = 'bg-warning/10 text-primary'; 
             break;
             
+        case 'Maintenance': 
+            statusClass = 'bg-chart-orange/10 text-accent'; 
+            break;
+
         default: 
             statusClass = 'bg-light-border text-dark-muted';
       }
@@ -1537,6 +1489,7 @@
     let lulusQcCount = 0;
     let failQcCount = 0;
     let belumQcCount = 0;
+    let maintenanceCount = 0;
     const typeCounts = {};
     const qcStatusCounts = {};
 
@@ -1546,6 +1499,8 @@
       if (asset.qcStatus === 'Lulus QC') lulusQcCount++;
       else if (asset.qcStatus === 'Gagal QC') failQcCount++;
       else if (asset.qcStatus === 'Belum QC') belumQcCount++;
+      else if (asset.qcStatus === 'Maintenance') maintenanceCount++;
+
 
       const type = asset.type || 'Lainnya';
       typeCounts[type] = (typeCounts[type] || 0) + 1;
@@ -1554,13 +1509,11 @@
       qcStatusCounts[status] = (qcStatusCounts[status] || 0) + 1;
     });
 
-    // Update KPI
     animateCountUp($('#kpi-total-items'), totalItems);
     animateCountUp($('#kpi-unique-assets'), assets.length);
     animateCountUp($('#kpi-lulus-qc'), lulusQcCount);
-    animateCountUp($('#kpi-fail-qc'), (failQcCount + belumQcCount)); 
+    animateCountUp($('#kpi-fail-qc'), (failQcCount + belumQcCount + maintenanceCount)); 
 
-    // Update Chart Tipe (Bar)
     const typeCtx = $('#typeChart').getContext('2d');
     const typeLabels = Object.keys(typeCounts);
     const typeData = Object.values(typeCounts); 
@@ -1571,7 +1524,7 @@
       data: { labels: typeLabels, datasets: [{
           label: 'Jumlah Aset', 
           data: typeData, 
-          backgroundColor: '#007bff', // Menggunakan Primary (Biru)
+          backgroundColor: '#007bff', 
           borderRadius: 4,
       }]},
       options: {
@@ -1584,17 +1537,16 @@
       }
     });
 
-    // Update Chart Status QC (Doughnut)
     const qcCtx = $('#qcStatusChart').getContext('2d');
     const qcLabels = Object.keys(qcStatusCounts);
     const qcData = Object.values(qcStatusCounts);
     
-    // Mapping warna untuk Doughnut Chart: Hijau (Lulus), Merah (Gagal), Biru (Belum)
     const chartColors = {
-      'Lulus QC': '#1db954', // HIJAU
-      'Gagal QC': '#dc3545', // MERAH
-      'Belum QC': '#007bff', // BIRU
-      'Unknown': '#777777'   // ABU
+      'Lulus QC': '#1db954', 
+      'Gagal QC': '#dc3545', 
+      'Belum QC': '#007bff', 
+      'Maintenance': '#ff7a18', // Warna baru
+      'Unknown': '#777777'   
     };
 
     const dataColors = qcLabels.map(label => chartColors[label] || chartColors['Unknown']);
@@ -1672,10 +1624,31 @@
     modal.classList.add('active');
   }
   
+  function handleCreateReport(e) {
+      const assetId = e.currentTarget.dataset.id;
+      const asset = allAssetsCache.find(a => a.id === assetId);
+      if (!asset) {
+          showToast('Error: Aset tidak ditemukan.', true);
+          return;
+      }
+  
+      const encodedAssetData = btoa(JSON.stringify({ 
+          id: asset.id, 
+          name: asset.name, 
+          location: asset.location,
+          pic: asset.pic,
+          userEmail: fb_auth.currentUser.email 
+      }));
+  
+      $('#viewAssetModal').classList.remove('active');
+      
+      const adminDashboardUrl = `../index.html#new_report_asset=${encodedAssetData}`;
+      window.open(adminDashboardUrl, '_blank'); 
+  }
+
   async function openViewModal(asset) {
     const modal = $('#viewAssetModal');
     
-    // Tentukan warna status dan ikon
     let statusClass, statusIcon;
     let statusText = asset.qcStatus || 'Unknown';
 
@@ -1692,20 +1665,21 @@
           statusClass = 'bg-warning/20 text-primary border border-primary/50'; 
           statusIcon = '<i class="fa-solid fa-hourglass-half mr-2"></i>';
           break;
+      case 'Maintenance': 
+          statusClass = 'bg-chart-orange/20 text-accent border border-accent/50'; 
+          statusIcon = '<i class="fa-solid fa-wrench mr-2"></i>';
+          break;
       default: 
           statusClass = 'bg-light-border text-dark-muted border border-light-border';
           statusIcon = '<i class="fa-solid fa-circle-question mr-2"></i>';
     }
 
-    // Isi Header Status
-    // Perbaikan error setting textContent of null:
     const viewStatusHeader = $('#view-status-header');
     if (viewStatusHeader) {
         viewStatusHeader.className = `status-header ${statusClass}`;
         viewStatusHeader.innerHTML = `${statusIcon} STATUS: ${statusText.toUpperCase()} ${asset.disposedAt ? '(DISPOSED)' : ''}`;
     }
     
-    // Isi info dasar
     $('#viewModalTitle').textContent = `Detail Aset: ${asset.name}`;
     
     const formattedPrice = (asset.purchasePrice || 0).toLocaleString('id-ID', {
@@ -1714,7 +1688,6 @@
       maximumFractionDigits: 0
     });
     
-    // Mengisi data ke elemen yang baru (Ditambahkan cek null untuk robustness)
     if ($('#view-name')) $('#view-name').textContent = asset.name || '-';
     if ($('#view-type')) $('#view-type').textContent = asset.type || '-';
     if ($('#view-qty')) $('#view-qty').textContent = asset.qty || '0';
@@ -1732,7 +1705,13 @@
     
     modal.classList.add('active');
     
-    // Ambil dan tampilkan riwayat (Logika sama, menggunakan koleksi disposed jika ada)
+    const reportBtn = $('#createReportBtn');
+    if (reportBtn) {
+        reportBtn.dataset.id = asset.id;
+        reportBtn.removeEventListener('click', handleCreateReport); 
+        reportBtn.addEventListener('click', handleCreateReport);
+    }
+    
     const historyContainer = $('#view-history');
     historyContainer.innerHTML = `<p class="text-dark-muted text-sm">Memuat riwayat...</p>`;
     
